@@ -370,6 +370,15 @@ BEGIN
  IF EXISTS(SELECT 1 FROM public.participants p WHERE p.id=p_recipient AND p.space_id=b.space_id
    AND p.user_id=v_uid) AND (v_kind<>'personal' OR NOT b.allow_self_stamp) THEN
    RAISE EXCEPTION 'Self-stamping is not permitted'; END IF;
+ IF EXISTS(SELECT 1 FROM public.participants p WHERE p.id=p_recipient
+      AND p.space_id=b.space_id AND p.kind='child'
+      AND p.guardian_user_id IS DISTINCT FROM v_uid)
+    AND NOT pointplus_private.book_is_manager(b.space_id,v_uid) THEN
+   RAISE EXCEPTION 'Only the guardian or an authorized Room manager can stamp for a child'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.stamp_book_cycles c WHERE c.book_id=p_book
+   AND c.participant_id=p_recipient AND c.completed_at IS NULL
+   AND c.progress_count<c.target_snapshot) THEN
+   RAISE EXCEPTION 'This recipient has no open Stamp Book cycle'; END IF;
  IF coalesce(length(p_note),0)>1000 THEN RAISE EXCEPTION 'Note is too long'; END IF;
  SELECT * INTO prev FROM public.stamp_book_stamp_requests
  WHERE book_id=p_book AND giver_user_id=v_uid AND idempotency_key=p_key;
