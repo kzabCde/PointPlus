@@ -2,7 +2,7 @@
 
 **Verified:** 2026-11-20 (Asia/Bangkok) via connected Supabase account **Que168**  
 **Target:** `gczribbtkfvhpzzupqre` (`pointplus`)  
-**Repository:** `kzabCde/PointPlus` — draft PR #11, branch `feat/database-v3-room-first-schema`.
+**Repository:** `kzabCde/PointPlus` — draft PR #12, branch `fix/room-first-live-v3-reconciliation` (PR #11 was merged first, without the later Room creation fix).
 
 ## Observed source-of-truth and changes
 
@@ -48,7 +48,7 @@ The exact forward scripts are `supabase/v3/05_live_assignment_notifications_hard
 
 ## Safety and rollout gate
 
-**Do not merge PR #11 or deploy Vercel Preview/Production yet.** The live DB is migrated but the Next.js Room creation fix is not on `main`. CI is source-level; it is not a real end-user E2E test. Full backup restore on an isolated database and two-plus independent Auth sessions have **not** been verified. No Supabase development branches were present when checked.
+**Do not merge PR #12 or deploy Vercel Preview/Production yet.** The live DB is migrated but the Next.js Room creation fix is not on `main`. CI is source-level; it is not a real end-user E2E test. Full backup restore on an isolated database and two-plus independent Auth sessions have **not** been verified. No Supabase development branches were present when checked.
 
 To pause official features without data loss use `08_pause_official_collections_rollback.sql` after reviewing current state. To roll back v3.1 notifications use `06_assignment_notification_rollback.sql`. Neither deletes user data, point history or awards. Do not reset a live schema or drop group kinds without inventorying dependent data.
 
