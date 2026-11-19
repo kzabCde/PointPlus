@@ -61,7 +61,7 @@ export async function loadMissionBoard(spaceId: string, filters: BoardFilters = 
   const frequency = ['once','daily','weekly','repeatable'].includes(filters.frequency ?? '') ? filters.frequency : ''
   const mode = ['open','assigned'].includes(filters.mode ?? '') ? filters.mode : ''
   const missions = ((missionResult.data ?? []) as Mission[]).filter((m) =>
-    (m.assignment_mode === 'open' || assigned.has(m.id)) &&
+    (manager || m.assignment_mode === 'open' || assigned.has(m.id)) &&
     (manager || m.status === 'active') && m.status === wantedStatus &&
     (!search || m.title.toLocaleLowerCase().includes(search)) &&
     (!frequency || m.frequency === frequency) &&
@@ -81,7 +81,7 @@ export async function getMissionDetail(spaceId: string, missionId: string, parti
   const mission = data as Mission | null
   if (!mission || !board.selected) notFound()
   if (!board.manager && mission.status !== 'active') notFound()
-  if (mission.assignment_mode === 'assigned' &&
+  if (!board.manager && mission.assignment_mode === 'assigned' &&
     !board.assignments.some((a) => a.mission_id === missionId && a.participant_id === board.selected?.id)) notFound()
   return { ...board, mission }
 }

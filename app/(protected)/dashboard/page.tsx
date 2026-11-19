@@ -1,26 +1,40 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Card } from '@/components/ui/card'
-import { loadMyProfile } from '@/features/profiles/data'
+import { loadDashboard } from '@/features/dashboard/data'
 
 export const metadata: Metadata = { title: 'ภาพรวม' }
 export default async function DashboardPage() {
-  const { profile, personalSpace, error } = await loadMyProfile()
-  return (
-    <>
-      <span className="eyebrow">PointPlus</span>
-      <h1 className="page-title">สวัสดี{profile?.display_name && profile.display_name !== 'Member' ? ' ' + profile.display_name : ''}</h1>
-      {error || !profile
-        ? <div role="alert" className="card">ไม่สามารถโหลดข้อมูลบัญชีจาก Supabase ได้ โปรดลองใหม่อีกครั้ง</div>
-        : <p className="muted">ภารกิจและพื้นที่ความสัมพันธ์ของคุณจะอยู่ที่นี่</p>}
-      {profile?.display_name === 'Member' && <p><Link href="/onboarding" className="button button--primary">เริ่มตั้งค่าโปรไฟล์</Link></p>}
-      <Card className="empty-state">
-        <span className="empty-state__symbol" aria-hidden="true">♡</span>
-        <h2>เริ่มต้นจากพื้นที่ของคุณ</h2>
-        <p>สร้างและติดตามภารกิจที่ทำร่วมกันได้ภายในพื้นที่ส่วนตัว คนรัก หรือครอบครัว</p>
-        {personalSpace && <Link href={'/s/' + personalSpace.id} className="button button--primary">เปิดพื้นที่ส่วนตัว</Link>}
-        <Link href="/spaces" className="button button--secondary">ดูพื้นที่ทั้งหมด</Link>
-      </Card>
-    </>
-  )
+  const { identity, summaries } = await loadDashboard()
+  const profile = identity.profile
+  return <>
+    <span className="eyebrow">PointPlus</span>
+    <h1 className="page-title">สวัสดี{profile?.display_name && profile.display_name !== 'Member' ? ' ' + profile.display_name : ''}</h1>
+    <p className="muted">ภารกิจของคุณและคนสำคัญ ในทุกพื้นที่ที่เข้าถึงได้</p>
+    {identity.error || !profile
+      ? <div className="card" role="alert">ยังโหลดโปรไฟล์ไม่ได้ กรุณาตรวจสอบการเชื่อมต่อฐานข้อมูลและข้อมูลตั้งต้นของบัญชี</div>
+      : profile.display_name === 'Member' && <p><Link className="button button--primary" href="/onboarding">ตั้งค่าโปรไฟล์</Link></p>}
+    {!summaries.length
+      ? <div className="card empty-state"><h2>ยังไม่มีพื้นที่ให้แสดง</h2>
+          <p>หลังสมัครสมาชิกระบบจะสร้างพื้นที่ส่วนตัวอัตโนมัติ หากยังไม่พบ โปรดตรวจสอบฐานข้อมูล</p>
+          <Link href="/spaces" className="button button--primary">ไปยังพื้นที่ของฉัน</Link>
+        </div>
+      : <div className="dashboard-grid">{summaries.map(s => <section key={s.space.id} className="feature-card">
+        <span className="eyebrow">{s.space.kind === 'personal' ? 'ส่วนตัว' : s.space.kind === 'couple' ? 'คนรัก' : 'ครอบครัว'}</span>
+        <h2>{s.space.name}</h2>
+        <p className="muted">บทบาท: {s.role} · ผู้เข้าร่วมที่มองเห็น: {s.visibleParticipants} คน · สมาชิก: {s.memberCount} คน</p>
+        <div className="dashboard-stats">
+          <div><strong>{s.activeCount}</strong><span>ภารกิจเปิดใช้งานที่มองเห็น</span></div>
+          <div><strong>{s.currentlyAvailable}</strong><span>อยู่ในช่วงเวลาที่กำหนด</span></div>
+          <div><strong>{s.assignedCount}</strong><span>ภารกิจแบบมอบหมาย</span></div>
+          <div><strong>{s.points === null ? '—' : s.points.toLocaleString('th-TH')}</strong><span>แต้มของ {s.participantName ?? 'ผู้เข้าร่วม'}</span></div>
+        </div>
+        <div className="hero__actions">
+          <Link href={'/s/' + s.space.id + '/missions'} className="button button--primary">เปิดภารกิจ</Link>
+          <Link href={'/s/' + s.space.id} className="button button--secondary">ดูพื้นที่</Link>
+          {(s.role === 'owner' || s.role === 'admin') &&
+            <Link href={'/s/' + s.space.id + '/missions/new'} className="text-link">สร้างภารกิจ</Link>}
+        </div>
+      </section>)}</div>}
+    <p className="muted" style={{ marginTop: 20 }}>จำนวนภารกิจนับจากรายการที่บัญชีและผู้เข้าร่วมนี้มองเห็น ไม่ใช่สถิติการทำสำเร็จหรือคะแนนที่จำลองขึ้น</p>
+  </>
 }
