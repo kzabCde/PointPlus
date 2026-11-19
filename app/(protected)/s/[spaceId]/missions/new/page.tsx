@@ -11,6 +11,7 @@ export default async function NewMissionPage({params}: {params:Promise<{spaceId:
     <h2>สร้างภารกิจใหม่</h2>
     <p className="muted">กำหนดกิจกรรมที่อยากทำให้สำเร็จในพื้นที่นี้</p>
     <CreateMissionForm spaceId={spaceId} timezone={space.timezone}
-      campaigns={catalog.campaigns} stampCards={catalog.stampCards} />
+      campaigns={catalog.campaigns} stampCards={catalog.stampCards}
+      mode={space.kind === 'couple' ? 'couple' : space.kind === 'family' ? 'family' : 'personal'} />
   </>
 }

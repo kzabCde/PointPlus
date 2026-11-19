@@ -35,6 +35,8 @@ jobs:
         run: node --test tests/room-first-contract.test.mjs
       - name: Verify Room rewards contracts
         run: node --test tests/room-rewards-contract.test.mjs
+      - name: Verify Official Catalog contracts
+        run: node --test tests/official-assets-contract.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build

@@ -247,3 +247,7 @@ h1, h2, h3 { line-height: 1.27; letter-spacing: -.025em; }
 .collection-item small { font-size:12px; }
 
 .reward-balance { color:var(--teal);font-size:clamp(28px,3vw,36px);line-height:1.2; }
+
+.room-template { display:flex;flex-wrap:wrap;gap:12px;align-items:end;background:var(--surface-soft);padding:16px;border-radius:16px;margin-bottom:20px; }
+.room-template .input { max-width:430px; }
+.room-template .form-field__label,.room-template p { width:100%; margin:0; }
