@@ -40,7 +40,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
   </div>
   <fieldset className="stamp-picker-set">
    <legend className="form-field__label">ใครเป็นเจ้าของสมุดนี้บ้าง</legend>
-   <p className="muted">แต่ละคนจะมีหน้าและความคืบหน้าของตัวเอง</p>
+   <p className="muted">แต่ละคนจะมีหน้าและความคืบหน้าของตัวเอง ในห้องร่วมกันผู้ให้แสตมป์ไม่สามารถให้ตัวเองได้</p>
    {participants.map(p=><label className="stamp-check" key={p.id}>
     <input type="checkbox" name="recipient_id" value={p.id} defaultChecked={kind==='personal'||p.user_id!==userId} />
     <span>{p.display_name}{p.kind==='child'?' (เด็ก)':''}</span>
@@ -75,7 +75,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
    <label className="form-field__label" htmlFor="stamp-book-approval">วิธีให้แสตมป์</label>
    <select id="stamp-book-approval" name="approval_policy" className="input" defaultValue="direct">
     <option value="direct">ผู้มีสิทธิ์ให้แสตมป์ได้ทันที</option>
-    <option value="approval_required">ต้องให้ผู้ดูแลคนอื่นอนุมัติ</option>
+    <option value="approval_required">ต้องให้ผู้ดูแลคนอื่นอนุมัติ (ต้องมีผู้ตรวจที่ไม่ใช่ผู้ให้)</option>
    </select>
   </div>
   <label className="stamp-check"><input name="repeatable" type="checkbox" defaultChecked/> เริ่มสะสมรอบใหม่ได้เมื่อครบ</label>
