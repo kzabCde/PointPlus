@@ -6,6 +6,12 @@
 **Base:** current `main` includes merged Phase 1 integration PR #7 and official Heart branding PR #6.
 **DB:** Database v2.0 source `pointplus_database_v2.sql` inspected; target project `gczribbtkfvhpzzupqre` **NOT** accessible through connected Supabase. Linked account lists only an unrelated AirQuality project. No production SQL executed. Live verification is a release blocker.
 
+## Release policy
+
+- **Vercel Preview Deployments are disabled** for the linked `nowheredev/pointplus` project through its project setting (2026-11-19). Keep them disabled during all Phase 2 development and review.
+- Work only in the Phase 2 feature branch / pull request, without merging to `main` until Phase 2 acceptance checks pass.
+- Do not create a manual Preview or Production deployment during the phase. Perform **one planned Production deployment** only after Phase 2 completion and authorization. This setting does not itself disable automatic Production deployments from future `main` pushes, so keep the integration PR unmerged until release.
+
 ## Mission matrix
 
 | Mission | Status | Implemented / evidence | Remaining checks |
