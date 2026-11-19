@@ -36,9 +36,12 @@ The application also needs `NEXT_PUBLIC_SITE_URL` set to its canonical origin in
 ```bash
 npm run test:foundation
 node --test tests/phase1-m02-m07.test.mjs
+node --test tests/phase1-m08-m10.test.mjs
 npm run typecheck
 npm run build
 node scripts/validate-point-plus-assets.mjs
 ```
+
+See docs/PHASE1_M08_M10.md for the M08–M10 engineering report and 12 untested live acceptance scenarios.
 
 Database v2.0 is authoritative for later feature work. Do not invent table columns or RPCs and do not run SQL against another Supabase project.
