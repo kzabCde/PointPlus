@@ -9,7 +9,8 @@ export function InviteForm({ spaceId, isOwner }: { spaceId: string; isOwner: boo
   const [state, action, pending] = useActionState(createInviteAction, initial)
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState(false)
-  useEffect(() => { setCopied(false); setCopyError(false) }, [state.link])\n  async function copyLink() {
+  useEffect(() => { setCopied(false); setCopyError(false) }, [state.link])
+  async function copyLink() {
     if (!state.link) return
     try {
       await navigator.clipboard.writeText(state.link)
