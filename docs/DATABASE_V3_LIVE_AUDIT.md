@@ -61,3 +61,14 @@ Supabase Auth leaked-password setting: see [password security](https://supabase.
 - New draft [PR #12](https://github.com/kzabCde/PointPlus/pull/12) (`fix/room-first-live-v3-reconciliation`) carries the **unmerged** Room creation RLS fix, current documents and v3.2 SQL.
 - PR #12 source-level GitHub Actions **PASS** on `92ad37b15d2435ba7f5a7bc5ed8f5aa52a640a0c`: [CI run](https://github.com/kzabCde/PointPlus/actions/runs/44587022226). Vercel list returned **zero Preview deployments** for the PR #12 branch when checked.
 - Do not assume the current production UI can create Rooms: deployed `main` still uses the RLS-blocked `INSERT ... RETURNING` code. Do not merge PR #12 or authorize additional production deployments until the release gate passes.
+
+## Additional transactional idempotency / rewards verification
+
+A second post-v3.2, **ROLLBACK-only** authenticated SQL smoke test passed:
+
+1. Create Personal mission with 10 points / 1 stamp and submit twice with identical idempotency key: same submission UUID returned, exactly one `mission_approved` ledger entry and one `stamp_awards` entry.
+2. Create private 7-point reward in the same Personal Space; redeem twice with the same request key: same redemption UUID, exactly one `reward_redemption` debit and wallet balance at starting balance +3.
+3. Cancel the redemption once: exactly one `reward_refund` ledger event and wallet balance restored to starting balance +10.
+4. The transaction ended with **ROLLBACK** and did not persist the simulated mission, reward, points, stamps or redemptions.
+
+Still required for R07 acceptance: two-member Room authorization boundaries, real concurrent double-click/review races, stock exhaustion, private child beneficiary, and real browser UI flows.
