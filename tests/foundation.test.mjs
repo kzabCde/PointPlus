@@ -17,7 +17,7 @@ test('replaces the demo with a purposeful PointPlus public page', () => {
 test('only links to implemented destinations in the protected shell', () => {
   const layout = read('app/(protected)/layout.tsx')
   assert.match(layout, /getClaims\(\)/)
-  assert.match(layout, /redirect\('\/'\)/)
+  assert.match(layout, /redirect\('\/login'\)/)
   assert.ok(exists('app/(protected)/dashboard/page.tsx'))
   assert.doesNotMatch(layout, /href="\/(missions|rewards|settings)"/)
 })
