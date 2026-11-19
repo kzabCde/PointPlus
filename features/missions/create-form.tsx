@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { MissionFields } from './mission-fields'
-import { createMissionAction, idleMissionState } from './create-actions'
+import { createMissionAction } from './create-actions'
+import { idleMissionState } from './action-state'
 import type { CampaignOption, StampCardOption } from './catalog'
 
 export function CreateMissionForm({ spaceId, timezone, campaigns, stampCards }: {

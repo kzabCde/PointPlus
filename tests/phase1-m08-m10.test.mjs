@@ -69,3 +69,19 @@ test('M10 reads authorized dashboard records without fake wallets',()=>{
   assert.ok(!dashboard.includes('sampleMissions'))
   assert.ok(exists('docs/PHASE1_M08_M10.md'))
 })
+
+test('server action files never export non-function runtime constants',()=>{
+  const files=[
+    'features/auth/actions.ts','features/profiles/actions.ts',
+    'features/spaces/actions.ts','features/participants/actions.ts',
+    'features/invitations/actions.ts','features/missions/create-actions.ts',
+    'features/missions/manage-actions.ts',
+  ]
+  for(const file of files){
+    const source=read(file)
+    assert.ok(source.startsWith("'use server'"),file)
+    assert.doesNotMatch(source,/^export\s+(?:const|let|var|class)\s+/m,file)
+  }
+  assert.ok(exists('features/missions/action-state.ts'))
+  assert.ok(exists('app/(protected)/activities/new/page.tsx'))
+})

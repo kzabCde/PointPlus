@@ -4,7 +4,7 @@ import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { FormField } from '@/components/ui/form-field'
 import { createCampaignAction,updateCampaignAction } from './manage-actions'
-import { idleMissionState } from './create-actions'
+import { idleMissionState } from './action-state'
 import { utcToLocal } from './validation'
 import type { CampaignOption } from './catalog'
 

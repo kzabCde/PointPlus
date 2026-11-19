@@ -10,6 +10,10 @@ export default async function DashboardPage() {
     <span className="eyebrow">PointPlus</span>
     <h1 className="page-title">สวัสดี{profile?.display_name && profile.display_name !== 'Member' ? ' ' + profile.display_name : ''}</h1>
     <p className="muted">ภารกิจของคุณและคนสำคัญ ในทุกพื้นที่ที่เข้าถึงได้</p>
+    <div className="hero__actions" style={{ marginTop: 16, marginBottom: 24 }}>
+      <Link href="/activities/new" className="button button--primary">สร้างกิจกรรมใหม่</Link>
+      <Link href="/spaces" className="button button--secondary">สร้างพื้นที่สำหรับคนสำคัญ</Link>
+    </div>
     {identity.error || !profile
       ? <div className="card" role="alert">ยังโหลดโปรไฟล์ไม่ได้ กรุณาตรวจสอบการเชื่อมต่อฐานข้อมูลและข้อมูลตั้งต้นของบัญชี</div>
       : profile.display_name === 'Member' && <p><Link className="button button--primary" href="/onboarding">ตั้งค่าโปรไฟล์</Link></p>}

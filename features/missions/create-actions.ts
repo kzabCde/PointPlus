@@ -10,7 +10,6 @@ export type MissionMutationState = {
   message: string
   missionId?: string
 }
-export const idleMissionState: MissionMutationState = {status:'idle',message:''}
 export async function createMissionAction(
   _state: MissionMutationState, form: FormData,
 ): Promise<MissionMutationState> {

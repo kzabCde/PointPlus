@@ -2,7 +2,7 @@
 import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { addAssignmentAction, removeAssignmentAction } from './manage-actions'
-import { idleMissionState } from './create-actions'
+import { idleMissionState } from './action-state'
 import type { Participant } from '@/features/spaces/data'
 
 type AssignmentItem={id:string;participant_id:string;mission_id:string}
