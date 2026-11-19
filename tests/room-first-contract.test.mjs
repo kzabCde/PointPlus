@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
+import ts from 'typescript'
 const read = p => readFileSync(new URL('../' + p,import.meta.url),'utf8')
 test('R01: staged non-destructive group proposal keeps personal and separate migration',()=>{
  const sql=read('supabase/proposals/room_first_group_kind.sql')
@@ -56,4 +57,53 @@ test('R01 live RLS: Room creation avoids INSERT RETURNING before membership trig
  assert.match(s,/\.insert\(\{ id: spaceId, kind, name, timezone, owner_id: user\.id \}\)/)
  assert.doesNotMatch(s,/\.insert\(\{ kind, name, timezone, owner_id: user\.id \}\)\s*\.select\('id'\)/)
  assert.match(s,/spaceId \}/)
+})
+
+test('R01: createSpaceAction uses committed trigger model without INSERT RETURNING', async()=>{
+ const spaceId = '33333333-3333-4333-8333-333333333333'
+ const seen = []
+ const profileQuery = {
+   select(){ return this },eq(){ return this },
+   async maybeSingle(){ return {data:{timezone:'Asia/Bangkok'},error:null} },
+ }
+ const supabase = {
+   from(table){
+     if(table === 'profiles') return profileQuery
+     if(table !== 'spaces') throw new Error('Unexpected table '+table)
+     return {
+       async insert(row){ seen.push(row);return {error:null} },
+       select(){ throw new Error('INSERT RETURNING must not be used for spaces') },
+     }
+   },
+ }
+ const compiled=ts.transpileModule(read('features/spaces/actions.ts'),{
+   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true},
+   fileName:'features/spaces/actions.ts',
+ })
+ const module={exports:{}}
+ const stubs={
+   'node:crypto':{randomUUID:()=>spaceId},
+   'next/cache':{revalidatePath:()=>{}},
+   '@/lib/auth/validation':{
+     field:(form,key)=>String(form.get(key)||'').trim(),
+     allowedTimezone:tz=>tz==='Asia/Bangkok',
+     isUuid:()=>true,
+   },
+   '@/lib/auth/session':{requireUser:async()=>({user:{id:'owner-id'},supabase})},
+   './data':{getSpaceContext:async()=>{throw new Error('Unused')}},
+ }
+ new Function('require','module','exports',compiled.outputText)(
+   id=>{if(!(id in stubs)) throw new Error('Unexpected import: '+id);return stubs[id]},
+   module,module.exports,
+ )
+ const form=new FormData()
+ form.set('kind','group')
+ form.set('name','Friends')
+ const action=module.exports.createSpaceAction
+ const result=await action({status:'idle',message:''},form)
+ assert.equal(result.status,'success')
+ assert.equal(result.spaceId,spaceId)
+ assert.deepEqual(seen,[{
+   id:spaceId,kind:'group',name:'Friends',timezone:'Asia/Bangkok',owner_id:'owner-id',
+ }])
 })
