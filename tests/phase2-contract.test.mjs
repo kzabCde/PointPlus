@@ -119,3 +119,72 @@ test('P2-M07: client notification views import only client-safe runtime helpers'
   assert.doesNotMatch(read('features/social/notification-links.ts'),/from ['\"]@\/lib\/auth\/session/)
   assert.doesNotMatch(read('features/social/actions.ts'),/service_role|point_wallets'\)\.update/)
 })
+
+function loadReviewActions({actor=uuid,role='member',scopeKind='couple',
+  creator=uuid,kind='adult',guardian=null,status='submitted'}={}) {
+  const calls=[]
+  const supabase={
+    from(table) {
+      const row=table==='mission_submissions'
+        ?{id:missionId,space_id:spaceId,participant_id:participantId,created_by:creator,status}
+        :table==='participants'
+          ?{id:participantId,kind,guardian_user_id:guardian}:null
+      return {
+        select(){return this},eq(){return this},
+        async maybeSingle(){return {data:row,error:null}},
+      }
+    },
+    async rpc(name,args){calls.push({name,args});return {data:missionId,error:null}},
+  }
+  const context={supabase,user:{id:actor},space:{kind:scopeKind},member:{role}}
+  const actions=loadModule('features/social/actions.ts',{
+    'next/cache':{revalidatePath(){}},
+    '@/features/spaces/data':{getSpaceContext:async()=>context,canManage:r=>r==='owner'||r==='admin'},
+    '@/features/missions/data':{getMissionDetail(){}},
+    './data':{canSubmitFor:data.canSubmitFor},
+    '@/lib/auth/validation':{isUuid},
+  })
+  const form=new FormData()
+  form.set('space_id',spaceId);form.set('submission_id',missionId)
+  return {actions,calls,form}
+}
+test('P2-M03: another shared Space adult can approve but submitter cannot self-approve',async()=>{
+  const reviewer=loadReviewActions({creator:other})
+  reviewer.form.set('decision','approve')
+  const ok=await reviewer.actions.reviewMissionAction({status:'error',message:''},reviewer.form)
+  assert.equal(ok.status,'success')
+  assert.equal(reviewer.calls.length,1)
+  assert.deepEqual(reviewer.calls[0],{
+    name:'pointplus_review_mission',
+    args:{p_submission:missionId,p_approve:true,p_note:null},
+  })
+  const submitter=loadReviewActions({creator:uuid})
+  submitter.form.set('decision','approve')
+  const denied=await submitter.actions.reviewMissionAction({status:'error',message:''},submitter.form)
+  assert.equal(denied.status,'error')
+  assert.equal(submitter.calls.length,0)
+})
+test('P2-M03: rejection requires explanation and posts exactly one review RPC',async()=>{
+  const reviewer=loadReviewActions({creator:other})
+  reviewer.form.set('decision','reject')
+  assert.equal((await reviewer.actions.reviewMissionAction({status:'error',message:''},reviewer.form)).status,'error')
+  assert.equal(reviewer.calls.length,0)
+  reviewer.form.set('note','หลักฐานไม่ครบ')
+  const accepted=await reviewer.actions.reviewMissionAction({status:'error',message:''},reviewer.form)
+  assert.equal(accepted.status,'success')
+  assert.equal(reviewer.calls.length,1)
+  assert.equal(reviewer.calls[0].args.p_approve,false)
+  assert.equal(reviewer.calls[0].args.p_note,'หลักฐานไม่ครบ')
+})
+test('P2-M09: guardian or manager can review child; unrelated adult cannot',async()=>{
+  const guardian=loadReviewActions({kind:'child',guardian:uuid,creator:other})
+  guardian.form.set('decision','approve')
+  assert.equal((await guardian.actions.reviewMissionAction({status:'error',message:''},guardian.form)).status,'success')
+  const stranger=loadReviewActions({kind:'child',guardian:other,creator:other})
+  stranger.form.set('decision','approve')
+  assert.equal((await stranger.actions.reviewMissionAction({status:'error',message:''},stranger.form)).status,'error')
+  assert.equal(stranger.calls.length,0)
+  const manager=loadReviewActions({kind:'child',guardian:other,creator:other,role:'admin'})
+  manager.form.set('decision','approve')
+  assert.equal((await manager.actions.reviewMissionAction({status:'error',message:''},manager.form)).status,'success')
+})
