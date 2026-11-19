@@ -1,3 +1,5 @@
+> **Live status update (2026-11-20):** v3 already exists in PointPlus Supabase; see [DATABASE_V3_LIVE_AUDIT.md](DATABASE_V3_LIVE_AUDIT.md) for verified migrations and QA. The initial v2→v3 proposal below is historical and must not be rerun on the live project.
+
 # Point+ Database v3 — Room-First & Official Collections
 **Status:** design and *migration proposal*, NOT applied to any database.
 **Supabase target:** `gczribbtkfvhpzzupqre` (verify independently in connector/dashboard before any SQL execution).
