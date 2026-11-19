@@ -1,6 +1,6 @@
 # POINT+ — R01–R08 QA, Security, Performance and Release Handoff
 
-Updated 2026-11-19. Branch: `feat/room-first-complete-experience`; PR #10 (draft).
+Updated 2026-11-20. PR #10 was merged to main on 2026-11-19 by a separate action. Database v3 changes are isolated in `feat/database-v3-room-first-schema` and NOT applied to Supabase.
 Production deployment **NOT AUTHORIZED**. GitHub actions checks are source-level CI, **not** live Supabase End-to-End.
 
 ## Implementation status at source-code level

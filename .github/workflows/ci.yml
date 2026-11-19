@@ -39,6 +39,8 @@ jobs:
         run: node --test tests/official-assets-contract.test.mjs
       - name: Verify Room security contracts
         run: node --test tests/room-security-contract.test.mjs
+      - name: Verify v3 database schema proposals
+        run: node --test tests/database-v3-contract.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
