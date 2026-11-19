@@ -60,11 +60,13 @@ test('redirect validator enforces application-only navigation at runtime', async
     compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
   }).outputText
   const { safeNextPath } = await import('data:text/javascript;base64,' + Buffer.from(js).toString('base64'))
-  assert.equal(safeNextPath('https://attacker.example'), '/dashboard')
-  assert.equal(safeNextPath('//attacker.example'), '/dashboard')
-  assert.equal(safeNextPath('/\\\\attacker.example'), '/dashboard')
-  assert.equal(safeNextPath('/unrecognized'), '/dashboard')
+  assert.equal(safeNextPath('https://attacker.example'), '/rooms')
+  assert.equal(safeNextPath('//attacker.example'), '/rooms')
+  assert.equal(safeNextPath('/\\\\attacker.example'), '/rooms')
+  assert.equal(safeNextPath('/unrecognized'), '/rooms')
   assert.equal(safeNextPath('/auth/reset-password'), '/auth/reset-password')
   assert.equal(safeNextPath('/join#token=abc'), '/join#token=abc')
   assert.equal(safeNextPath('/spaces'), '/spaces')
+  assert.equal(safeNextPath('/rooms'), '/rooms')
+  assert.equal(safeNextPath('/dashboard'), '/dashboard')
 })
