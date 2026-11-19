@@ -4,7 +4,7 @@ import { listMySpaces, canManage } from '@/features/spaces/data'
 
 export const metadata: Metadata = { title: 'สร้างกิจกรรม' }
 
-const kindLabel = { personal: 'ส่วนตัว', couple: 'คนรัก', family: 'ครอบครัว' }
+const kindLabel = { personal: 'ส่วนตัว', couple: 'คนรัก', family: 'ครอบครัว', group: 'ทั่วไป' }
 
 export default async function NewActivityPage() {
   const spaces = (await listMySpaces()).filter(space => canManage(space.role))

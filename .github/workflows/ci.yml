@@ -31,6 +31,14 @@ jobs:
         run: node --test tests/phase1-m08-m10.test.mjs
       - name: Verify Phase 2 contract behavior
         run: node --test tests/phase2-contract.test.mjs
+      - name: Verify Room-First contracts
+        run: node --test tests/room-first-contract.test.mjs
+      - name: Verify Room rewards contracts
+        run: node --test tests/room-rewards-contract.test.mjs
+      - name: Verify Official Catalog contracts
+        run: node --test tests/official-assets-contract.test.mjs
+      - name: Verify Room security contracts
+        run: node --test tests/room-security-contract.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build

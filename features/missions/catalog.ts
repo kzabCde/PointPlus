@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { isUuid } from '@/lib/auth/validation'
 
 export type CampaignOption = { id: string; title: string; description: string | null; start_at: string | null; end_at: string | null }
-export type StampCardOption = { id: string; title: string; active: boolean }
+export type StampCardOption = { id: string; title: string; active: boolean; image_key: string | null }
 
 export async function getManagerContext(spaceId: string) {
   const context = await getSpaceContext(spaceId)
@@ -14,7 +14,7 @@ export async function getMissionCatalog(spaceId: string) {
   const { supabase } = await getManagerContext(spaceId)
   const [campaigns, cards] = await Promise.all([
     supabase.from('campaigns').select('id,title,description,start_at,end_at').eq('space_id',spaceId).order('created_at',{ascending:false}),
-    supabase.from('stamp_cards').select('id,title,active').eq('space_id',spaceId).order('created_at',{ascending:false}),
+    supabase.from('stamp_cards').select('id,title,active,image_key').eq('space_id',spaceId).order('created_at',{ascending:false}),
   ])
   if (campaigns.error || cards.error) throw new Error('Cannot load mission catalog')
   return {

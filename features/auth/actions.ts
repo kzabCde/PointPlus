@@ -23,7 +23,7 @@ export async function signInAction(_state: AuthState, form: FormData): Promise<A
   const next = safeNextPath(value(form, 'next'))
   // First sign-in should lead to the real profile onboarding, but explicit
   // deep links (e.g. after joining) take priority.
-  if (next === '/dashboard') {
+  if (next === '/rooms' || next === '/dashboard') {
     const { data: identity } = await supabase.auth.getUser()
     if (identity.user) {
       const { data: profile } = await supabase.from('profiles')

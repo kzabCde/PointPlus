@@ -1,29 +1,45 @@
 import Link from 'next/link'
-import { getSpaceContext, getSpaceMembers, getSpaceParticipants, canManage } from '@/features/spaces/data'
-import { loadMissionBoard, windowState } from '@/features/missions/data'
+import { getSpaceContext, canManage } from '@/features/spaces/data'
+import { loadRoomActivityPreview } from '@/features/rooms/data'
 
-export default async function SpacePage({ params }: { params: Promise<{ spaceId: string }> }) {
+export default async function RoomHomePage({ params }: { params: Promise<{ spaceId: string }> }) {
   const { spaceId } = await params
-  const [{ member, space }, members, participants, board] = await Promise.all([
-    getSpaceContext(spaceId), getSpaceMembers(spaceId), getSpaceParticipants(spaceId),
-    loadMissionBoard(spaceId, { status: 'active' }),
+  const [{ space, member }, recent] = await Promise.all([
+    getSpaceContext(spaceId),
+    loadRoomActivityPreview(spaceId),
   ])
-  const active = board.missions.filter(m => m.status === 'active')
-  return <div className="card">
-    <h2>ภาพรวมพื้นที่</h2>
-    <p className="muted">บทบาทของคุณ: {member.role}</p>
-    <div className="dashboard-stats">
-      <div><strong>{members.length}</strong><span>สมาชิกบัญชี</span></div>
-      <div><strong>{participants.length}</strong><span>ผู้เข้าร่วมที่มองเห็น</span></div>
-      <div><strong>{active.length}</strong><span>ภารกิจเปิดใช้งานที่มองเห็น</span></div>
-      <div><strong>{active.filter(m => windowState(m) === 'available').length}</strong><span>อยู่ในช่วงเวลาของภารกิจ</span></div>
+  const path = '/s/' + spaceId
+  return <div className="room-home">
+    <section className="room-hero">
+      <span className="eyebrow">วันนี้ในห้องของเรา</span>
+      <h2>มาทำสิ่งดี ๆ ด้วยกัน</h2>
+      <p>กิจกรรมของห้องนี้เท่านั้น — ทุกความสำเร็จเริ่มจากเรื่องเล็ก ๆ</p>
+      <div className="hero__actions">
+        {canManage(member.role) && <Link href={path + '/missions/new'} className="button button--primary">+ สร้างกิจกรรม</Link>}
+        <Link href={path + '/missions'} className="button button--secondary">ดูกิจกรรมทั้งหมด</Link>
+      </div>
+    </section>
+    <div className="room-summary">
+      <Link href={path + '/missions'} className="room-summary__tile"><strong>{recent.length}</strong><span>รายการล่าสุด</span></Link>
+      <Link href={path + '/reviews'} className="room-summary__tile"><strong>↗</strong><span>รายการรออนุมัติ</span></Link>
+      <Link href={path + '/collection'} className="room-summary__tile"><strong>★</strong><span>สมุดสะสม</span></Link>
     </div>
-    <div className="hero__actions">
-      <Link href={'/s/' + spaceId + '/missions'} className="button button--primary">ดูภารกิจ</Link>
-      {canManage(member.role) && <Link href={'/s/' + spaceId + '/missions/new'} className="button button--secondary">สร้างภารกิจใหม่</Link>}
-      {canManage(member.role) && <Link href={'/s/' + spaceId + '/campaigns'} className="text-link">ชุดภารกิจ</Link>}
-      {space.kind === 'family' && <Link href={'/s/' + spaceId + '/children'} className="text-link">เด็กในครอบครัว</Link>}
+    <div className="space-header"><h2>กิจกรรมของเรา</h2><Link className="text-link" href={path + '/missions'}>ดูทั้งหมด</Link></div>
+    {recent.length
+      ? <div className="room-activity-list">{recent.map(m => <Link href={path + '/missions/' + m.id} key={m.id} className="room-activity-item">
+          <span><strong>{m.title}</strong><small>{m.description || 'กิจกรรมร่วมกันในห้อง'}</small></span><span aria-hidden="true">›</span>
+        </Link>)}</div>
+      : <div className="card empty-state"><h3>ยังไม่มีกิจกรรมที่เปิดใช้งาน</h3>
+          <p>ลองสร้างกิจกรรมสั้น ๆ แล้วชวนสมาชิกเริ่มทำด้วยกัน</p>
+          {canManage(member.role) && <Link href={path + '/missions/new'} className="button button--primary">สร้างกิจกรรมแรก</Link>}
+        </div>}
+    <div className="room-shortcuts">
+      <Link href={path + '/daily'}>กิจกรรมวันนี้</Link>
+      <Link href={path + '/shared'}>กิจกรรมร่วมกัน</Link>
+      <Link href={path + '/rewards'}>รางวัลในห้อง</Link>
+      <Link href={path + '/progress'}>ความคืบหน้า</Link>
+      {space.kind === 'family' && <Link href={path + '/children'}>เด็กในครอบครัว</Link>}
+      {canManage(member.role) && <Link href={path + '/campaigns'}>ชุดภารกิจ</Link>}
     </div>
-    <p className="muted" style={{ marginTop: 16 }}>ข้อมูลอิงสิทธิ์ของพื้นที่ ไม่ใช่ข้อมูลจำลอง</p>
   </div>
 }

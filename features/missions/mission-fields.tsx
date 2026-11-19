@@ -44,7 +44,7 @@ export function MissionFields({ mission, campaigns, stampCards, timezone, creati
             {stampCards.filter(c=>c.active || c.id === mission?.stamp_card_id).map(c=>
               <option key={c.id} value={c.id}>{c.title}{c.active ? '' : ' (ปิดใช้งาน)'}</option>)}
           </select>
-          <span className="form-field__hint">เลือกเฉพาะเมื่อจำนวนแสตมป์มากกว่า 0</span>
+          <span className="form-field__hint">เลือกเฉพาะเมื่อจำนวนแสตมป์มากกว่า 0 โดยเลือกหมวดที่ตรงกับกิจกรรม</span>
         </div>
         <div className="form-field"><label className="form-field__label" htmlFor="mission-max">จำนวนครั้งสูงสุด (ไม่บังคับ)</label>
           <input id="mission-max" name="max_completions" className="input" type="number" min={1} max={1000000} step={1}

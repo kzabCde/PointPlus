@@ -34,7 +34,7 @@ export function ProfileForm({ profile, onboarding = false }: { profile: Profile;
       {state.message && <p role="status" className={state.status === 'error' ? 'form-field__error' : 'status status--success'}>{state.message}</p>}
       <div className="hero__actions">
         <Button type="submit" disabled={pending}>{pending ? 'กำลังบันทึก…' : 'บันทึกโปรไฟล์'}</Button>
-        {onboarding && state.status === 'success' && <Link href="/spaces" className="button button--secondary">ไปยังพื้นที่ของฉัน</Link>}
+        {onboarding && state.status === 'success' && <Link href="/rooms" className="button button--secondary">ไปยังห้องของฉัน</Link>}
       </div>
     </form>
   )

@@ -19,7 +19,7 @@ const heading: Record<Mode, string> = {
 const actions = { login: signInAction, register: signUpAction, forgot: forgotPasswordAction, reset: updatePasswordAction }
 const initial: AuthState = { status: 'idle', message: '' }
 
-export function AuthForm({ mode, next = '/dashboard' }: { mode: Mode; next?: string }) {
+export function AuthForm({ mode, next = '/rooms' }: { mode: Mode; next?: string }) {
   const [state, action, pending] = useActionState(actions[mode], initial)
   return (
     <>
@@ -47,7 +47,7 @@ export function AuthForm({ mode, next = '/dashboard' }: { mode: Mode; next?: str
       <div className="auth-links">
         {mode !== 'login' && <Link href="/login">เข้าสู่ระบบ</Link>}
         {mode === 'login' && <><Link href="/register">สมัครสมาชิก</Link><Link href="/forgot-password">ลืมรหัสผ่าน?</Link></>}
-        {mode === 'reset' && state.status === 'success' && <Link href="/dashboard">ไปยังภาพรวม</Link>}
+        {mode === 'reset' && state.status === 'success' && <Link href="/rooms">ไปยังห้องของฉัน</Link>}
       </div>
     </>
   )
