@@ -11,10 +11,10 @@ already installed; incremental v3.1/v3.2 migrations are now applied and verified
 
 A live RLS regression was found in Room creation: using `INSERT ... RETURNING id`
 before the AFTER INSERT membership trigger made creating new Rooms fail.
-**Draft PR #11** generates the Room ID in the Next.js server action and performs
+**Draft PR #12** generates the Room ID in the Next.js server action and performs
 the insert without `RETURNING`. It also restores official Room collections and
 adds assignment notification handling. The DB migrations are already live,
-but the application code in PR #11 is **not merged or deployed**.
+but the application code in PR #12 is **not merged or deployed**.
 
 Rollback-only SQL smoke tests passed for Group Room provisioning and a Personal
 Mission → auto-approval → points → stamp → badge sequence. This does not replace
