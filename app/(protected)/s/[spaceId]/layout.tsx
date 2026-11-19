@@ -20,6 +20,7 @@ export default async function SpaceLayout({ children, params }: {
       <Link href={'/s/' + spaceId}>หน้าห้อง</Link>
       <Link href={'/s/' + spaceId + '/missions'}>กิจกรรม</Link>
       <Link href={'/s/' + spaceId + '/collection'}>สมุดสะสม</Link>
+      <Link href={'/s/' + spaceId + '/rewards'}>รางวัล</Link>
       {space.kind !== 'personal' && <Link href={'/s/' + spaceId + '/members'}>สมาชิก</Link>}
       <Link href={'/s/' + spaceId + '/settings'}>ตั้งค่า</Link>
     </nav>

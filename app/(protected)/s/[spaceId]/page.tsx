@@ -37,6 +37,7 @@ export default async function RoomHomePage({ params }: { params: Promise<{ space
     <div className="room-shortcuts">
       <Link href={path + '/daily'}>กิจกรรมวันนี้</Link>
       <Link href={path + '/shared'}>กิจกรรมร่วมกัน</Link>
+      <Link href={path + '/rewards'}>รางวัลในห้อง</Link>
       <Link href={path + '/progress'}>ความคืบหน้า</Link>
       {space.kind === 'family' && <Link href={path + '/children'}>เด็กในครอบครัว</Link>}
       {canManage(member.role) && <Link href={path + '/campaigns'}>ชุดภารกิจ</Link>}

@@ -33,6 +33,8 @@ jobs:
         run: node --test tests/phase2-contract.test.mjs
       - name: Verify Room-First contracts
         run: node --test tests/room-first-contract.test.mjs
+      - name: Verify Room rewards contracts
+        run: node --test tests/room-rewards-contract.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
