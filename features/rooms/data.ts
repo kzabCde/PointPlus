@@ -1,4 +1,4 @@
-import { getSpaceContext, getSpaceParticipants, canManage } from '@/features/spaces/data'
+import { getSpaceContext, canManage } from '@/features/spaces/data'
 
 export type RoomActivityPreview = {
   id: string; title: string; description: string | null; created_at: string

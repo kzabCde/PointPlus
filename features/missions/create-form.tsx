@@ -20,8 +20,8 @@ export function CreateMissionForm({ spaceId, timezone, campaigns, stampCards, mo
   const formRef = useRef<HTMLFormElement>(null)
   const available = officialMissionTemplatesV1.filter(t=>t.mode===mode)
   const fill = (name:string,value:string) => {
-    const target=formRef.current?.elements.namedItem(name)
-    if(target && 'value' in target) (target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value=value
+    const target=formRef.current?.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(`[name="${name}"]`)
+    if(target) target.value=value
   }
   function applyTemplate() {
     const item=available.find(t=>t.stampAssetId===templateId)

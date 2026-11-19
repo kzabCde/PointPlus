@@ -4,7 +4,7 @@ import { loadRoomActivityPreview } from '@/features/rooms/data'
 
 export default async function RoomHomePage({ params }: { params: Promise<{ spaceId: string }> }) {
   const { spaceId } = await params
-  const [{ space, member, user }, recent] = await Promise.all([
+  const [{ space, member }, recent] = await Promise.all([
     getSpaceContext(spaceId),
     loadRoomActivityPreview(spaceId),
   ])
