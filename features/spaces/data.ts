@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
+import { cache } from 'react'
 import { requireUser } from '@/lib/auth/session'
 import { isUuid } from '@/lib/auth/validation'
 
-export type SpaceKind = 'personal' | 'couple' | 'family'
+export type SpaceKind = 'personal' | 'couple' | 'family' | 'group'
 export type SpaceRole = 'owner' | 'admin' | 'member'
 export type Space = {
   id: string
@@ -39,7 +40,7 @@ export async function listMySpaces(): Promise<SpaceWithRole[]> {
   })).sort((a,b) => (a.kind === 'personal' ? -1 : 0) - (b.kind === 'personal' ? -1 : 0))
 }
 
-export async function getSpaceContext(id: string) {
+export const getSpaceContext = cache(async (id: string) => {
   if (!isUuid(id)) notFound()
   const { supabase, user } = await requireUser()
   const { data: member, error: memberError } = await supabase.from('space_members')
@@ -51,7 +52,7 @@ export async function getSpaceContext(id: string) {
   if (spaceError) throw new Error('Cannot load space')
   if (!space) notFound()
   return { supabase, user, member: member as Membership, space: space as Space }
-}
+})
 
 export async function getSpaceMembers(spaceId: string): Promise<Membership[]> {
   const { supabase } = await getSpaceContext(spaceId)
@@ -69,4 +70,10 @@ export async function getSpaceParticipants(spaceId: string): Promise<Participant
     .order('created_at')
   if (error) throw new Error('Cannot load participants')
   return (data ?? []) as Participant[]
+}
+
+
+/** Shared Rooms only; legacy personal data stays accessible but off the room launcher. */
+export async function listMyRooms(): Promise<SpaceWithRole[]> {
+  return (await listMySpaces()).filter((space) => space.kind !== 'personal')
 }

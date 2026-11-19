@@ -14,16 +14,19 @@ export type SpaceState = {
 export async function createSpaceAction(_state: SpaceState, form: FormData): Promise<SpaceState> {
   const kind = field(form, 'kind')
   const name = field(form, 'name')
-  const timezone = field(form, 'timezone')
-  if (kind !== 'couple' && kind !== 'family') return { status:'error', message:'ประเภทพื้นที่ไม่ถูกต้อง' }
+  const submittedTimezone = field(form, 'timezone')
+  if (kind !== 'couple' && kind !== 'family' && kind !== 'group') return { status:'error', message:'ประเภทพื้นที่ไม่ถูกต้อง' }
   if (name.length < 1 || name.length > 100) return { status:'error', message:'ชื่อพื้นที่ต้องยาว 1–100 ตัวอักษร' }
-  if (!allowedTimezone(timezone)) return { status:'error', message:'เขตเวลาไม่ถูกต้อง' }
   const { user, supabase } = await requireUser()
+  const { data: ownerProfile } = await supabase.from('profiles').select('timezone').eq('id', user.id).maybeSingle()
+  const timezone = submittedTimezone || ownerProfile?.timezone || 'Asia/Bangkok'
+  if (!allowedTimezone(timezone)) return { status:'error', message:'เขตเวลาไม่ถูกต้อง' }
   const { data, error } = await supabase.from('spaces')
     .insert({ kind, name, timezone, owner_id: user.id })
     .select('id').single()
   if (error || !data) return { status:'error', message:'สร้างพื้นที่ไม่สำเร็จ โปรดลองอีกครั้ง' }
   revalidatePath('/spaces')
+  revalidatePath('/rooms')
   return { status:'success', message:'สร้างพื้นที่เรียบร้อยแล้ว', spaceId:data.id }
 }
 

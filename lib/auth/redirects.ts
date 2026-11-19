@@ -1,9 +1,9 @@
-export function safeNextPath(raw: string | null | undefined, fallback = '/dashboard'): string {
+export function safeNextPath(raw: string | null | undefined, fallback = '/rooms'): string {
   if (!raw || raw.length > 600 || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\r\n\x00-\x1f]/.test(raw)) {
     return fallback
   }
   // Auth redirects stay within documented app routes. No external redirects.
-  if (!/^(\/dashboard(?:[/?#]|$)|\/profile(?:[/?#]|$)|\/spaces(?:[/?#]|$)|\/s\/[a-f\d-]{36}(?:[/?#]|$)|\/join(?:[/?#]|$)|\/auth\/reset-password(?:[/?#]|$)|\/onboarding(?:[/?#]|$))/.test(raw)) return fallback
+  if (!/^(\/dashboard(?:[/?#]|$)|\/rooms(?:[/?#]|$)|\/profile(?:[/?#]|$)|\/spaces(?:[/?#]|$)|\/s\/[a-f\d-]{36}(?:[/?#]|$)|\/join(?:[/?#]|$)|\/auth\/reset-password(?:[/?#]|$)|\/onboarding(?:[/?#]|$))/.test(raw)) return fallback
   return raw
 }
 
