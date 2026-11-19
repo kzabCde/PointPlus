@@ -29,7 +29,9 @@ jobs:
         run: node --test tests/phase1-m02-m07.test.mjs
       - name: Verify M08-M10 mission and timezone checks
         run: node --test tests/phase1-m08-m10.test.mjs
-      - name: Build
-        run: npm run build
+      - name: Verify Phase 2 contract behavior
+        run: node --test tests/phase2-contract.test.mjs
       - name: Typecheck
         run: npm run typecheck
+      - name: Build
+        run: npm run build

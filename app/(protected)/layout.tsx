@@ -18,6 +18,7 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
           <Link href="/dashboard">ภาพรวม</Link>
           <Link href="/profile">โปรไฟล์</Link>
           <Link href="/spaces">พื้นที่ของฉัน</Link>
+          <Link href="/notifications">การแจ้งเตือน</Link>
         </nav>
         <form action={signOutAction} className="app-sidebar__bottom">
           <Button type="submit" variant="secondary">ออกจากระบบ</Button>
