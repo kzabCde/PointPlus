@@ -82,3 +82,20 @@ test('v3: rule version and rarity mapping are deterministic',()=>{
    assert.ok(upgrade.includes("'"+rarity[b.rarity]+"'"))
  }
 })
+
+test('v3.1: live hardening only adds assignment notification flow and restricts event RPC',()=>{
+ const hardening=read('supabase/v3/05_live_assignment_notifications_hardening.sql')
+ const undo=read('supabase/v3/06_assignment_notification_rollback.sql')
+ assert.match(hardening,/CREATE TRIGGER pointplus_notify_mission_assignment/)
+ assert.match(hardening,/AFTER INSERT ON public\.mission_assignments/)
+ assert.match(hardening,/JOIN public\.missions m ON m\.space_id=p\.space_id/)
+ assert.match(hardening,/p\.space_id=NEW\.space_id/)
+ assert.match(hardening,/COALESCE\(p\.user_id,p\.guardian_user_id\)/)
+ assert.match(hardening,/v_recipient IS DISTINCT FROM NEW\.assigned_by/)
+ assert.match(hardening,/REVOKE EXECUTE ON FUNCTION public\.rls_auto_enable\(\)/)
+ assert.doesNotMatch(hardening,/\b(?:DELETE\s+FROM|TRUNCATE|DROP\s+TABLE|DROP\s+SCHEMA)\b/i)
+ assert.match(undo,/DROP TRIGGER IF EXISTS pointplus_notify_mission_assignment/)
+ const links=read('features/social/notification-links.ts')
+ assert.match(links,/item\.type === 'mission\.assigned'/)
+ assert.match(links,/isUuid\(missionId\)/)
+})
