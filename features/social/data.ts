@@ -67,9 +67,10 @@ export async function loadMissionSubmissions(spaceId: string, missionId: string,
     .eq('participant_id', detail.selected.id).order('submitted_at', { ascending: false }).limit(100)
   if (error) throw new Error('Cannot load authorized submission history')
   const submissions = (data ?? []) as Submission[]
+  const { user } = await getSpaceContext(spaceId)
   return { ...detail, submissions,
     availability: missionAvailability(detail.mission, submissions, detail.space.timezone),
-    canSubmit: canSubmitFor(detail.selected, detail.user.id, detail.manager) }
+    canSubmit: canSubmitFor(detail.selected, user.id, detail.manager) }
 }
 
 export async function loadReviewQueue(spaceId: string) {
