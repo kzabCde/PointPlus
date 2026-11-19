@@ -1,0 +1,266 @@
+[
+  {
+    "asset_id": "couple-heart",
+    "mode": "couple",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "couple-letter",
+    "mode": "couple",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "couple-cheers",
+    "mode": "couple",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "couple-flowers",
+    "mode": "couple",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "couple-cake",
+    "mode": "couple",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "couple-lock",
+    "mode": "couple",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "family-star",
+    "mode": "family",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "family-books",
+    "mode": "family",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "family-home",
+    "mode": "family",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "family-paint",
+    "mode": "family",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "family-sprout",
+    "mode": "family",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "family-bear",
+    "mode": "family",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "personal-sunrise",
+    "mode": "personal",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "personal-dumbbell",
+    "mode": "personal",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "personal-open-book",
+    "mode": "personal",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "personal-target",
+    "mode": "personal",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "personal-mountain",
+    "mode": "personal",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "personal-trophy",
+    "mode": "personal",
+    "kind": "stamp",
+    "version": 1,
+    "target_count": 5,
+    "earned_from": "approved_mission_with_selected_stamp_card"
+  },
+  {
+    "asset_id": "couple-caring-heart",
+    "mode": "couple",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "bronze",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "couple-heart",
+    "threshold": 1
+  },
+  {
+    "asset_id": "couple-love-notes",
+    "mode": "couple",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "silver",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "couple-letter",
+    "threshold": 3
+  },
+  {
+    "asset_id": "couple-moment-maker",
+    "mode": "couple",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "gold",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "couple-cheers",
+    "threshold": 5
+  },
+  {
+    "asset_id": "couple-forever-team",
+    "mode": "couple",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "diamond",
+    "criterion": "official_categories_count",
+    "required_stamp_asset_id": null,
+    "threshold": 6
+  },
+  {
+    "asset_id": "family-first-star",
+    "mode": "family",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "bronze",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "family-star",
+    "threshold": 1
+  },
+  {
+    "asset_id": "family-book-explorer",
+    "mode": "family",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "silver",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "family-books",
+    "threshold": 3
+  },
+  {
+    "asset_id": "family-creative-hero",
+    "mode": "family",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "gold",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "family-paint",
+    "threshold": 5
+  },
+  {
+    "asset_id": "family-growth-champion",
+    "mode": "family",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "diamond",
+    "criterion": "official_categories_count",
+    "required_stamp_asset_id": null,
+    "threshold": 6
+  },
+  {
+    "asset_id": "personal-fresh-start",
+    "mode": "personal",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "bronze",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "personal-sunrise",
+    "threshold": 1
+  },
+  {
+    "asset_id": "personal-active-streak",
+    "mode": "personal",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "silver",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "personal-dumbbell",
+    "threshold": 3
+  },
+  {
+    "asset_id": "personal-goal-chaser",
+    "mode": "personal",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "gold",
+    "criterion": "official_stamps_count",
+    "required_stamp_asset_id": "personal-target",
+    "threshold": 5
+  },
+  {
+    "asset_id": "personal-personal-legend",
+    "mode": "personal",
+    "kind": "badge",
+    "version": 1,
+    "rarity": "diamond",
+    "criterion": "official_categories_count",
+    "required_stamp_asset_id": null,
+    "threshold": 6
+  }
+]
