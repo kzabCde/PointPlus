@@ -41,8 +41,8 @@ These tests **are not substitutes** for two distinct real Auth sessions, cross-R
 
 ## Release gate
 
-- Keep PR #11 **draft**, don't merge/deploy Preview/Production before release.
-- `features/spaces/actions.ts` in PR #11 avoids Room `INSERT ... RETURNING` RLS failure; production UI has not received this code yet.
+- Keep PR #12 **draft**, don't merge/deploy Preview/Production before release.
+- `features/spaces/actions.ts` in PR #12 avoids Room `INSERT ... RETURNING` RLS failure; production UI has not received this code yet.
 - Verify backed-up restore to separate PointPlus database; Supabase branching currently not configured.
 - Verify 2+ real Auth users, Room create → Invite → Mission → Review → Stamp/Badge → Redeem.
 - Capture real latency baseline and rerun CI. Only then consider release authorization.
