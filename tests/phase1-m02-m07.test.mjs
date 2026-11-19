@@ -52,3 +52,19 @@ test('M07: Space and participant filters on real mission tables', () => {
   assert.ok(d.includes('getSpaceParticipants'))
   assert.ok(!read('app/(protected)/s/[spaceId]/missions/page.tsx').includes('awardPoints'))
 })
+
+test('redirect validator enforces application-only navigation at runtime', async () => {
+  const ts = await import('typescript')
+  const source = read('lib/auth/redirects.ts')
+  const js = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
+  }).outputText
+  const { safeNextPath } = await import('data:text/javascript;base64,' + Buffer.from(js).toString('base64'))
+  assert.equal(safeNextPath('https://attacker.example'), '/dashboard')
+  assert.equal(safeNextPath('//attacker.example'), '/dashboard')
+  assert.equal(safeNextPath('/\\\\attacker.example'), '/dashboard')
+  assert.equal(safeNextPath('/unrecognized'), '/dashboard')
+  assert.equal(safeNextPath('/auth/reset-password'), '/auth/reset-password')
+  assert.equal(safeNextPath('/join#token=abc'), '/join#token=abc')
+  assert.equal(safeNextPath('/spaces'), '/spaces')
+})

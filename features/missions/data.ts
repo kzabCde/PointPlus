@@ -57,7 +57,7 @@ export async function loadMissionBoard(spaceId: string, filters: BoardFilters = 
   const assigned = new Set(assignments.filter((a) => a.participant_id === selected.id).map((a) => a.mission_id))
   const allowed = manager ? ['active','draft','archived'] : ['active']
   const wantedStatus = allowed.includes(filters.status ?? '') ? filters.status : 'active'
-  const search = (filters.search ?? '').slice(0,160).trim().toLocaleLowerCase()
+  const search = (typeof filters.search === 'string' ? filters.search : '').slice(0,160).trim().toLocaleLowerCase()
   const frequency = ['once','daily','weekly','repeatable'].includes(filters.frequency ?? '') ? filters.frequency : ''
   const mode = ['open','assigned'].includes(filters.mode ?? '') ? filters.mode : ''
   const missions = ((missionResult.data ?? []) as Mission[]).filter((m) =>

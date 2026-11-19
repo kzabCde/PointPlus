@@ -20,7 +20,18 @@ export async function signInAction(_state: AuthState, form: FormData): Promise<A
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) return invalid('เข้าสู่ระบบไม่สำเร็จ โปรดตรวจสอบข้อมูลหรือยืนยันอีเมลก่อน')
-  redirect(safeNextPath(value(form, 'next')))
+  const next = safeNextPath(value(form, 'next'))
+  // First sign-in should lead to the real profile onboarding, but explicit
+  // deep links (e.g. after joining) take priority.
+  if (next === '/dashboard') {
+    const { data: identity } = await supabase.auth.getUser()
+    if (identity.user) {
+      const { data: profile } = await supabase.from('profiles')
+        .select('display_name').eq('id',identity.user.id).maybeSingle()
+      if (!profile || profile.display_name === 'Member') redirect('/onboarding')
+    }
+  }
+  redirect(next)
 }
 
 export async function signUpAction(_state: AuthState, form: FormData): Promise<AuthState> {
