@@ -61,10 +61,10 @@ export default function HomePage() {
                 สำหรับตัวคุณเอง คนรัก และครอบครัว โดยไม่เกี่ยวกับการซื้อขายหรือธุรกิจ
               </p>
               <div className="hero__actions">
-                <ButtonLink href="#how-it-works">รู้จักวิธีใช้งาน <span aria-hidden="true">→</span></ButtonLink>
-                <ButtonLink href="#spaces" variant="secondary">สำรวจพื้นที่</ButtonLink>
+                <ButtonLink href="/register">เริ่มใช้งาน PointPlus <span aria-hidden="true">→</span></ButtonLink>
+                <ButtonLink href="/login" variant="secondary">เข้าสู่ระบบ</ButtonLink>
               </div>
-              <span className="hero__note">ระบบบัญชีผู้ใช้และการสร้างภารกิจจะเปิดใช้งานในขั้นตอนการพัฒนาถัดไป</span>
+              <span className="hero__note">สมัครสมาชิกและสร้างพื้นที่ส่วนตัวของคุณได้เลย</span>
             </div>
 
             <div className="hero-art">
