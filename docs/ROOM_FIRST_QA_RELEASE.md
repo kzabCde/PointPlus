@@ -1,3 +1,5 @@
+> **Current DB reconciliation (2026-11-20):** Supabase access is restored and v3.1/v3.2 have been applied; see [DATABASE_V3_LIVE_AUDIT.md](DATABASE_V3_LIVE_AUDIT.md). The original unverified-DB notes below are historic. Multi-account E2E, backup restoration and production release approval remain outstanding.
+
 # POINT+ — R01–R08 QA, Security, Performance and Release Handoff
 
 Updated 2026-11-20. PR #10 was merged to main on 2026-11-19 by a separate action. Database v3 changes are isolated in `feat/database-v3-room-first-schema` and NOT applied to Supabase.
