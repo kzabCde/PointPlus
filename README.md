@@ -2,8 +2,26 @@
 
 PointPlus is a non-commercial, Thai-first application for people supporting each other through meaningful missions: personal goals, couples and families. Points, stamps and badges are personal encouragement, **not money, sales rewards or store loyalty**.
 
-## Status
-Phase 1 — M01–M07 implemented. Auth, profiles/onboarding, spaces, invitations, child profiles and read-only Mission Board are available as code. Mission creation/submission, points, redemption and stamp/badge awarding are **not yet implemented** (M08+). Live target Supabase permission is still unavailable; do not claim end-to-end functionality has passed.
+## Current implementation status (2026-11-20)
+
+The Room-First application is in the repository, including sign-up, login, profiles,
+Room switching, invitations, missions, approvals, personal rewards and collections.
+The connected PointPlus Supabase project (`gczribbtkfvhpzzupqre`) has v3 objects
+already installed; incremental v3.1/v3.2 migrations are now applied and verified.
+
+A live RLS regression was found in Room creation: using `INSERT ... RETURNING id`
+before the AFTER INSERT membership trigger made creating new Rooms fail.
+**Draft PR #11** generates the Room ID in the Next.js server action and performs
+the insert without `RETURNING`. It also restores official Room collections and
+adds assignment notification handling. The DB migrations are already live,
+but the application code in PR #11 is **not merged or deployed**.
+
+Rollback-only SQL smoke tests passed for Group Room provisioning and a Personal
+Mission → auto-approval → points → stamp → badge sequence. This does not replace
+two-user/browser E2E, security adversarial testing, restorable-backup verification
+or measured performance. Do not deploy before complete release acceptance.
+
+See `docs/DATABASE_V3_LIVE_AUDIT.md` and `supabase/v3/README.md`.
 
 ## Local development
 
@@ -44,4 +62,4 @@ node scripts/validate-point-plus-assets.mjs
 
 See docs/PHASE1_M08_M10.md for the M08–M10 engineering report and 12 untested live acceptance scenarios.
 
-Database v2.0 is authoritative for later feature work. Do not invent table columns or RPCs and do not run SQL against another Supabase project.
+The verified live v3 schema is authoritative for PointPlus. Do not rerun the original v2→v3 migration proposal, invent missing columns/RPCs, or run SQL against any other Supabase project.
