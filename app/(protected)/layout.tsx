@@ -1,27 +1,27 @@
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Brand } from '@/components/brand/pointplus-mark'
 import { createClient } from '@/utils/supabase/server'
+import { signOutAction } from '@/features/auth/actions'
+import { Button } from '@/components/ui/button'
 
-/**
- * Page access is enforced on the server, not only by hiding navigation.
- * M02 will add auth screens and a meaningful unauthenticated redirect.
- */
 export default async function ProtectedLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
   const { data, error } = await supabase.auth.getClaims()
-
-  if (error || !data?.claims?.sub) redirect('/')
-
+  if (error || !data?.claims?.sub) redirect('/login')
   return (
     <div className="app-layout">
       <aside className="app-sidebar">
         <Brand />
-        <nav aria-label="การนำทางภายในแอป" className="app-nav">
-          <a aria-current="page" href="/dashboard">ภาพรวม</a>
-          <a href="/">หน้าแรก</a>
+        <nav aria-label="เมนูในแอป" className="app-nav">
+          <Link href="/dashboard">ภาพรวม</Link>
+          <Link href="/profile">โปรไฟล์</Link>
+          <Link href="/spaces">พื้นที่ของฉัน</Link>
         </nav>
-        <span className="app-sidebar__bottom">พื้นที่ส่วนตัวสำหรับเรื่องสำคัญของคุณ</span>
+        <form action={signOutAction} className="app-sidebar__bottom">
+          <Button type="submit" variant="secondary">ออกจากระบบ</Button>
+        </form>
       </aside>
       <main className="app-main" id="main-content">
         <div className="app-content">{children}</div>
