@@ -34,7 +34,8 @@ The application also needs `NEXT_PUBLIC_SITE_URL` set to its canonical origin in
 ## Checks
 
 ```bash
-npm run test:foundation\nnode --test tests/phase1-m02-m07.test.mjs
+npm run test:foundation
+node --test tests/phase1-m02-m07.test.mjs
 npm run typecheck
 npm run build
 node scripts/validate-point-plus-assets.mjs

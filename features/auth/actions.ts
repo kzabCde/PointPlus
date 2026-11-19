@@ -10,7 +10,8 @@ const value = (data: FormData, key: string) => {
   const item = data.get(key)
   return typeof item === 'string' ? item.trim() : ''
 }
-const rawValue = (data: FormData, key: string) => { const item = data.get(key); return typeof item === 'string' ? item : '' }\nconst validEmail = (email: string) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+const rawValue = (data: FormData, key: string) => { const item = data.get(key); return typeof item === 'string' ? item : '' }
+const validEmail = (email: string) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
 export async function signInAction(_state: AuthState, form: FormData): Promise<AuthState> {
   const email = value(form, 'email').toLowerCase()
