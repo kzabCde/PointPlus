@@ -48,3 +48,12 @@ test('R05: quick activity creates mission via existing secure action and officia
  assert.match(page,/QuickMissionForm/)
  assert.match(page,/CreateMissionForm/)
 })
+
+test('R01 live RLS: Room creation avoids INSERT RETURNING before membership trigger',()=>{
+ const s=read('features/spaces/actions.ts')
+ assert.match(s,/import \{ randomUUID \} from 'node:crypto'/)
+ assert.match(s,/const spaceId = randomUUID\(\)/)
+ assert.match(s,/\.insert\(\{ id: spaceId, kind, name, timezone, owner_id: user\.id \}\)/)
+ assert.doesNotMatch(s,/\.insert\(\{ kind, name, timezone, owner_id: user\.id \}\)\s*\.select\('id'\)/)
+ assert.match(s,/spaceId \}/)
+})
