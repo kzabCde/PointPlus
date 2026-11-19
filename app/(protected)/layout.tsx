@@ -16,6 +16,7 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
         <Brand />
         <nav aria-label="เมนูในแอป" className="app-nav">
           <Link href="/dashboard">ภาพรวม</Link>
+          <Link href="/activities/new">สร้างกิจกรรม</Link>
           <Link href="/profile">โปรไฟล์</Link>
           <Link href="/spaces">พื้นที่ของฉัน</Link>
           <Link href="/notifications">การแจ้งเตือน</Link>

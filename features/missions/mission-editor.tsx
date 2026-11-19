@@ -4,7 +4,7 @@ import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { MissionFields } from './mission-fields'
 import { updateMissionAction } from './manage-actions'
-import { idleMissionState } from './create-actions'
+import { idleMissionState } from './action-state'
 import type { Mission } from './data'
 import type { CampaignOption, StampCardOption } from './catalog'
 

@@ -2,7 +2,7 @@
 import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { changeMissionStatusAction } from './manage-actions'
-import { idleMissionState } from './create-actions'
+import { idleMissionState } from './action-state'
 import type { Mission } from './data'
 
 export function StatusControls({mission,spaceId}: {mission:Mission;spaceId:string}) {
