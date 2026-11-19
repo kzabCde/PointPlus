@@ -57,8 +57,12 @@ BEGIN
  END IF;
  IF EXISTS (SELECT 1 FROM public.stamp_awards sa
              JOIN public.stamp_cycles sc ON sc.id=sa.stamp_cycle_id
-             WHERE sa.space_id<>sc.space_id) THEN
-   RAISE EXCEPTION 'Found cross-Room stamp awards. STOP and audit.';
+             JOIN public.mission_submissions sub ON sub.id=sa.submission_id
+             WHERE sa.space_id<>sc.space_id OR sa.space_id<>sub.space_id
+                OR sc.participant_id<>sub.participant_id
+                OR sc.stamp_card_id IS DISTINCT FROM sub.stamp_card_snapshot
+                OR sub.status<>'approved') THEN
+   RAISE EXCEPTION 'Found unapproved or cross-Room/participant stamp awards. STOP and audit.';
  END IF;
 END
 $v3_preflight$;
@@ -420,6 +424,69 @@ REVOKE ALL ON FUNCTION pointplus_private.assert_badge_scope()
 CREATE TRIGGER pointplus_v3_badge_scope BEFORE INSERT OR UPDATE ON public.participant_badges
  FOR EACH ROW EXECUTE FUNCTION pointplus_private.assert_badge_scope();
 
+
+
+-- On future INSERT, reject official asset keys from the wrong Room collection,
+-- and reject spoofed criteria/target counts before any award can be created.
+CREATE OR REPLACE FUNCTION pointplus_private.validate_official_collection_insert()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $
+DECLARE v_mode text; a pointplus_private.official_assets%ROWTYPE;
+BEGIN
+  SELECT CASE WHEN kind='couple' THEN 'couple'
+              WHEN kind='family' THEN 'family' ELSE 'personal' END
+    INTO v_mode FROM public.spaces WHERE id=NEW.space_id;
+  SELECT * INTO a FROM pointplus_private.official_assets WHERE asset_id=NEW.image_key;
+  IF NOT FOUND THEN RETURN NEW; END IF;
+  IF v_mode IS NULL OR a.mode<>v_mode THEN
+    RAISE EXCEPTION 'Official asset cannot be assigned to a different Room category';
+  END IF;
+  IF TG_TABLE_NAME='stamp_cards' THEN
+    IF a.kind<>'stamp' OR NEW.target_count<>a.stamp_target_count
+       OR NEW.official_rule_version<>a.rule_version THEN
+      RAISE EXCEPTION 'Invalid official Stamp definition';
+    END IF;
+  ELSIF TG_TABLE_NAME='badge_definitions' THEN
+    IF a.kind<>'badge' OR NEW.slug<>a.asset_id
+       OR NEW.criterion<>a.criterion OR NEW.threshold<>a.threshold
+       OR NEW.rarity<>a.db_rarity
+       OR NEW.required_stamp_asset_id IS DISTINCT FROM a.required_stamp_asset_id
+       OR NEW.official_rule_version<>a.rule_version THEN
+      RAISE EXCEPTION 'Invalid official Badge definition';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$;
+REVOKE ALL ON FUNCTION pointplus_private.validate_official_collection_insert()
+ FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER pointplus_v3_validate_official_stamp BEFORE INSERT ON public.stamp_cards
+ FOR EACH ROW EXECUTE FUNCTION pointplus_private.validate_official_collection_insert();
+CREATE TRIGGER pointplus_v3_validate_official_badge BEFORE INSERT ON public.badge_definitions
+ FOR EACH ROW EXECUTE FUNCTION pointplus_private.validate_official_collection_insert();
+
+-- Separate submission/cycle integrity check prevents a stamp_awards row ever
+-- pointing to another Room, another participant, or an unapproved submission.
+CREATE OR REPLACE FUNCTION pointplus_private.assert_stamp_award_scope()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $
+DECLARE v_cycle public.stamp_cycles%ROWTYPE;
+        v_submission public.mission_submissions%ROWTYPE;
+BEGIN
+ SELECT * INTO v_cycle FROM public.stamp_cycles WHERE id=NEW.stamp_cycle_id;
+ SELECT * INTO v_submission FROM public.mission_submissions WHERE id=NEW.submission_id;
+ IF v_cycle.id IS NULL OR v_submission.id IS NULL
+    OR NEW.space_id<>v_cycle.space_id OR NEW.space_id<>v_submission.space_id
+    OR v_cycle.participant_id<>v_submission.participant_id
+    OR v_cycle.stamp_card_id IS DISTINCT FROM v_submission.stamp_card_snapshot
+    OR v_submission.status<>'approved' THEN
+   RAISE EXCEPTION 'Stamp award must match approved submission, participant, Room and card';
+ END IF;
+ RETURN NEW;
+END;
+$;
+REVOKE ALL ON FUNCTION pointplus_private.assert_stamp_award_scope()
+ FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER pointplus_v3_stamp_award_scope BEFORE INSERT OR UPDATE ON public.stamp_awards
+ FOR EACH ROW EXECUTE FUNCTION pointplus_private.assert_stamp_award_scope();
 
 -- Ensure one officially mapped Stamp/Badge record exists per Room (6 + 4).
 DO $v3_verify$
