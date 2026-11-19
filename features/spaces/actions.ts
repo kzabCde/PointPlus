@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { randomUUID } from 'node:crypto'
 import { allowedTimezone, field, isUuid } from '@/lib/auth/validation'
 import { requireUser } from '@/lib/auth/session'
 import { getSpaceContext } from './data'
@@ -21,13 +22,17 @@ export async function createSpaceAction(_state: SpaceState, form: FormData): Pro
   const { data: ownerProfile } = await supabase.from('profiles').select('timezone').eq('id', user.id).maybeSingle()
   const timezone = submittedTimezone || ownerProfile?.timezone || 'Asia/Bangkok'
   if (!allowedTimezone(timezone)) return { status:'error', message:'เขตเวลาไม่ถูกต้อง' }
-  const { data, error } = await supabase.from('spaces')
-    .insert({ kind, name, timezone, owner_id: user.id })
-    .select('id').single()
-  if (error || !data) return { status:'error', message:'สร้างพื้นที่ไม่สำเร็จ โปรดลองอีกครั้ง' }
+  // Space SELECT RLS checks membership, but AFTER INSERT triggers create that membership.
+  // INSERT ... RETURNING sees the row before AFTER triggers and is rejected by RLS.
+  // Generate the UUID on the server, insert without RETURNING, then let the committed
+  // triggers create membership, participant, wallet and official collections.
+  const spaceId = randomUUID()
+  const { error } = await supabase.from('spaces')
+    .insert({ id: spaceId, kind, name, timezone, owner_id: user.id })
+  if (error) return { status:'error', message:'สร้างพื้นที่ไม่สำเร็จ โปรดลองอีกครั้ง' }
   revalidatePath('/spaces')
   revalidatePath('/rooms')
-  return { status:'success', message:'สร้างพื้นที่เรียบร้อยแล้ว', spaceId:data.id }
+  return { status:'success', message:'สร้างพื้นที่เรียบร้อยแล้ว', spaceId }
 }
 
 export async function updateSpaceAction(_state: SpaceState, form: FormData): Promise<SpaceState> {
