@@ -25,7 +25,7 @@ jobs:
         run: node scripts/validate-point-plus-assets.mjs
       - name: Verify M01 foundation
         run: npm run test:foundation
-      - name: Build
+      - name: Verify M02-M07 contracts\n        run: node --test tests/phase1-m02-m07.test.mjs\n      - name: Build
         run: npm run build
       - name: Typecheck
         run: npm run typecheck

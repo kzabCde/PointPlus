@@ -10,11 +10,11 @@ const value = (data: FormData, key: string) => {
   const item = data.get(key)
   return typeof item === 'string' ? item.trim() : ''
 }
-const validEmail = (email: string) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+const rawValue = (data: FormData, key: string) => { const item = data.get(key); return typeof item === 'string' ? item : '' }\nconst validEmail = (email: string) => email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
 export async function signInAction(_state: AuthState, form: FormData): Promise<AuthState> {
   const email = value(form, 'email').toLowerCase()
-  const password = value(form, 'password')
+  const password = rawValue(form, 'password')
   if (!validEmail(email) || !password) return invalid('กรุณาตรวจสอบอีเมลและรหัสผ่าน')
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -24,7 +24,7 @@ export async function signInAction(_state: AuthState, form: FormData): Promise<A
 
 export async function signUpAction(_state: AuthState, form: FormData): Promise<AuthState> {
   const email = value(form, 'email').toLowerCase()
-  const password = value(form, 'password')
+  const password = rawValue(form, 'password')
   if (!validEmail(email)) return invalid('กรุณากรอกอีเมลที่ถูกต้อง')
   if (password.length < 8 || password.length > 128) return invalid('รหัสผ่านต้องมี 8–128 ตัวอักษร')
   const supabase = await createClient()
@@ -49,8 +49,8 @@ export async function forgotPasswordAction(_state: AuthState, form: FormData): P
 }
 
 export async function updatePasswordAction(_state: AuthState, form: FormData): Promise<AuthState> {
-  const password = value(form, 'password')
-  const confirm = value(form, 'confirm')
+  const password = rawValue(form, 'password')
+  const confirm = rawValue(form, 'confirm')
   if (password.length < 8 || password.length > 128) return invalid('รหัสผ่านต้องมี 8–128 ตัวอักษร')
   if (password !== confirm) return invalid('รหัสผ่านทั้งสองช่องไม่ตรงกัน')
   const supabase = await createClient()

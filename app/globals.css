@@ -160,3 +160,13 @@ h1, h2, h3 { line-height: 1.27; letter-spacing: -.025em; }
 .space-tabs { display: flex; align-items: center; gap: 8px; overflow-x: auto; margin: 14px 0 30px; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
 .space-tabs a { flex: none; border-radius: 999px; padding: 8px 14px; color: var(--teal); font-size: 14px; font-weight: 700; }
 .space-tabs a:hover { background: var(--teal-pale); }
+
+.space-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+.space-tabs { display:flex; flex-wrap:wrap; gap:8px; padding-bottom:12px; border-bottom:1px solid var(--line); margin-bottom:30px; }
+.space-tabs a { padding:8px 13px; color:var(--teal); border-radius:999px; font-size:14px; font-weight:700; }
+.space-tabs a:hover { background:var(--teal-pale); }
+.mission-filters { display:grid; grid-template-columns:repeat(auto-fit, minmax(165px,1fr)); align-items:end; gap:14px; margin:15px 0 25px; }
+.mission-filters .form-field { margin-bottom:0; }
+.mission-card { display:flex; flex-direction:column; align-items:flex-start; }
+.mission-card .button { margin-top:auto; }
+.mission-card h3 { overflow-wrap:anywhere; }

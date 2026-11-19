@@ -3,7 +3,7 @@ export function safeNextPath(raw: string | null | undefined, fallback = '/dashbo
     return fallback
   }
   // Auth redirects stay within documented app routes. No external redirects.
-  if (!/^(\/dashboard(?:[/?#]|$)|\/profile(?:[/?#]|$)|\/spaces(?:[/?#]|$)|\/s\/[a-f\d-]{36}(?:[/?#]|$)|\/join(?:[/?#]|$)|\/onboarding(?:[/?#]|$))/.test(raw)) return fallback
+  if (!/^(\/dashboard(?:[/?#]|$)|\/profile(?:[/?#]|$)|\/spaces(?:[/?#]|$)|\/s\/[a-f\d-]{36}(?:[/?#]|$)|\/join(?:[/?#]|$)|\/auth\/reset-password(?:[/?#]|$)|\/onboarding(?:[/?#]|$))/.test(raw)) return fallback
   return raw
 }
 
