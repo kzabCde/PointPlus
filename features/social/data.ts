@@ -61,13 +61,12 @@ export const availabilityLabels = {
 export async function loadMissionSubmissions(spaceId: string, missionId: string, participantId?: string) {
   const detail = await getMissionDetail(spaceId, missionId, participantId)
   if (!detail.selected) notFound()
-  const { supabase } = await getSpaceContext(spaceId)
+  const { supabase, user } = await getSpaceContext(spaceId)
   const { data, error } = await supabase.from('mission_submissions')
     .select(submissionFields).eq('space_id', spaceId).eq('mission_id', missionId)
     .eq('participant_id', detail.selected.id).order('submitted_at', { ascending: false }).limit(100)
   if (error) throw new Error('Cannot load authorized submission history')
   const submissions = (data ?? []) as Submission[]
-  const { user } = await getSpaceContext(spaceId)
   return { ...detail, submissions,
     availability: missionAvailability(detail.mission, submissions, detail.space.timezone),
     canSubmit: canSubmitFor(detail.selected, user.id, detail.manager) }
@@ -120,23 +119,36 @@ export async function loadPointLedger(spaceId: string, participantId: string) {
   return { wallet: wallet.data, transactions: (transactions.data ?? []) as Transaction[] }
 }
 
-export async function loadProgress(spaceId: string, offset = 0) {
+export async function loadProgress(spaceId: string, offset = 0, participantId?: string) {
   const context = await getSpaceContext(spaceId)
   const participants = await getSpaceParticipants(spaceId)
+  if (participantId && (!isUuid(participantId) || !participants.some(p => p.id === participantId)))
+    notFound()
   const byId = new Map(participants.map(p => [p.id,p]))
   const safeOffset = Number.isSafeInteger(offset) ? Math.min(Math.max(offset,0),10000) : 0
-  const { data, error, count } = await context.supabase.from('mission_submissions')
+
+  let pageQuery = context.supabase.from('mission_submissions')
     .select(submissionFields,{count:'exact'}).eq('space_id',spaceId)
-    .order('submitted_at',{ascending:false}).range(safeOffset,safeOffset+19)
-  if (error) throw new Error('Cannot load activity')
-  const records = ((data ?? []) as Submission[]).filter(s => byId.has(s.participant_id))
+  if (participantId) pageQuery = pageQuery.eq('participant_id',participantId)
+  const pagePromise = pageQuery.order('submitted_at',{ascending:false}).range(safeOffset,safeOffset+19)
+  const countsPromise = (['submitted','approved','rejected'] as const).map(status => {
+    let q = context.supabase.from('mission_submissions').select('id',{count:'exact',head:true})
+      .eq('space_id',spaceId).eq('status',status)
+    if (participantId) q = q.eq('participant_id',participantId)
+    return q
+  })
+  const [page, ...summary] = await Promise.all([pagePromise,...countsPromise])
+  if (page.error || summary.some(result => result.error)) throw new Error('Cannot load activity')
+  const records = ((page.data ?? []) as Submission[]).filter(s => byId.has(s.participant_id))
   const ids = [...new Set(records.map(s => s.mission_id))]
   const { data: missions, error: mError } = ids.length
     ? await context.supabase.from('missions').select('id,title').eq('space_id',spaceId).in('id',ids)
     : {data:[],error:null}
   if (mError) throw new Error('Cannot load activity titles')
   const names = new Map((missions ?? []).map(m => [m.id,m.title]))
-  return { ...context, participants, count: count ?? 0, offset: safeOffset,
+  return { ...context, participants, count: page.count ?? 0, offset: safeOffset,
+    selectedParticipant: participantId ?? null,
+    counts: { pending:summary[0].count??0, approved:summary[1].count??0, rejected:summary[2].count??0 },
     activity: records.map(s => ({
       ...s, participantName: byId.get(s.participant_id)?.display_name ?? '',
       missionTitle: names.get(s.mission_id) ?? 'ภารกิจ',
