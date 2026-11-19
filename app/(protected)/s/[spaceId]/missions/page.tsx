@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { loadMissionBoard, frequencyLabels, type BoardFilters } from '@/features/missions/data'
 import { MissionCard } from '@/features/missions/mission-card'
 export const metadata: Metadata = { title: 'ภารกิจ' }
@@ -9,7 +10,7 @@ export default async function MissionsPage({ params, searchParams }: {
   const filters = await searchParams
   const board = await loadMissionBoard(spaceId, filters)
   return <>
-    <h2>ภารกิจในพื้นที่</h2>
+    <div className="space-header"><h2>ภารกิจในพื้นที่</h2>{board.manager && <Link className="button button--primary" href={'/s/'+spaceId+'/missions/new'}>สร้างภารกิจ</Link>}</div>
     <p className="muted">รายการจริงจาก Supabase ตามพื้นที่และผู้เข้าร่วมที่คุณมีสิทธิ์เข้าถึง</p>
     <form action={'/s/' + spaceId + '/missions'} method="get" className="card mission-filters">
       <div className="form-field"><label htmlFor="board-participant">ผู้เข้าร่วม</label>
