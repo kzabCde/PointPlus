@@ -13,7 +13,7 @@ const claimLabels={requested:'รอส่งมอบ',fulfilled:'ส่งม�
 
 export default async function StampBookDetailPage({params}:{params:Promise<{spaceId:string;bookId:string}>}){
  const {spaceId,bookId}=await params
- const {book,context,manager,assigned,people,givers,styles,rewards,cycles,marks,claims,requests}=await loadStampBookDetail(spaceId,bookId)
+ const {book,context,manager,assigned,giverRecipients,people,givers,styles,rewards,cycles,marks,claims,requests}=await loadStampBookDetail(spaceId,bookId)
  const isGiver=givers.includes(context.user.id)&&book.status==='active'
  const lookup=(id:string)=>people.find(p=>p.id===id)?.display_name??'ผู้สะสม'
  const bookPath='/s/'+spaceId+'/stamp-books'
@@ -28,14 +28,7 @@ export default async function StampBookDetailPage({params}:{params:Promise<{spac
     <p className="muted">{book.description||'ค่อย ๆ เติมความทรงจำทีละดวง'}</p>
     <p className="muted">{book.target_count} ดวงต่อรอบ · {book.repeatable?'เริ่มรอบใหม่ได้':'ครบแล้วจบเล่ม'} · {book.status==='active'?'เปิดสะสม':book.status==='paused'?'พักสะสม':'เก็บถาวร'}</p></div>
    <div className="hero__actions">
-    <GiveStampDialog spaceId={spaceId} bookId={bookId} recipients={
-      people.filter(p=>(
-       p.kind==='adult'||manager||p.guardian_user_id===context.user.id
-      )&&assigned.some(a=>a.id===p.id) || (
-       isGiver&&p.kind==='adult'
-       &&p.space_id===spaceId
-      ))
-    } styleIds={styles} canGive={isGiver} stampKey={randomUUID()}/>
+    <GiveStampDialog spaceId={spaceId} bookId={bookId} recipients={giverRecipients} styleIds={styles} canGive={isGiver} stampKey={randomUUID()}/>
     {manager&&book.status!=='archived'&&<Link href={bookPath+'/'+bookId+'/edit'} className="button button--secondary">จัดการสมุด</Link>}
    </div>
   </header>

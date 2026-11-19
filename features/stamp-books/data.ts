@@ -75,8 +75,10 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
    throw new Error('Cannot load protected Stamp Book details')
  const allowedRecipients=new Set((recipients.data??[]).map(x=>x.participant_id))
  const assigned=eligible.filter(p=>allowedRecipients.has(p.id))
+ const giverRecipients=people.filter(p=>allowedRecipients.has(p.id)
+   && (manager || p.kind==='adult' || p.guardian_user_id===user.id))
  return {
- context,manager,people,assigned,members,book:book as StampBook,
+ context,manager,people,assigned,giverRecipients,members,book:book as StampBook,
  givers:(givers.data??[]).map(x=>x.user_id) as string[],
  styles:(styles.data??[]).map(x=>x.asset_id) as string[],
  rewards:(rewards.data??[]) as BookReward[],
