@@ -12,9 +12,4 @@ export async function loadNotifications() {
   if(error) throw new Error('Cannot load your notifications')
   return { notifications:(data??[]) as NotificationItem[],count:count??0 }
 }
-export function notificationDestination(item: NotificationItem) {
-  if(!item.space_id) return '/notifications'
-  if(item.type==='mission.submitted') return '/s/'+item.space_id+'/reviews'
-  if(item.type==='mission.review') return '/s/'+item.space_id+'/progress'
-  return '/s/'+item.space_id
-}
+export { notificationDestination } from './notification-links'
