@@ -53,3 +53,11 @@ The exact forward scripts are `supabase/v3/05_live_assignment_notifications_hard
 To pause official features without data loss use `08_pause_official_collections_rollback.sql` after reviewing current state. To roll back v3.1 notifications use `06_assignment_notification_rollback.sql`. Neither deletes user data, point history or awards. Do not reset a live schema or drop group kinds without inventorying dependent data.
 
 Supabase Auth leaked-password setting: see [password security](https://supabase.com/docs/guides/auth/password-security); enable in Auth dashboard if plan supports it. No plugin action to modify this project setting was available through the currently connected Supabase tools.
+
+## GitHub / Vercel deployment reconciliation
+
+- PR #11 was merged into `main` at `6f4cbdf6cfa391aa04bdab2bfc20a4f580dcf7f5` after the initial draft PR opened, **before the RLS Room-creation fix and latest docs were committed**.
+- That merge automatically triggered a Vercel **Production** deployment (READY): `dpl_3tFDJcPhCWnLdcutRKLyKnmL7qm8`, inspector [Vercel deployment](https://vercel.com/nowheredev/pointplus/3tFDJcPhCWnLdcutRKLyKnmL7qm8). This was not a manual deployment from the database remediation process.
+- New draft [PR #12](https://github.com/kzabCde/PointPlus/pull/12) (`fix/room-first-live-v3-reconciliation`) carries the **unmerged** Room creation RLS fix, current documents and v3.2 SQL.
+- PR #12 source-level GitHub Actions **PASS** on `92ad37b15d2435ba7f5a7bc5ed8f5aa52a640a0c`: [CI run](https://github.com/kzabCde/PointPlus/actions/runs/44587022226). Vercel list returned **zero Preview deployments** for the PR #12 branch when checked.
+- Do not assume the current production UI can create Rooms: deployed `main` still uses the RLS-blocked `INSERT ... RETURNING` code. Do not merge PR #12 or authorize additional production deployments until the release gate passes.
