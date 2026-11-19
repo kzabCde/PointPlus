@@ -426,12 +426,10 @@ DO $v3_verify$
 DECLARE v_bad_spaces integer; v_bad_rules integer;
 BEGIN
  SELECT count(*) INTO v_bad_spaces FROM (
-   SELECT s.id, count(DISTINCT sc.image_key) FILTER(WHERE oa.kind='stamp') AS stamp_n,
-                count(DISTINCT bd.image_key) FILTER(WHERE oa.kind='badge') AS badge_n
+   SELECT s.id, count(DISTINCT sc.image_key) FILTER(WHERE oa.kind='stamp') AS stamp_n
    FROM public.spaces s
    LEFT JOIN public.stamp_cards sc ON sc.space_id=s.id
    LEFT JOIN pointplus_private.official_assets oa ON oa.asset_id=sc.image_key AND oa.kind='stamp'
-   LEFT JOIN public.badge_definitions bd ON bd.space_id=s.id AND bd.image_key IS NOT NULL
    GROUP BY s.id
  ) q WHERE stamp_n<>6;
  -- Badge count independently (avoid fan-out from joining cards).
