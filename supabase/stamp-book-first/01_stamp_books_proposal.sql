@@ -188,12 +188,12 @@ END $rls$;
 
 CREATE POLICY stamp_book_artworks_read ON public.stamp_book_artworks FOR SELECT TO authenticated USING(true);
 CREATE POLICY stamp_books_read ON public.stamp_books FOR SELECT TO authenticated
- USING(EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=space_id AND m.user_id=(SELECT auth.uid())));
+ USING(EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=stamp_books.space_id AND m.user_id=(SELECT auth.uid())));
 CREATE POLICY stamp_book_recipients_read ON public.stamp_book_recipients FOR SELECT TO authenticated
- USING(EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=space_id AND m.user_id=(SELECT auth.uid()))
- AND (EXISTS(SELECT 1 FROM public.participants p WHERE p.id=participant_id AND p.space_id=space_id
+ USING(EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=stamp_book_recipients.space_id AND m.user_id=(SELECT auth.uid()))
+ AND (EXISTS(SELECT 1 FROM public.participants p WHERE p.id=participant_id AND p.space_id=stamp_book_recipients.space_id
     AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid())))
- OR EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=space_id
+ OR EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=stamp_book_recipients.space_id
     AND m.user_id=(SELECT auth.uid()) AND m.role IN ('owner','admin'))));
 CREATE POLICY stamp_book_givers_read ON public.stamp_book_givers FOR SELECT TO authenticated
  USING(EXISTS(SELECT 1 FROM public.stamp_books b JOIN public.space_members m
@@ -202,30 +202,30 @@ CREATE POLICY stamp_book_styles_read ON public.stamp_book_styles FOR SELECT TO a
  USING(EXISTS(SELECT 1 FROM public.stamp_books b JOIN public.space_members m
    ON m.space_id=b.space_id WHERE b.id=book_id AND m.user_id=(SELECT auth.uid())));
 CREATE POLICY stamp_book_rewards_read ON public.stamp_book_reward_options FOR SELECT TO authenticated
- USING(EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=space_id AND m.user_id=(SELECT auth.uid())));
+ USING(EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=stamp_book_reward_options.space_id AND m.user_id=(SELECT auth.uid())));
 CREATE POLICY stamp_book_cycles_read ON public.stamp_book_cycles FOR SELECT TO authenticated
- USING(EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=space_id
+ USING(EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=stamp_book_cycles.space_id
       AND m.user_id=(SELECT auth.uid()) AND m.role IN ('owner','admin'))
    OR EXISTS(SELECT 1 FROM public.participants p WHERE p.id=participant_id
-      AND p.space_id=space_id AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid()))));
+      AND p.space_id=stamp_book_cycles.space_id AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid()))));
 CREATE POLICY stamp_book_requests_read ON public.stamp_book_stamp_requests FOR SELECT TO authenticated
  USING(giver_user_id=(SELECT auth.uid())
- OR EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=space_id
+ OR EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=stamp_book_stamp_requests.space_id
      AND m.user_id=(SELECT auth.uid()) AND m.role IN ('owner','admin'))
  OR EXISTS(SELECT 1 FROM public.participants p WHERE p.id=participant_id
-     AND p.space_id=space_id AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid()))));
+     AND p.space_id=stamp_book_stamp_requests.space_id AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid()))));
 CREATE POLICY stamp_book_marks_read ON public.stamp_book_marks FOR SELECT TO authenticated
  USING(giver_user_id=(SELECT auth.uid())
- OR EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=space_id
+ OR EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=stamp_book_marks.space_id
      AND m.user_id=(SELECT auth.uid()) AND m.role IN ('owner','admin'))
  OR EXISTS(SELECT 1 FROM public.participants p WHERE p.id=participant_id
-    AND p.space_id=space_id AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid()))));
+    AND p.space_id=stamp_book_marks.space_id AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid()))));
 CREATE POLICY stamp_book_claims_read ON public.stamp_book_claims FOR SELECT TO authenticated
  USING(claimed_by=(SELECT auth.uid())
- OR EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=space_id
+ OR EXISTS(SELECT 1 FROM public.space_members m WHERE m.space_id=stamp_book_claims.space_id
      AND m.user_id=(SELECT auth.uid()) AND m.role IN ('owner','admin'))
  OR EXISTS(SELECT 1 FROM public.participants p WHERE p.id=participant_id
-    AND p.space_id=space_id AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid()))));
+    AND p.space_id=stamp_book_claims.space_id AND (p.user_id=(SELECT auth.uid()) OR p.guardian_user_id=(SELECT auth.uid()))));
 
 -- No direct write grants to authenticated/anon. SECURITY DEFINER *public RPCs*
 -- explicitly require auth.uid() plus Room/child checks before any write.
@@ -345,6 +345,7 @@ BEGIN
  NOT EXISTS(SELECT 1 FROM public.stamp_book_givers g WHERE g.book_id=p_book AND g.user_id=v_uid) OR
  NOT EXISTS(SELECT 1 FROM public.stamp_book_recipients r WHERE r.book_id=p_book AND r.participant_id=p_recipient
   AND r.space_id=b.space_id) OR
+ NOT EXISTS(SELECT 1 FROM public.participants p WHERE p.id=p_recipient AND p.space_id=b.space_id AND p.archived_at IS NULL) OR
  NOT EXISTS(SELECT 1 FROM public.stamp_book_styles s WHERE s.book_id=p_book AND s.asset_id=p_art)
  THEN RAISE EXCEPTION 'Not authorized to give this stamp'; END IF;
  SELECT kind INTO v_kind FROM public.spaces WHERE id=b.space_id;
