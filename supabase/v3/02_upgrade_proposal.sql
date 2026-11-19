@@ -276,7 +276,6 @@ END;
 $$;
 REVOKE ALL ON FUNCTION pointplus_private.seed_new_space_official_assets()
   FROM PUBLIC, anon, authenticated;
-DROP TRIGGER IF EXISTS pointplus_official_assets_new_space ON public.spaces;
 CREATE TRIGGER pointplus_official_assets_new_space
 AFTER INSERT ON public.spaces
 FOR EACH ROW EXECUTE FUNCTION pointplus_private.seed_new_space_official_assets();
@@ -444,6 +443,29 @@ BEGIN
  IF v_bad_spaces>0 OR v_bad_rules>0 THEN
    RAISE EXCEPTION 'Official Catalog backfill incomplete, Rooms: %, badge Rooms: %',v_bad_spaces,v_bad_rules;
  END IF;
+
+ -- A preexisting image_key must never silently count as an official award
+ -- if it has the wrong rules, mode or id/version mapping.
+ IF EXISTS (
+   SELECT 1 FROM public.stamp_cards c
+   JOIN public.spaces s ON s.id=c.space_id
+   JOIN pointplus_private.official_assets a ON a.asset_id=c.image_key AND a.kind='stamp'
+   WHERE c.target_count<>a.stamp_target_count
+     OR c.official_rule_version<>a.rule_version
+     OR a.mode<>CASE WHEN s.kind='couple' THEN 'couple'
+                    WHEN s.kind='family' THEN 'family' ELSE 'personal' END
+ ) THEN RAISE EXCEPTION 'Official Stamp rules drifted from canonical asset catalog'; END IF;
+ IF EXISTS (
+   SELECT 1 FROM public.badge_definitions b
+   JOIN public.spaces s ON s.id=b.space_id
+   JOIN pointplus_private.official_assets a ON a.asset_id=b.image_key AND a.kind='badge'
+   WHERE b.slug<>a.asset_id OR b.criterion<>a.criterion OR
+         b.threshold<>a.threshold OR b.rarity<>a.db_rarity OR
+         b.official_rule_version<>a.rule_version OR
+         b.required_stamp_asset_id IS DISTINCT FROM a.required_stamp_asset_id OR
+         a.mode<>CASE WHEN s.kind='couple' THEN 'couple'
+                     WHEN s.kind='family' THEN 'family' ELSE 'personal' END
+ ) THEN RAISE EXCEPTION 'Official Badge rules drifted from canonical asset catalog'; END IF;
 END
 $v3_verify$;
 
