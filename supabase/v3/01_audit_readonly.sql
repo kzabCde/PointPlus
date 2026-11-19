@@ -42,6 +42,12 @@ WHERE n.nspname IN ('public','pointplus_private') AND p.proname LIKE 'pointplus_
        ('review_mission','award_stamps','post_points','evaluate_badges','after_new_space'))
 ORDER BY schema_name, function_name;
 
+-- Capture exact pre-upgrade function definitions for a verified rollback; these SELECTs do not execute the returned SQL.
+SELECT pg_get_functiondef('pointplus_private.evaluate_badges(uuid,uuid)'::regprocedure)
+  AS before_v3_evaluate_badges_function_definition;
+SELECT pg_get_functiondef('pointplus_private.after_new_space()'::regprocedure)
+  AS before_v3_after_new_space_function_definition;
+
 -- Database side-effect hooks; verify no incompatible old official-catalog triggers.
 SELECT c.relname AS table_name, t.tgname AS trigger_name, pg_get_triggerdef(t.oid) AS definition
 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
