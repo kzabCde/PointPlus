@@ -8,14 +8,14 @@ export default async function MissionDetailPage({ params, searchParams }: {
 }) {
   const { spaceId, missionId } = await params
   const { participant } = await searchParams
-  const { mission, selected, space, campaigns, stampCards } = await getMissionDetail(spaceId,missionId,participant)
+  const { mission, selected, space, campaigns, stampCards, manager } = await getMissionDetail(spaceId,missionId,participant)
   const formatDate = (value: string) => new Intl.DateTimeFormat('th-TH',{
     dateStyle: 'medium', timeStyle: 'short', timeZone: space.timezone,
   }).format(new Date(value))
   const timeWindow = windowState(mission)
   return <>
     <Link className="text-link" href={'/s/' + spaceId + '/missions?participant=' + selected!.id}>← กลับไปหน้าภารกิจ</Link>
-    <h2 className="page-title">{mission.title}</h2>
+    <div className="space-header"><h2 className="page-title">{mission.title}</h2>{manager && <Link className="button button--primary" href={'/s/'+spaceId+'/missions/'+missionId+'/manage'}>จัดการภารกิจ</Link>}</div>
     <div className="card">
       <p>สถานะ: {statusLabels[mission.status]} · ความถี่: {frequencyLabels[mission.frequency]}</p>
       <p>ผู้เข้าร่วม: {selected!.display_name}</p>
