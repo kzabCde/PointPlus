@@ -39,6 +39,15 @@ export async function redeemRewardAction(_previous: RewardState, form: FormData)
   if (![spaceId, rewardId, participantId].every(isUuid) || !/^[a-f\d-]{36}$/i.test(key))
     return fail('ข้อมูลการแลกไม่ถูกต้อง')
   const { supabase } = await getSpaceContext(spaceId)
+  // Validate client-provided IDs belong to the current Room before calling
+  // the authoritative, atomic database RPC; do not trust hidden form fields.
+  const [reward, participant] = await Promise.all([
+    supabase.from('rewards').select('id').eq('space_id',spaceId).eq('id',rewardId).maybeSingle(),
+    supabase.from('participants').select('id').eq('space_id',spaceId)
+      .eq('id',participantId).is('archived_at',null).maybeSingle(),
+  ])
+  if (reward.error || participant.error || !reward.data || !participant.data)
+    return fail('รางวัลหรือผู้เข้าร่วมไม่อยู่ในห้องนี้')
   // Atomic point subtraction and eligibility live ONLY in database v2 RPC.
   const { error } = await supabase.rpc('pointplus_redeem_reward', {
     p_reward: rewardId, p_participant: participantId, p_idempotency_key: key,
@@ -55,6 +64,9 @@ export async function processRedemptionAction(_previous: RewardState, form: Form
   if (!isUuid(spaceId) || !isUuid(redemptionId) || !['fulfill', 'cancel'].includes(decision))
     return fail('รายการไม่ถูกต้อง')
   const { supabase } = await getSpaceContext(spaceId)
+  const { data: redemption, error: scopeError } = await supabase.from('redemptions')
+    .select('id').eq('space_id',spaceId).eq('id',redemptionId).maybeSingle()
+  if (scopeError || !redemption) return fail('ไม่พบการแลกรางวัลในห้องนี้')
   const { error } = decision === 'fulfill'
     ? await supabase.rpc('pointplus_fulfill_redemption', { p_redemption: redemptionId, p_note: null })
     : await supabase.rpc('pointplus_cancel_redemption', { p_redemption: redemptionId, p_note: null })

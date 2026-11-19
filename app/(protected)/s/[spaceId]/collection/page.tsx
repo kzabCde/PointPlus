@@ -29,8 +29,8 @@ export default async function CollectionPage({ params, searchParams }: {
   const [cardResult, badgeResult, cycleResult, earnedResult] = await Promise.all([
     supabase.from('stamp_cards').select('id,image_key,title,target_count')
       .eq('space_id', spaceId),
-    supabase.from('badge_definitions').select('id,image_key,title')
-      .in('image_key', badges.map(b => b.id)),
+    supabase.from('badge_definitions').select('id,image_key,title,space_id,slug')
+      .eq('space_id',spaceId).in('image_key', badges.map(b => b.id)),
     selected ? supabase.from('stamp_cycles')
       .select('stamp_card_id,cycle_no,progress_count,completed_at')
       .eq('space_id', spaceId).eq('participant_id', selected.id) :
@@ -78,7 +78,7 @@ export default async function CollectionPage({ params, searchParams }: {
     <h3>ตราความสำเร็จ</h3>
     <div className="collection-grid">
       {badges.map(item => {
-        const rule = rules.find(r => r.image_key === item.id)
+        const rule = rules.find(r => r.space_id === spaceId && r.slug === item.id && r.image_key === item.id)
         const earned = !!rule && earnedIds.has(rule.id)
         return <article className="card collection-item" key={item.id}>
           <Image src={item.png} alt="" width={80} height={80}
