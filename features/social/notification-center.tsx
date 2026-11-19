@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { markNotificationReadAction } from './actions'
-import { notificationDestination,type NotificationItem } from './notifications'
+import type { NotificationItem } from './notifications'
+import { notificationDestination } from './notification-links'
 
 export function NotificationCenter({items}: {items:NotificationItem[]}) {
   const router=useRouter()
