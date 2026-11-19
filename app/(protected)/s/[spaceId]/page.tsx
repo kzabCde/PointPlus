@@ -1,14 +1,13 @@
 import Link from 'next/link'
 import { getSpaceContext, canManage } from '@/features/spaces/data'
-import { loadMissionBoard } from '@/features/missions/data'
+import { loadRoomActivityPreview } from '@/features/rooms/data'
 
 export default async function RoomHomePage({ params }: { params: Promise<{ spaceId: string }> }) {
   const { spaceId } = await params
-  const [{ space, member }, board] = await Promise.all([
+  const [{ space, member, user }, recent] = await Promise.all([
     getSpaceContext(spaceId),
-    loadMissionBoard(spaceId, { status: 'active' }),
+    loadRoomActivityPreview(spaceId),
   ])
-  const recent = board.missions.slice(0, 4)
   const path = '/s/' + spaceId
   return <div className="room-home">
     <section className="room-hero">
@@ -21,7 +20,7 @@ export default async function RoomHomePage({ params }: { params: Promise<{ space
       </div>
     </section>
     <div className="room-summary">
-      <Link href={path + '/missions'} className="room-summary__tile"><strong>{board.missions.length}</strong><span>กิจกรรมที่มองเห็น</span></Link>
+      <Link href={path + '/missions'} className="room-summary__tile"><strong>{recent.length}</strong><span>รายการล่าสุด</span></Link>
       <Link href={path + '/reviews'} className="room-summary__tile"><strong>↗</strong><span>รายการรออนุมัติ</span></Link>
       <Link href={path + '/collection'} className="room-summary__tile"><strong>★</strong><span>สมุดสะสม</span></Link>
     </div>

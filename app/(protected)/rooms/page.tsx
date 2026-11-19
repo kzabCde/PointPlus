@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ResumeRoom } from '@/features/rooms/room-usage'
+import { requireUser } from '@/lib/auth/session'
 import { listMyRooms } from '@/features/spaces/data'
 import { CreateSpaceForm } from '@/features/spaces/space-form'
 
@@ -7,11 +9,12 @@ export const metadata: Metadata = { title: 'ห้องของฉัน' }
 const roomLabels = { couple: 'คู่รัก', family: 'ครอบครัว', group: 'ทั่วไป' } as const
 export default async function RoomsPage() {
   // Only membership + Room metadata: do not fetch missions/wallets at login.
-  const rooms = await listMyRooms()
+  const [rooms, { user }] = await Promise.all([listMyRooms(), requireUser()])
   return <section className="room-launcher">
     <span className="eyebrow">POINT+ ROOMS</span>
     <h1 className="page-title">ห้องของฉัน</h1>
     <p className="muted">สร้างพื้นที่เล็ก ๆ สำหรับคนสำคัญ หรือกลับไปทำกิจกรรมในห้องที่คุณเข้าร่วม</p>
+    {rooms.length > 0 && <ResumeRoom accountId={user.id} rooms={rooms} />}
     {rooms.length > 0 && <section aria-label="ห้องที่เข้าร่วม" className="room-cards">
       {rooms.map(room => <Link href={'/s/' + room.id} className="room-card" key={room.id}>
         <span className="room-card__art" aria-hidden="true">{room.kind === 'couple' ? '♥' : room.kind === 'family' ? '⌂' : '✦'}</span>

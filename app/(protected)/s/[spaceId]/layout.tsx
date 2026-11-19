@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { RememberRoom } from '@/features/rooms/room-usage'
 import { getSpaceContext } from '@/features/spaces/data'
 
 export default async function SpaceLayout({ children, params }: {
@@ -7,8 +8,9 @@ export default async function SpaceLayout({ children, params }: {
   params: Promise<{ spaceId: string }>
 }) {
   const { spaceId } = await params
-  const { space } = await getSpaceContext(spaceId)
+  const { space, user } = await getSpaceContext(spaceId)
   return <>
+    <RememberRoom accountId={user.id} spaceId={spaceId} />
     <div className="space-header">
       <div>
         <span className="eyebrow">{space.kind === 'personal' ? 'พื้นที่ส่วนตัว' : space.kind === 'couple' ? 'ห้องคู่รัก' : space.kind === 'family' ? 'ห้องครอบครัว' : 'ห้องทั่วไป'}</span>

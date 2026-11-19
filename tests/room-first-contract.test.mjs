@@ -15,7 +15,7 @@ test('R02: lightweight room launcher replaces old all-space dashboard',()=>{
 test('R03: Room Home renders only room-local missions and protects membership',()=>{
  const page=read('app/(protected)/s/[spaceId]/page.tsx')
  assert.match(page,/getSpaceContext\(spaceId\)/)
- assert.match(page,/loadMissionBoard\(spaceId/)
+ assert.match(page,/loadRoomActivityPreview\(spaceId/)
  assert.ok(existsSync(new URL('../app/(protected)/s/[spaceId]/collection/page.tsx',import.meta.url)))
 })
 test('R06: use official 18 stamp and 12 badge assets and only DB-backed earned state',()=>{
@@ -26,4 +26,13 @@ test('R06: use official 18 stamp and 12 badge assets and only DB-backed earned s
  assert.match(col,/\.from\('stamp_cycles'\)/)
  assert.match(col,/space.kind === 'couple' \? 'couple'/)
  assert.match(col,/space.kind === 'family' \? 'family' : 'personal'/)
+})
+
+test('R08: Room Home uses bounded per-Room queries and authorized Room resume',()=>{
+ const home=read('features/rooms/data.ts')
+ assert.match(home,/\.eq\('space_id',spaceId\)/)
+ assert.match(home,/\.limit\(4\)/)
+ assert.doesNotMatch(home,/loadDashboard/)
+ const tracking=read('features/rooms/room-usage.tsx')
+ assert.match(tracking,/rooms\.some\(room=>room\.id===saved\)/)
 })
