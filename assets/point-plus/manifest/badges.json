@@ -1,0 +1,134 @@
+[
+  {
+    "id": "couple-caring-heart",
+    "mode": "couple",
+    "name": "Caring Heart",
+    "nameTh": "ใจดีต่อกัน",
+    "rarity": "bronze",
+    "svg": "/point-plus/badges/couple/caring-heart.svg",
+    "png": "/point-plus/badges/couple/caring-heart.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "couple-love-notes",
+    "mode": "couple",
+    "name": "Love Notes",
+    "nameTh": "ส่งกำลังใจกันสม่ำเสมอ",
+    "rarity": "silver",
+    "svg": "/point-plus/badges/couple/love-notes.svg",
+    "png": "/point-plus/badges/couple/love-notes.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "couple-moment-maker",
+    "mode": "couple",
+    "name": "Moment Maker",
+    "nameTh": "สร้างความทรงจำร่วมกัน",
+    "rarity": "gold",
+    "svg": "/point-plus/badges/couple/moment-maker.svg",
+    "png": "/point-plus/badges/couple/moment-maker.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "couple-forever-team",
+    "mode": "couple",
+    "name": "Forever Team",
+    "nameTh": "ผ่านภารกิจสำคัญร่วมกัน",
+    "rarity": "diamond",
+    "svg": "/point-plus/badges/couple/forever-team.svg",
+    "png": "/point-plus/badges/couple/forever-team.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "family-first-star",
+    "mode": "family",
+    "name": "First Star",
+    "nameTh": "สำเร็จภารกิจแรก",
+    "rarity": "bronze",
+    "svg": "/point-plus/badges/family/first-star.svg",
+    "png": "/point-plus/badges/family/first-star.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "family-book-explorer",
+    "mode": "family",
+    "name": "Book Explorer",
+    "nameTh": "อ่านหนังสืออย่างต่อเนื่อง",
+    "rarity": "silver",
+    "svg": "/point-plus/badges/family/book-explorer.svg",
+    "png": "/point-plus/badges/family/book-explorer.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "family-creative-hero",
+    "mode": "family",
+    "name": "Creative Hero",
+    "nameTh": "ทำกิจกรรมสร้างสรรค์",
+    "rarity": "gold",
+    "svg": "/point-plus/badges/family/creative-hero.svg",
+    "png": "/point-plus/badges/family/creative-hero.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "family-growth-champion",
+    "mode": "family",
+    "name": "Growth Champion",
+    "nameTh": "พิชิตเป้าหมายการเรียนรู้",
+    "rarity": "diamond",
+    "svg": "/point-plus/badges/family/growth-champion.svg",
+    "png": "/point-plus/badges/family/growth-champion.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "personal-fresh-start",
+    "mode": "personal",
+    "name": "Fresh Start",
+    "nameTh": "เริ่มสร้างนิสัยใหม่",
+    "rarity": "bronze",
+    "svg": "/point-plus/badges/personal/fresh-start.svg",
+    "png": "/point-plus/badges/personal/fresh-start.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "personal-active-streak",
+    "mode": "personal",
+    "name": "Active Streak",
+    "nameTh": "เคลื่อนไหวอย่างต่อเนื่อง",
+    "rarity": "silver",
+    "svg": "/point-plus/badges/personal/active-streak.svg",
+    "png": "/point-plus/badges/personal/active-streak.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "personal-goal-chaser",
+    "mode": "personal",
+    "name": "Goal Chaser",
+    "nameTh": "ทำเป้าหมายสำคัญสำเร็จ",
+    "rarity": "gold",
+    "svg": "/point-plus/badges/personal/goal-chaser.svg",
+    "png": "/point-plus/badges/personal/goal-chaser.png",
+    "type": "permanent-achievement",
+    "size": 256
+  },
+  {
+    "id": "personal-personal-legend",
+    "mode": "personal",
+    "name": "Personal Legend",
+    "nameTh": "พิชิตความสำเร็จใหญ่",
+    "rarity": "diamond",
+    "svg": "/point-plus/badges/personal/personal-legend.svg",
+    "png": "/point-plus/badges/personal/personal-legend.png",
+    "type": "permanent-achievement",
+    "size": 256
+  }
+]

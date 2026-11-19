@@ -1,0 +1,62 @@
+[
+  {
+    "id": "couple",
+    "name": "Love Collection",
+    "nameTh": "คอลเลกชันคู่รัก",
+    "accent": "#EB6E88",
+    "stamps": [
+      "couple-heart",
+      "couple-letter",
+      "couple-cheers",
+      "couple-flowers",
+      "couple-cake",
+      "couple-lock"
+    ],
+    "badges": [
+      "couple-caring-heart",
+      "couple-love-notes",
+      "couple-moment-maker",
+      "couple-forever-team"
+    ]
+  },
+  {
+    "id": "family",
+    "name": "Little Stars",
+    "nameTh": "คอลเลกชันครอบครัว",
+    "accent": "#F2AE4F",
+    "stamps": [
+      "family-star",
+      "family-books",
+      "family-home",
+      "family-paint",
+      "family-sprout",
+      "family-bear"
+    ],
+    "badges": [
+      "family-first-star",
+      "family-book-explorer",
+      "family-creative-hero",
+      "family-growth-champion"
+    ]
+  },
+  {
+    "id": "personal",
+    "name": "My Journey",
+    "nameTh": "คอลเลกชันส่วนตัว",
+    "accent": "#65A8D4",
+    "stamps": [
+      "personal-sunrise",
+      "personal-dumbbell",
+      "personal-open-book",
+      "personal-target",
+      "personal-mountain",
+      "personal-trophy"
+    ],
+    "badges": [
+      "personal-fresh-start",
+      "personal-active-streak",
+      "personal-goal-chaser",
+      "personal-personal-legend"
+    ]
+  }
+]

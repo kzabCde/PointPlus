@@ -1,0 +1,200 @@
+[
+  {
+    "id": "couple-heart",
+    "mode": "couple",
+    "name": "Sweet Heart",
+    "nameTh": "หัวใจแทนความใส่ใจ",
+    "svg": "/point-plus/stamps/couple/heart.svg",
+    "png": "/point-plus/stamps/couple/heart.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "couple-letter",
+    "mode": "couple",
+    "name": "Love Letter",
+    "nameTh": "ส่งข้อความดี ๆ ให้กัน",
+    "svg": "/point-plus/stamps/couple/letter.svg",
+    "png": "/point-plus/stamps/couple/letter.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "couple-cheers",
+    "mode": "couple",
+    "name": "Together Time",
+    "nameTh": "ใช้เวลาคุณภาพด้วยกัน",
+    "svg": "/point-plus/stamps/couple/cheers.svg",
+    "png": "/point-plus/stamps/couple/cheers.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "couple-flowers",
+    "mode": "couple",
+    "name": "Little Surprise",
+    "nameTh": "สร้างเซอร์ไพรส์เล็ก ๆ",
+    "svg": "/point-plus/stamps/couple/flowers.svg",
+    "png": "/point-plus/stamps/couple/flowers.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "couple-cake",
+    "mode": "couple",
+    "name": "Special Day",
+    "nameTh": "ฉลองโอกาสพิเศษ",
+    "svg": "/point-plus/stamps/couple/cake.svg",
+    "png": "/point-plus/stamps/couple/cake.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "couple-lock",
+    "mode": "couple",
+    "name": "Trust & Care",
+    "nameTh": "ดูแลและรักษาคำมั่นสัญญา",
+    "svg": "/point-plus/stamps/couple/lock.svg",
+    "png": "/point-plus/stamps/couple/lock.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "family-star",
+    "mode": "family",
+    "name": "Little Star",
+    "nameTh": "ทำภารกิจได้สำเร็จ",
+    "svg": "/point-plus/stamps/family/star.svg",
+    "png": "/point-plus/stamps/family/star.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "family-books",
+    "mode": "family",
+    "name": "Reading Time",
+    "nameTh": "อ่านหนังสือ",
+    "svg": "/point-plus/stamps/family/books.svg",
+    "png": "/point-plus/stamps/family/books.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "family-home",
+    "mode": "family",
+    "name": "Tiny Helper",
+    "nameTh": "ช่วยดูแลบ้าน",
+    "svg": "/point-plus/stamps/family/home.svg",
+    "png": "/point-plus/stamps/family/home.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "family-paint",
+    "mode": "family",
+    "name": "Creative Mind",
+    "nameTh": "ทำกิจกรรมสร้างสรรค์",
+    "svg": "/point-plus/stamps/family/paint.svg",
+    "png": "/point-plus/stamps/family/paint.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "family-sprout",
+    "mode": "family",
+    "name": "Growing Together",
+    "nameTh": "เรียนรู้สิ่งใหม่",
+    "svg": "/point-plus/stamps/family/sprout.svg",
+    "png": "/point-plus/stamps/family/sprout.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "family-bear",
+    "mode": "family",
+    "name": "Kindness",
+    "nameTh": "แบ่งปันและมีน้ำใจ",
+    "svg": "/point-plus/stamps/family/bear.svg",
+    "png": "/point-plus/stamps/family/bear.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "personal-sunrise",
+    "mode": "personal",
+    "name": "Early Bird",
+    "nameTh": "เริ่มต้นวันตามเป้าหมาย",
+    "svg": "/point-plus/stamps/personal/sunrise.svg",
+    "png": "/point-plus/stamps/personal/sunrise.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "personal-dumbbell",
+    "mode": "personal",
+    "name": "Move More",
+    "nameTh": "ออกกำลังกาย",
+    "svg": "/point-plus/stamps/personal/dumbbell.svg",
+    "png": "/point-plus/stamps/personal/dumbbell.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "personal-open-book",
+    "mode": "personal",
+    "name": "Learn Daily",
+    "nameTh": "เรียนรู้ทุกวัน",
+    "svg": "/point-plus/stamps/personal/open-book.svg",
+    "png": "/point-plus/stamps/personal/open-book.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "personal-target",
+    "mode": "personal",
+    "name": "Goal Setter",
+    "nameTh": "ตั้งเป้าหมายและลงมือทำ",
+    "svg": "/point-plus/stamps/personal/target.svg",
+    "png": "/point-plus/stamps/personal/target.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "personal-mountain",
+    "mode": "personal",
+    "name": "New Milestone",
+    "nameTh": "ก้าวข้ามความท้าทาย",
+    "svg": "/point-plus/stamps/personal/mountain.svg",
+    "png": "/point-plus/stamps/personal/mountain.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  },
+  {
+    "id": "personal-trophy",
+    "mode": "personal",
+    "name": "Personal Best",
+    "nameTh": "ทำสถิติของตัวเอง",
+    "svg": "/point-plus/stamps/personal/trophy.svg",
+    "png": "/point-plus/stamps/personal/trophy.png",
+    "type": "collectible-stamp",
+    "suggestedUsage": "stamp-card",
+    "size": 256
+  }
+]
