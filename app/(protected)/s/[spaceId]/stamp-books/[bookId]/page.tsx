@@ -63,6 +63,18 @@ export default async function StampBookDetailPage({params}:{params:Promise<{spac
       </div>
      })}
     </div>
+    {!!myMarks.length&&<details className="stamp-book-history">
+     <summary>ดูประวัติแสตมป์ในรอบนี้ ({myMarks.length} ดวง)</summary>
+     <ul className="stamp-book-mark-history">
+      {myMarks.map(m=><li key={m.id}>
+       <Image src={art(m.asset_id)?.png??'/point-plus/stamps/couple/heart.png'} alt="" width={38} height={38}/>
+       <span><strong>{art(m.asset_id)?.nameTh??'แสตมป์'}</strong>
+        <small>ให้โดย {people.find(x=>x.user_id===m.giver_user_id)?.display_name??'สมาชิกในห้อง'} · {readable(m.stamped_at)}</small>
+        {m.note&&<small>{m.note}</small>}
+       </span>
+      </li>)}
+     </ul>
+    </details>}
     {current.completed_at&&<div className="stamp-book-finish">
      <strong>สมุดสะสมครบแล้ว!</strong><p>สำเร็จเมื่อ {readable(current.completed_at)}</p>
      {claimed?<p>รางวัล: {claimed.reward_title_snapshot} · {claimLabels[claimed.status]}</p>:

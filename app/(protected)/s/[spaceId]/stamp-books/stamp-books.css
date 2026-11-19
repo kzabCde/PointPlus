@@ -60,3 +60,8 @@
 .stamp-book-claims{display:grid;gap:12px}
 @media(max-width:550px){.stamp-book-page{gap:18px}.stamp-book-cover{min-height:190px}.stamp-book-slots{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.stamp-book-slot{border-radius:12px}.stamp-physical-book{padding-left:25px;padding-right:16px}.stamp-art-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.stamp-dialog{padding:16px}.stamp-book-facts span{flex:1}.stamp-book-detail-head .hero__actions{width:100%}}
 @media(prefers-reduced-motion:reduce){.stamp-book-cover{transition:none}.stamp-book-cover:hover{transform:none}}
+
+.stamp-book-mark-history{padding:0;margin:8px 0 0;list-style:none;display:grid;gap:10px}
+.stamp-book-mark-history li{display:flex;align-items:center;gap:12px;border:1px solid #f3e1d6;padding:10px 12px;border-radius:14px;background:#fff9f2}
+.stamp-book-mark-history li span{display:grid;gap:1px}
+.stamp-book-mark-history li small{color:#947466;font-size:12px}
