@@ -1,3 +1,5 @@
+> **Live status update (2026-11-20):** The older “NOT verified” statements below describe the earlier blocked-connector investigation. Connection is now confirmed; official v3 objects already existed and two incremental migrations were applied. Refer to [DATABASE_V3_LIVE_AUDIT.md](DATABASE_V3_LIVE_AUDIT.md) for current authoritative findings, migrations and release blockers. Do not reapply the canonical v2→v3 proposal.
+
 # Point+ — Database v3 delta, live verification and rollback plan
 
 ## 1. What is confirmed vs not confirmed
