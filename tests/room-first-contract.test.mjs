@@ -36,3 +36,15 @@ test('R08: Room Home uses bounded per-Room queries and authorized Room resume',(
  const tracking=read('features/rooms/room-usage.tsx')
  assert.match(tracking,/rooms\.some\(room=>room\.id===saved\)/)
 })
+
+test('R05: quick activity creates mission via existing secure action and official stamp catalog',()=>{
+ const s=read('features/missions/quick-form.tsx')
+ assert.match(s,/createMissionAction/)
+ assert.match(s,/name="status" value="active"/)
+ assert.match(s,/name="space_id" value={spaceId}/)
+ assert.match(s,/pointPlusStamps\.filter/)
+ assert.match(s,/stampCards\.find\(c => c.active && c.image_key === s.id\)/)
+ const page=read('app/(protected)/s/[spaceId]/missions/new/page.tsx')
+ assert.match(page,/QuickMissionForm/)
+ assert.match(page,/CreateMissionForm/)
+})

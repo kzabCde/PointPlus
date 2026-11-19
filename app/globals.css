@@ -251,3 +251,11 @@ h1, h2, h3 { line-height: 1.27; letter-spacing: -.025em; }
 .room-template { display:flex;flex-wrap:wrap;gap:12px;align-items:end;background:var(--surface-soft);padding:16px;border-radius:16px;margin-bottom:20px; }
 .room-template .input { max-width:430px; }
 .room-template .form-field__label,.room-template p { width:100%; margin:0; }
+
+.quick-mission-form { display:grid;gap:12px; }
+.quick-mission-form .form-field { margin:0; }
+.quick-mission-form h3,.quick-mission-form p { margin:0; }
+.quick-mission-form>label,.quick-mission-grid label { font-size:14px;font-weight:700; }
+.quick-mission-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px; }
+.room-create>.card { border-top:1px solid var(--line); }
+@media(max-width:600px){ .quick-mission-grid{grid-template-columns:1fr;} }
