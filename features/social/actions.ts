@@ -34,10 +34,11 @@ export async function submitMissionAction(input: SubmissionInput): Promise<Actio
     (typeof input.proofPath !== 'string' || input.proofPath.length > 500))
     return invalid('ไฟล์หลักฐานไม่ถูกต้อง')
   const detail = await getMissionDetail(spaceId,missionId,participantId)
+  const { user } = await getSpaceContext(spaceId)
   if (!detail.selected || detail.selected.id !== participantId ||
-      !canSubmitFor(detail.selected,detail.user.id,detail.manager))
+      !canSubmitFor(detail.selected,user.id,detail.manager))
     return invalid('คุณไม่มีสิทธิ์ส่งภารกิจของผู้เข้าร่วมนี้')
-  if (input.proofPath && !input.proofPath.startsWith(detail.user.id + '/'))
+  if (input.proofPath && !input.proofPath.startsWith(user.id + '/'))
     return invalid('ไฟล์หลักฐานไม่ใช่ของบัญชีคุณ')
   // DB is responsible for recurrence, assignment, timing, duplicate and auto-approval.
   const { error } = await detail.supabase.rpc('pointplus_submit_mission',{
