@@ -28,7 +28,7 @@ export async function updateMissionAction(
   const {supabase,space,mission} = await getManagedMission(spaceId,missionId)
   if (mission.status === 'archived') return fail('ภารกิจที่เก็บถาวรแล้วไม่สามารถแก้ไขได้')
   const parsed = parseMissionForm(form,space.timezone)
-  if (parsed.error) return fail(parsed.error)
+  if (!parsed.value) return fail(parsed.error ?? 'ข้อมูลภารกิจไม่ถูกต้อง')
   const catalog = await getMissionCatalog(spaceId)
   const problem = checkMissionCatalog(parsed.value,catalog)
   if (problem) return fail(problem)
@@ -110,7 +110,7 @@ function campaignFields(form:FormData,zone:string) {
   if (title.length < 1 || title.length > 120) return {error:'ชื่อชุดภารกิจต้องยาว 1–120 ตัวอักษร'} as const
   if (description.length > 4000) return {error:'คำอธิบายต้องไม่เกิน 4,000 ตัวอักษร'} as const
   const times=parseTimeWindow(form,zone)
-  if (times.error) return {error:times.error} as const
+  if (!times.value) return {error:times.error ?? 'ช่วงเวลาไม่ถูกต้อง'} as const
   return {value:{title,description:description||null,start_at:times.value.starts_at,end_at:times.value.ends_at}} as const
 }
 export async function createCampaignAction(
@@ -120,7 +120,7 @@ export async function createCampaignAction(
   if (!isUuid(spaceId)) return fail('พื้นที่ไม่ถูกต้อง')
   const {supabase,user,space}=await getManagerContext(spaceId)
   const data=campaignFields(form,space.timezone)
-  if (data.error) return fail(data.error)
+  if (!data.value) return fail(data.error ?? 'ข้อมูลชุดภารกิจไม่ถูกต้อง')
   const {data:created,error}=await supabase.from('campaigns')
     .insert({...data.value,space_id:spaceId,created_by:user.id}).select('id').single()
   if (error || !created) return fail('ไม่สามารถสร้างชุดภารกิจได้')
@@ -135,7 +135,7 @@ export async function updateCampaignAction(
   if (!isUuid(spaceId) || !isUuid(campaignId)) return fail('ไม่พบชุดภารกิจ')
   const {supabase,space}=await getManagerContext(spaceId)
   const input=campaignFields(form,space.timezone)
-  if (input.error) return fail(input.error)
+  if (!input.value) return fail(input.error ?? 'ข้อมูลชุดภารกิจไม่ถูกต้อง')
   const {data,error}=await supabase.from('campaigns').update(input.value)
     .eq('space_id',spaceId).eq('id',campaignId).select('id').maybeSingle()
   if (error || !data) return fail('ไม่สามารถบันทึกชุดภารกิจได้')

@@ -96,7 +96,7 @@ export function parseMissionForm(form: FormData, zone: string): Validation<Missi
     return { error: 'ห้ามเลือกบัตรสะสมเมื่อจำนวนแสตมป์เท่ากับ 0' }
   if (campaign_id && !uuid(campaign_id)) return { error: 'ชุดภารกิจไม่ถูกต้อง' }
   const schedule = parseTimeWindow(form,zone)
-  if (schedule.error) return { error: schedule.error }
+  if (!schedule.value) return { error: schedule.error ?? 'ช่วงเวลาไม่ถูกต้อง' }
   return { value: {
     title, description: description || null,
     frequency: frequency as MissionFrequency,
