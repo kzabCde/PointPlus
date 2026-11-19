@@ -13,20 +13,18 @@ test('R02: lightweight room launcher replaces old all-space dashboard',()=>{
  assert.match(read('app/(protected)/rooms/page.tsx'),/listMyRooms\(\)/)
  assert.doesNotMatch(read('app/(protected)/rooms/page.tsx'),/loadDashboard|loadMissionBoard/)
 })
-test('R03: Room Home renders only room-local missions and protects membership',()=>{
+test('R03: Room Home prioritizes only room-local Stamp Books and protects membership',()=>{
  const page=read('app/(protected)/s/[spaceId]/page.tsx')
- assert.match(page,/getSpaceContext\(spaceId\)/)
- assert.match(page,/loadRoomActivityPreview\(spaceId/)
- assert.ok(existsSync(new URL('../app/(protected)/s/[spaceId]/collection/page.tsx',import.meta.url)))
+ assert.match(page,/loadStampBookBoard\(spaceId\)/)
+ assert.match(page,/stamp-books/)
+ assert.ok(existsSync(new URL('../app/(protected)/s/[spaceId]/stamp-books/page.tsx',import.meta.url)))
 })
-test('R06: use official 18 stamp and 12 badge assets and only DB-backed earned state',()=>{
+test('R06: 18 original Stamp assets remain, but the gallery is replaced by user-made books',()=>{
  const lib=read('lib/point-plus/assets.ts')
  assert.equal((lib.match(/"id": "(?:couple|family|personal)-/g)||[]).length,30)
  const col=read('app/(protected)/s/[spaceId]/collection/page.tsx')
- assert.match(col,/\.from\('participant_badges'\)/)
- assert.match(col,/\.from\('stamp_cycles'\)/)
- assert.match(col,/space.kind === 'couple' \? 'couple'/)
- assert.match(col,/space.kind === 'family' \? 'family' : 'personal'/)
+ assert.match(col,/redirect\('\/s\/'.*stamp-books/)
+ assert.match(read('app/(protected)/s/[spaceId]/stamp-books/page.tsx'),/loadStampBookBoard/)
 })
 
 test('R08: Room Home uses bounded per-Room queries and authorized Room resume',()=>{
