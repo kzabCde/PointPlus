@@ -1,39 +1,43 @@
 # PointPlus
 
-Next.js 16 App Router foundation with Supabase SSR authentication helpers for the PointPlus rewards web app.
+PointPlus is a non-commercial, Thai-first application for people supporting each other through meaningful missions: personal goals, couples and families. Points, stamps and badges are personal encouragement, **not money, sales rewards or store loyalty**.
 
-## Local setup
+## Status
+Phase 1 — M01 foundation and UI architecture. The landing page is informational, and `/dashboard` is a protected scaffold. Account registration, authentication forms, mission creation and real dashboards are **not implemented yet**.
+
+## Local development
 
 Requires Node.js 22+ and npm.
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-On Windows PowerShell, copy environment variables with `Copy-Item .env.example .env.local`.
+On Windows PowerShell use `Copy-Item .env.example .env.local`.
 
-The publishable key is intended for browser clients. **Never** put a Supabase secret key or service-role key in a `NEXT_PUBLIC_` variable. `.env.local` is ignored by Git. Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in Vercel's environment settings separately.
+The only required environment variables are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. These are publishable browser values; never put a Supabase service-role or secret key under `NEXT_PUBLIC_`. Configure values separately in Vercel's environment settings. Local `.env.local` is ignored by Git.
 
-## Supabase clients
+## Source structure
 
-- `utils/supabase/client.ts`: browser client for Client Components.
-- `utils/supabase/server.ts`: per-request server client using Next.js cookies.
-- `utils/supabase/middleware.ts`: session refresh helper; applies cookie and cache headers.
-- `proxy.ts`: Next.js 16 entry point for automatic session refresh.
-
-The home page includes an **optional** example query to a `todos` table. This setup does not create tables, RLS policies, user login screens, or PointPlus reward logic. If the demo table does not exist or is inaccessible under RLS, the page displays an explanatory message rather than failing.
+- `app/(public)/page.tsx`: live public landing page (no demo todos or fictional stats).
+- `app/(auth)/layout.tsx`: auth UI layout prepared for M02.
+- `app/(protected)/`: verified-session app shell and M01 dashboard scaffold.
+- `components/ui/`, `components/brand/`: reusable presentation building blocks.
+- `app/globals.css`: design tokens, responsive and accessibility styling.
+- `utils/supabase/client.ts` and `server.ts`: existing SSR browser/server clients.
+- `utils/supabase/middleware.ts` and `proxy.ts`: existing session refresh; do not bypass.
+- `lib/point-plus/assets.ts`: imported assets registry for future stamps/badges, not active reward logic.
+- `docs/PHASE1_M01.md`: M01 architecture, constraints and verification.
 
 ## Checks
 
 ```bash
-npm run build
+npm run test:foundation
 npm run typecheck
+npm run build
+node scripts/validate-point-plus-assets.mjs
 ```
 
-Optional agent instructions (not needed for app runtime):
-
-```bash
-npx skills add supabase/agent-skills
-```
+Database v2.0 is authoritative for later feature work. Do not invent table columns or RPCs and do not run SQL against another Supabase project.

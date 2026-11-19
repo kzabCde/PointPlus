@@ -23,6 +23,8 @@ jobs:
         run: cp .env.example .env.local
       - name: Validate PointPlus artwork
         run: node scripts/validate-point-plus-assets.mjs
+      - name: Verify M01 foundation
+        run: npm run test:foundation
       - name: Build
         run: npm run build
       - name: Typecheck
