@@ -108,8 +108,28 @@ BEGIN
   IF auth.uid() IS NULL OR p_key IS NULL THEN
     RAISE EXCEPTION 'Authentication/idempotency key required';
   END IF;
-  SELECT * INTO v_book FROM public.stamp_books WHERE id = p_book;
+  -- Serialize all placement and replay checks on the same book lock.
+  SELECT * INTO v_book FROM public.stamp_books WHERE id = p_book FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Book not found'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.space_members m
+      WHERE m.space_id=v_book.space_id AND m.user_id=auth.uid()) THEN
+    RAISE EXCEPTION 'Room membership required';
+  END IF;
+  -- Replays of the final stamp must still succeed after the cycle completes
+  -- or after Couple memory redemption archives the book. No new mark is made.
+  SELECT * INTO v_prior FROM public.stamp_book_stamp_requests
+    WHERE book_id = p_book AND giver_user_id = auth.uid() AND idempotency_key = p_key;
+  IF FOUND THEN
+    IF v_prior.participant_id IS DISTINCT FROM p_recipient
+       OR v_prior.asset_id IS DISTINCT FROM p_art
+       OR v_prior.note IS DISTINCT FROM p_note
+       OR v_prior.page_index IS DISTINCT FROM p_page
+       OR v_prior.position_x IS DISTINCT FROM p_x
+       OR v_prior.position_y IS DISTINCT FROM p_y
+       OR v_prior.rotation_deg IS DISTINCT FROM p_rotation
+    THEN RAISE EXCEPTION 'Idempotency key already used with different content'; END IF;
+    RETURN jsonb_build_object('request_id', v_prior.id, 'status', v_prior.status);
+  END IF;
 
   SELECT c.target_snapshot INTO v_cycle_target
   FROM public.stamp_book_cycles c
@@ -124,14 +144,6 @@ BEGIN
     OR p_y IS NULL OR p_y NOT BETWEEN 0 AND 1
     OR p_rotation IS NULL OR p_rotation NOT BETWEEN -15 AND 15
   THEN RAISE EXCEPTION 'Invalid stamp placement coordinates'; END IF;
-
-  SELECT * INTO v_prior FROM public.stamp_book_stamp_requests
-    WHERE book_id = p_book AND giver_user_id = auth.uid() AND idempotency_key = p_key;
-  IF FOUND AND (v_prior.page_index IS DISTINCT FROM p_page
-      OR v_prior.position_x IS DISTINCT FROM p_x
-      OR v_prior.position_y IS DISTINCT FROM p_y
-      OR v_prior.rotation_deg IS DISTINCT FROM p_rotation)
-  THEN RAISE EXCEPTION 'Idempotency key already used with different placement'; END IF;
 
   v_result := public.pointplus_give_stamp(p_book, p_recipient, p_art, p_note, p_key);
   v_request := (v_result->>'request_id')::uuid;
