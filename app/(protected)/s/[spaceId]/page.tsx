@@ -7,7 +7,7 @@ import Image from 'next/image'
 export default async function RoomHomePage({params}:{params:Promise<{spaceId:string}>}){
  const {spaceId}=await params
  const {context,books,cycles}=await loadStampBookBoard(spaceId)
- const manager=canManage(context.member.role)
+ const manager=context.space.kind==='couple'||canManage(context.member.role)
  const base='/s/'+spaceId+'/stamp-books'
  const current=books.filter(b=>b.status==='active')
  const complete=cycles.filter(c=>c.completed_at!==null).length
