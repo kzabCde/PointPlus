@@ -1,0 +1,124 @@
+.book {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 1.65;
+  perspective: 1000px;
+  translate: -25% 0;
+}
+
+.book[data-open="true"] { translate: 0; }
+
+.pages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  position: absolute;
+  inset: 0;
+}
+
+.leaf {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  position: relative;
+  min-inline-size: 0;
+  padding: 10% 8%;
+  border: 1px solid #dcbaa5;
+  background: var(--paper);
+  box-shadow: 0 4px 0 #ead5bc, 0 8px 0 #d5a88f, 0 10px 0 #b77366, 0 18px 25px #6e413029;
+}
+
+.leaf:first-child {
+  border-radius: 10px 0 0 10px;
+  background: linear-gradient(90deg, var(--paper) 89%, #eee1d0);
+}
+
+.leaf:last-child {
+  border-radius: 0 10px 10px 0;
+  background: linear-gradient(90deg, #e9d6c1, var(--paper) 13%);
+}
+
+.book[data-open="false"] .leaf:first-child { visibility: hidden; }
+
+.cover {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  inset: -3px -2px 0 50%;
+  z-index: 1;
+  padding: 9%;
+  border: 1px solid #a45a57;
+  border-inline-start: 9px solid #ad6560;
+  border-radius: 4px 11px 11px 4px;
+  background-color: #d99387;
+  background-image: repeating-linear-gradient(110deg, #ffffff0b 0 1px, transparent 1px 4px);
+  box-shadow: inset -3px 0 #b67469, 4px 7px 0 #ad625b40, 10px 15px 23px #73453440;
+  transform-origin: left center;
+  backface-visibility: hidden;
+}
+
+.cover::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  pointer-events: none;
+  border: 1px solid #fdf0d7a6;
+  border-radius: 2px 6px 6px 2px;
+}
+
+.book[data-open="true"] .cover { transform: rotateY(-173deg); }
+
+.turn { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .book { transition: translate var(--motion-cover) var(--motion-turn); }
+  .cover { transition: transform var(--motion-cover) var(--motion-turn); }
+
+  .turn {
+    position: absolute;
+    z-index: 2;
+    display: block;
+    inset: 0 0 0 50%;
+    border: 1px solid #d8ad99;
+    border-radius: 0 8px 8px 0;
+    background: linear-gradient(90deg, #dfb49e, #f4e2d5 28%, #fff3e6);
+    box-shadow: 7px 1px 12px #76514129;
+    transform-origin: left center;
+    pointer-events: none;
+    opacity: 0;
+    animation: var(--motion-leaf-animation) var(--motion-leaf) var(--motion-turn) backwards;
+  }
+  .turn[data-leaf-turn="backward"] {
+    inset: 0 50% 0 0;
+    transform-origin: right center;
+    --leaf-turn: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .book[data-opening] {
+    animation: book-arrive var(--motion-dialog) var(--motion-out) both,
+      book-center var(--motion-cover) var(--motion-turn) var(--motion-dialog) both;
+  }
+  .book[data-opening] .cover {
+    animation: cover-open var(--motion-cover) var(--motion-turn) var(--motion-dialog) backwards;
+  }
+  .book[data-opening] .leaf:first-child {
+    animation: book-page-appear var(--motion-leaf) var(--motion-out) var(--motion-dialog) backwards;
+  }
+}
+@keyframes book-arrive {
+  from { opacity: .6; scale: .88; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes book-center {
+  from { translate: -25% 0; }
+  to { translate: 0; }
+}
+@keyframes cover-open {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(-173deg); }
+}
+@keyframes book-page-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

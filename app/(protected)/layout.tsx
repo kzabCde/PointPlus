@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Brand } from '@/components/brand/pointplus-mark'
-import { createClient } from '@/utils/supabase/server'
+import { getClaims } from '@/lib/auth/session'
+import { openingCookie } from '@/lib/auth/opening'
+import { ClearOpeningHint } from '@/features/auth/clear-opening-hint'
 import { signOutAction } from '@/features/auth/actions'
 import { Navigation } from './navigation'
 import { Button } from '@/components/ui/button'
@@ -13,10 +16,11 @@ const destinations = [
 ]
 
 export default async function ProtectedLayout({ children }: { children: ReactNode }) {
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.getClaims()
+  const [{ data, error }, cookieStore] = await Promise.all([getClaims(), cookies()])
   if (error || !data?.claims?.sub) redirect('/login')
-  return <div className="app-layout">
+  const entering = cookieStore.get(openingCookie)?.value === '1'
+  return <div className="app-layout" data-opening-entry={entering || undefined}>
+    {entering && <ClearOpeningHint/>}
     <aside className="app-sidebar">
       <Brand href="/rooms" label="Point+ ห้องของฉัน"/>
       <Navigation label="เมนูหลัก" className="app-nav app-nav--desktop" destinations={destinations}/>

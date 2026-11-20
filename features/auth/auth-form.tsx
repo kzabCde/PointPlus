@@ -25,7 +25,10 @@ export function AuthForm({ mode, next = '/rooms' }: { mode: Mode; next?: string 
     <>
       <h1 className="page-title">{heading[mode]}</h1>
       <p className="muted">พื้นที่เล็ก ๆ สำหรับเป้าหมายและความสัมพันธ์ที่สำคัญ</p>
-      <form action={action}>
+      <form action={action} onSubmit={event => {
+        const opening = event.currentTarget.elements.namedItem('opening')
+        if (opening instanceof HTMLInputElement) opening.value = '1'
+      }}>
         {mode === 'register' && (
           <FormField id="display_name" name="display_name" label="ชื่อที่แสดง" required maxLength={80} autoComplete="nickname" />
         )}
@@ -42,8 +45,12 @@ export function AuthForm({ mode, next = '/rooms' }: { mode: Mode; next?: string 
           <FormField id="confirm" name="confirm" type="password" label="ยืนยันรหัสผ่านใหม่"
             autoComplete="new-password" minLength={8} maxLength={128} required />
         )}
-        {mode === 'login' && <input type="hidden" name="next" value={next} />}
-        {state.message && <p className={state.status === 'error' ? 'form-field__error' : 'status status--success'} role="status">{state.message}</p>}
+        {mode === 'login' && <>
+          <input type="hidden" name="next" value={next}/>
+          <input type="hidden" name="opening" defaultValue=""/>
+        </>}
+        {state.message && <p className={state.status === 'error' ? 'form-field__error' : 'status status--success'} role={state.status === 'error' ? 'alert' : 'status'}>{state.message}</p>}
+        {pending && mode === 'login' && <p className="muted auth-pending" role="status">กำลังตรวจสอบข้อมูลเข้าสู่ระบบ…</p>}
         <Button type="submit" disabled={pending}>{pending ? 'กำลังดำเนินการ…' :
           mode === 'login' ? 'เข้าสู่ระบบ' : mode === 'register' ? 'สมัครสมาชิก' : mode === 'forgot' ? 'ส่งลิงก์' : 'บันทึกรหัสผ่าน'}</Button>
       </form>

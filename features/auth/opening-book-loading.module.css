@@ -1,0 +1,25 @@
+.entry {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 22px;
+  min-block-size: min(62svh, 28rem);
+  padding: 20px;
+  text-align: center;
+}
+.entry p { margin: 0; color: var(--muted); font-weight: 700; }
+.scene {
+  inline-size: min(100%, 246px);
+  padding: 8px;
+}
+.mascot { inline-size: min(100%, 52px); block-size: auto; border-radius: 20%; }
+.lines {
+  inline-size: 84%;
+  block-size: 48px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(0deg, transparent 0 9px, #ead3c0 9px 10px);
+}
+.press {
+  inline-size: min(92%, 58px);
+  --stamp-press-delay: calc(var(--motion-dialog) + var(--motion-cover) * .65);
+}

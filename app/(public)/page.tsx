@@ -1,156 +1,114 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Brand } from '@/components/brand/pointplus-mark'
+import { LandingReveals } from '@/components/landing/landing-reveals'
+import { InteractiveStampBook } from '@/components/landing/interactive-stamp-book'
+import { flowersStamp, heartStamp, letterStamp } from '@/components/landing/illustrative-stamps'
+import { StampPressPreview } from '@/components/landing/stamp-press-preview'
 import { ButtonLink } from '@/components/ui/button'
+import './landing.css'
 
 export const metadata: Metadata = {
   title: 'สมุดสะสมแสตมป์ของคนสำคัญ',
 }
 
-const sampleStamps = [
-  { src: '/point-plus/stamps/personal/sunrise.svg', alt: 'แสตมป์รูปพระอาทิตย์สำหรับเป้าหมายส่วนตัว' },
-  { src: '/point-plus/stamps/couple/heart.svg', alt: 'แสตมป์หัวใจสำหรับกิจกรรมของคนรัก' },
-  { src: '/point-plus/stamps/family/star.svg', alt: 'แสตมป์ดาวสำหรับกิจกรรมของครอบครัว' },
-]
-
-const spaceTypes = [
-  {
-    title: 'สำหรับตัวเอง',
-    description: 'แบ่งเป้าหมายออกเป็นเรื่องเล็ก ๆ ที่ทำได้จริง และเห็นความพยายามของตัวเองอย่างเป็นรูปธรรม',
-    stamp: '/point-plus/stamps/personal/target.svg',
-    alt: 'แสตมป์รูปเป้าหมาย',
-    accent: '',
-  },
-  {
-    title: 'สำหรับคนรัก',
-    description: 'ชวนกันทำเรื่องดี ๆ สร้างเวลาคุณภาพ และส่งกำลังใจให้กันในแบบของสองคน',
-    stamp: '/point-plus/stamps/couple/heart.svg',
-    alt: 'แสตมป์รูปหัวใจ',
-    accent: 'feature-card__icon--coral',
-  },
-  {
-    title: 'สำหรับครอบครัว',
-    description: 'สร้างกิจกรรมร่วมกันอย่างอบอุ่น และให้กำลังใจเด็ก ๆ ผ่านภารกิจที่ผู้ใหญ่ช่วยดูแล',
-    stamp: '/point-plus/stamps/family/books.svg',
-    alt: 'แสตมป์รูปหนังสือ',
-    accent: 'feature-card__icon--butter',
-  },
-]
-
 export default function HomePage() {
-  return (
-    <>
-      <header className="site-header">
-        <div className="container site-header__inner">
-          <Brand />
-          <nav className="site-nav" aria-label="เมนูหน้าแรก">
-            <a href="#spaces">พื้นที่ของเรา</a>
-            <a href="#how-it-works">วิธีใช้งาน</a>
-          </nav>
+  return <div className="living-landing">
+    <LandingReveals/>
+    <header className="site-header">
+      <div className="container site-header__inner">
+        <Brand/>
+        <nav className="site-nav" aria-label="เมนูหน้าแรก">
+          <a href="#how-it-works">วิธีใช้งาน</a>
+          <Link href="/login" prefetch={false}>เข้าสู่ระบบ</Link>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content" tabIndex={-1}>
+      <section className="living-hero container" aria-labelledby="hero-heading">
+        <div className="living-hero__copy">
+          <p className="living-hero__eyebrow" lang="en">POINT+ · OUR LITTLE MOMENTS</p>
+          <h1 id="hero-heading">เก็บทุกเรื่องราวดี ๆ <span>ไว้ในสมุดของเรา</span></h1>
+          <p className="living-hero__description">สร้างสมุดสะสมแสตมป์ให้คนสำคัญ มอบความสุขเล็ก ๆ ให้กัน และเก็บทุกความทรงจำไว้ในแบบของเรา</p>
+          <div className="living-actions">
+            <ButtonLink href="/register" prefetch={false}>เริ่มสร้างสมุด <span aria-hidden="true">→</span></ButtonLink>
+            <ButtonLink href="/login" prefetch={false} variant="secondary">เข้าสู่ระบบ</ButtonLink>
+          </div>
+          <p className="living-hero__message">ทุกแสตมป์ คือหนึ่งเรื่องราวที่มีความหมาย</p>
         </div>
-      </header>
+        <InteractiveStampBook/>
+      </section>
 
-      <main id="main-content">
-        <section className="hero" aria-labelledby="hero-heading">
-          <div className="container hero__grid">
-            <div>
-              <span className="eyebrow">ทำเรื่องเล็กให้มีความหมาย</span>
-              <h1 id="hero-heading">ทุกความตั้งใจ<br />มีค่าเมื่อเรา<span>ทำไปด้วยกัน</span></h1>
-              <p className="hero__text">
-                PointPlus คือสมุดสะสมแสตมป์สำหรับคนสำคัญ สร้างสมุด เลือกลายแสตมป์ให้กัน แล้วเลือกรางวัลเมื่อครบจำนวน สำหรับคู่รัก ครอบครัว และเพื่อน โดยไม่เกี่ยวกับการซื้อขายหรือธุรกิจ
-              </p>
-              <div className="hero__actions">
-                <ButtonLink href="/register">เริ่มใช้งาน PointPlus <span aria-hidden="true">→</span></ButtonLink>
-                <ButtonLink href="/login" variant="secondary">เข้าสู่ระบบ</ButtonLink>
+      <div className="living-stories" id="how-it-works">
+        <section className="living-story" id="spaces" aria-labelledby="create-book-heading">
+          <div className="container living-story__grid" data-living-reveal>
+            <div className="living-story__copy">
+              <h2 id="create-book-heading">เริ่มจากสมุดหนึ่งเล่ม</h2>
+              <p>ตั้งชื่อสมุด เลือกลายบนปก และกำหนดจำนวนแสตมป์ที่อยากสะสม สมุดเล่มนี้มีไว้ให้คนสำคัญของคุณโดยเฉพาะ</p>
+            </div>
+            <figure className="sample-label">
+              <div className="sample-label__cover">
+                <Image src={flowersStamp} width={96} height={96} alt=""/>
               </div>
-              <span className="hero__note">สมัครสมาชิกและสร้างพื้นที่ส่วนตัวของคุณได้เลย</span>
-            </div>
+              <figcaption>
+                <span className="sample-label__caption">สมุดตัวอย่าง</span>
+                <strong>วันดี ๆ ของเรา</strong>
+                <dl>
+                  <div><dt>ผู้สะสม</dt><dd>เตย</dd></div>
+                  <div><dt>เป้าหมาย</dt><dd>3 ดวง</dd></div>
+                </dl>
+              </figcaption>
+            </figure>
+          </div>
+        </section>
 
-            <div className="hero-art">
-              <div className="preview">
-                <div className="preview__top">
-                  <strong>สมุดสะสมความสุข</strong>
-                  <small>เลือกภาพได้ทุกครั้ง</small>
-                </div>
-                <div className="preview__stamps">
-                  {sampleStamps.map((stamp) => (
-                    <div className="preview__stamp" key={stamp.src}>
-                      <Image src={stamp.src} alt={stamp.alt} width={76} height={76} />
-                    </div>
-                  ))}
-                </div>
+        <section className="living-story living-story--stamp" aria-labelledby="give-stamp-heading">
+          <div className="container living-story__grid" data-living-reveal>
+            <div className="living-story__copy">
+              <h2 id="give-stamp-heading">ให้แสตมป์แทนคำขอบคุณ</h2>
+              <p>นทีให้แสตมป์ในสมุดของเตยได้ และเตยก็สร้างสมุดอีกเล่มไว้ให้แสตมป์นทีได้ ต่างคนต่างสะสมเรื่องราวในสมุดของตัวเอง</p>
+              <div className="reciprocal-example" role="group" aria-label="ตัวอย่างการให้แสตมป์ทั้งสองทาง">
+                <span>นที <span aria-hidden="true">→</span><span className="sr-only"> ให้ </span> เตย</span>
+                <span>เตย <span aria-hidden="true">→</span><span className="sr-only"> ให้ </span> นที</span>
               </div>
             </div>
+            <StampPressPreview/>
           </div>
         </section>
 
-        <section className="section section--soft" id="spaces" aria-labelledby="spaces-title">
-          <div className="container">
-            <div className="section-heading">
-              <span className="eyebrow">พื้นที่ที่เหมาะกับเรา</span>
-              <h2 id="spaces-title">ความสัมพันธ์แต่ละแบบ มีวิธีเติบโตที่ต่างกัน</h2>
-              <p>สร้างสมุดสะสมในห้องของคุณ เลือกผู้รับและรางวัลได้เอง ทุกดวงเป็นเรื่องราวที่มีความหมาย</p>
+        <section className="living-story" aria-labelledby="memories-heading">
+          <div className="container living-story__grid" data-living-reveal>
+            <div className="living-story__copy">
+              <h2 id="memories-heading">ครบเล่มแล้ว เก็บไว้เป็นความทรงจำ</h2>
+              <p>เมื่อสมุดคู่รักสะสมครบ ผู้สะสมแลกรางวัลและเขียนข้อความถึงอีกคนได้ สมุดจะปิดและเก็บไว้ให้ทั้งคู่กลับมาเปิดอ่าน</p>
             </div>
-            <div className="feature-grid">
-              {spaceTypes.map((space) => (
-                <article className="feature-card" key={space.title}>
-                  <div className={'feature-card__icon ' + space.accent}>
-                    <Image src={space.stamp} alt={space.alt} width={67} height={67} />
-                  </div>
-                  <h3>{space.title}</h3>
-                  <p>{space.description}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section" id="how-it-works" aria-labelledby="steps-title">
-          <div className="container">
-            <div className="section-heading">
-              <span className="eyebrow">แนวคิดการใช้งาน</span>
-              <h2 id="steps-title">สามขั้นตอน สร้างแรงใจได้ทุกวัน</h2>
-              <p>ไม่จำเป็นต้องสร้างภารกิจก่อนให้แสตมป์ ทุกดวงมีผู้ให้และวันที่บันทึกชัดเจน</p>
-            </div>
-            <ol className="steps">
-              <li>
-                <span className="steps__number">1</span>
-                <strong>สร้างสมุดสะสม</strong>
-                <p>ตั้งชื่อสมุด เลือกจำนวนดวงและคนที่จะสะสม พร้อมเพิ่มตัวเลือกรางวัล</p>
-              </li>
-              <li>
-                <span className="steps__number">2</span>
-                <strong>เลือกแสตมป์ให้กัน</strong>
-                <p>คนที่มีสิทธิ์เลือกลายแสตมป์จาก 18 แบบ และมอบให้ผู้สะสมทีละดวง</p>
-              </li>
-              <li>
-                <span className="steps__number">3</span>
-                <strong>สะสมครบแล้วเลือกรางวัล</strong>
-                <p>เมื่อครบจำนวนที่กำหนด ผู้สะสมเลือกหนึ่งรางวัลที่ตกลงกัน โดยไม่หักแต้ม</p>
-              </li>
-            </ol>
-          </div>
-        </section>
-
-        <section className="section section--soft" aria-label="หลักการของ PointPlus">
-          <div className="container">
-            <div className="bottom-note">
-              <div>
-                <h2 style={{ marginBottom: 0, fontSize: 22 }}>ความทรงจำและกำลังใจ ไม่จำเป็นต้องมีราคา</h2>
-                <p>PointPlus สร้างเพื่อความสัมพันธ์ระหว่างคนกับคนเท่านั้น</p>
+            <figure className="sample-memory">
+              <figcaption>ตัวอย่างสมุดที่เก็บแล้ว</figcaption>
+              <div className="sample-memory__stamp-row" aria-hidden="true">
+                {[heartStamp, flowersStamp, letterStamp].map(src => <Image key={src} src={src} width={64} height={64} alt=""/>)}
               </div>
-              <ButtonLink href="#main-content" variant="secondary">กลับไปด้านบน</ButtonLink>
-            </div>
+              <blockquote>“ไว้ไปดูพระอาทิตย์ตกด้วยกันอีกนะ”</blockquote>
+              <span>เตย · ผู้สะสม</span>
+            </figure>
           </div>
         </section>
-      </main>
+      </div>
 
-      <footer className="site-footer">
-        <div className="container site-footer__inner">
-          <span>© PointPlus — เรื่องดี ๆ ที่เราแบ่งปันกัน</span>
-          <a className="text-link" href="#main-content">กลับขึ้นด้านบน</a>
+      <section className="living-finale" aria-labelledby="start-heading">
+        <div className="container">
+          <h2 id="start-heading">เรื่องราวของเราควรมีที่เก็บพิเศษ</h2>
+          <ButtonLink href="/register" prefetch={false}>เริ่มสร้างสมุด <span aria-hidden="true">→</span></ButtonLink>
         </div>
-      </footer>
-    </>
-  )
+      </section>
+    </main>
+
+    <footer className="site-footer">
+      <div className="container site-footer__inner">
+        <span>© PointPlus · เรื่องราวระหว่างคน ไม่เกี่ยวกับการซื้อขายหรือธุรกิจ</span>
+        <a className="text-link" href="#main-content">กลับขึ้นด้านบน</a>
+      </div>
+    </footer>
+  </div>
 }
