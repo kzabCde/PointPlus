@@ -20,6 +20,7 @@ const clampVolume = (v: number) => Number.isFinite(v) ? Math.max(0, Math.min(1, 
 export function BookSoundProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState(true)
   const [volume, setVolume] = useState(.35)
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false)
   const contextRef = useRef<AudioContext | null>(null)
   const preferences = useRef({ enabled: true, volume: .35 })
   preferences.current = { enabled, volume }
@@ -36,12 +37,14 @@ export function BookSoundProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch { /* Disabled storage should not prevent stamping. */ }
+    setPreferencesLoaded(true)
   }, [])
 
   useEffect(() => {
+    if (!preferencesLoaded) return
     try { window.localStorage.setItem(storageKey, JSON.stringify({ enabled, volume })) }
     catch { /* Preferences are optional. */ }
-  }, [enabled, volume])
+  }, [enabled, volume, preferencesLoaded])
 
   useEffect(() => () => { void contextRef.current?.close(); contextRef.current = null }, [])
 
