@@ -32,6 +32,8 @@ export function StampCollectionCard({
 }) {
   const router = useRouter()
   const sound = useBookSound()
+  const playSound = sound?.play
+  const unlockSound = sound?.unlock
   const [state, action, pending] = useBookAction(giveStampAction)
   const dialog = useRef<HTMLDialogElement>(null)
   const key = useRef<string | null>(null)
@@ -59,7 +61,7 @@ export function StampCollectionCard({
       if (state.outcome === 'granted' && state.receipt?.id &&
         lastSound.current !== state.receipt.id) {
         lastSound.current = state.receipt.id
-        sound?.play('stamp')
+        playSound?.('stamp')
       }
       dialog.current?.close()
       key.current = null
@@ -67,12 +69,12 @@ export function StampCollectionCard({
       setNote('')
       router.refresh()
     }
-  }, [state, router, sound])
+  }, [state, router, playSound])
 
   function openSlot(slot: number) {
     if (!editable || pending || inFlight.current || !Number.isInteger(slot) ||
       slot < 0 || slot >= count || slots[slot] || pendingBySlot.has(slot)) return
-    sound?.unlock()
+    unlockSound?.()
     setSelectedSlot(slot)
     key.current = crypto.randomUUID()
     setNote('')
@@ -156,7 +158,7 @@ export function StampCollectionCard({
 
     <dialog className="dialog stamp-card-dialog" ref={dialog}
       aria-labelledby={'card-slot-stamp-' + cycle.id}
-      onCancel={event => { if (!canCancel) event.preventDefault() }}
+      onCancel={event => { if (pending || inFlight.current) event.preventDefault() }}
       onClose={() => { if (canCancel) setSelectedSlot(null) }}>
       {selectedSlot !== null && <form onSubmit={submit}>
         <header className="stamp-card-dialog__head">
