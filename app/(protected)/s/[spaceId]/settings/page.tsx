@@ -12,7 +12,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ space
       <SectionHeader title="ตั้งค่าห้อง"/>
       {space.owner_id === user.id
         ? <EditSpaceForm space={space} />
-        : <div className="card">คุณสามารถดูข้อมูลพื้นที่ได้ แต่เจ้าของพื้นที่เท่านั้นที่แก้ไขชื่อและเขตเวลาได้</div>}
+        : <div className="card">คุณสามารถดูข้อมูลพื้นที่ได้ แต่เจ้าของพื้นที่เท่านั้นที่แก้ไขชื่อห้องได้</div>}
     </section>
   )
 }
