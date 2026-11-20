@@ -103,6 +103,7 @@ DECLARE
   v_result jsonb;
   v_request uuid;
   v_max_page integer;
+  v_cycle_target integer;
 BEGIN
   IF auth.uid() IS NULL OR p_key IS NULL THEN
     RAISE EXCEPTION 'Authentication/idempotency key required';
@@ -110,8 +111,14 @@ BEGIN
   SELECT * INTO v_book FROM public.stamp_books WHERE id = p_book;
   IF NOT FOUND THEN RAISE EXCEPTION 'Book not found'; END IF;
 
+  SELECT c.target_snapshot INTO v_cycle_target
+  FROM public.stamp_book_cycles c
+  WHERE c.book_id = p_book AND c.participant_id = p_recipient
+    AND c.completed_at IS NULL AND c.progress_count < c.target_snapshot
+  ORDER BY c.cycle_no DESC LIMIT 1;
+  IF v_cycle_target IS NULL THEN RAISE EXCEPTION 'No open collection cycle'; END IF;
   v_max_page := CASE WHEN v_book.layout_mode = 'single_sheet'
-    THEN 0 ELSE (v_book.target_count - 1) / 6 END;
+    THEN 0 ELSE (v_cycle_target - 1) / 6 END;
   IF p_page IS NULL OR p_page NOT BETWEEN 0 AND v_max_page
     OR p_x IS NULL OR p_x NOT BETWEEN 0 AND 1
     OR p_y IS NULL OR p_y NOT BETWEEN 0 AND 1
