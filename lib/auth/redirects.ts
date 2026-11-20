@@ -8,13 +8,23 @@ export function safeNextPath(raw: string | null | undefined, fallback = '/rooms'
 }
 
 export function siteOrigin(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL
-  if (configured) return new URL(configured).origin
+  // Invitation and auth links must use a stable public origin, not a per-deployment URL.
+  // NEXT_PUBLIC_SITE_URL is supported for existing environments.
+  const configured = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL
+  if (configured) {
+    const url = new URL(configured)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:')
+      throw new Error('PointPlus site URL must use HTTP(S)')
+    return url.origin
+  }
   if (process.env.NODE_ENV === 'production') {
-    // No user-controlled request headers are trusted as an OAuth redirect host.
-    // On Vercel, use the deployment host only when the explicit canonical URL is absent.
-    const vercelHost = process.env.VERCEL_URL
-    if (vercelHost) return 'https://' + vercelHost
+    // Vercel's stable project production hostname is preferable to VERCEL_URL,
+    // which can point to a deployment protected by Vercel Authentication.
+    const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    if (productionHost) return new URL('https://' + productionHost).origin
+    // Backward compatibility when neither canonical option is available.
+    const deploymentHost = process.env.VERCEL_URL
+    if (deploymentHost) return 'https://' + deploymentHost
   }
   return 'http://localhost:3000'
 }
