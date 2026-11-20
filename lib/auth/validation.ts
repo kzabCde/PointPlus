@@ -3,7 +3,3 @@ export const field = (data: FormData, key: string) => {
   const value = data.get(key)
   return typeof value === 'string' ? value.trim() : ''
 }
-export const allowedTimezone = (value: string) => {
-  if (!value || value.length > 80) return false
-  try { new Intl.DateTimeFormat('en', { timeZone: value }); return true } catch { return false }
-}
