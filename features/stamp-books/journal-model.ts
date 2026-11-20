@@ -7,7 +7,7 @@ export type BookActivity = {
   id: string
 }
 
-export type JournalMark = Pick<BookMark, 'id' | 'request_id' | 'asset_id' | 'stamped_at' | 'note' | 'page_index' | 'position_x' | 'position_y' | 'rotation_deg' | 'scale_factor'> & {
+export type JournalMark = Pick<BookMark, 'id' | 'request_id' | 'asset_id' | 'stamped_at' | 'note' | 'page_index' | 'position_x' | 'position_y' | 'rotation_deg' | 'scale_factor' | 'slot_index'> & {
   giver: string
   date: string
 }
