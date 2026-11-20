@@ -35,7 +35,7 @@ npm run dev
 
 On Windows PowerShell use `Copy-Item .env.example .env.local`.
 
-The application also needs `NEXT_PUBLIC_SITE_URL` set to its canonical origin in production (for email confirmation, password recovery and invitations). The Supabase project's Auth URL configuration must allow `/auth/callback`. The required Supabase client environment variables are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. These are publishable browser values; never put a Supabase service-role or secret key under `NEXT_PUBLIC_`. Configure values separately in Vercel's environment settings. Local `.env.local` is ignored by Git.
+Set `NEXT_PUBLIC_APP_URL=https://pointpluss.vercel.app` in the Vercel Production environment to ensure invitations, email confirmation and password recovery use the public site rather than a protected deployment-specific URL. The legacy `NEXT_PUBLIC_SITE_URL` is also recognized when `NEXT_PUBLIC_APP_URL` is absent; Vercel's `VERCEL_PROJECT_PRODUCTION_URL` is used as the next fallback. A new deployment is required for environment variable changes to take effect. The Supabase project's Auth URL configuration must allow `/auth/callback`. The required Supabase client environment variables are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. These are publishable browser values; never put a Supabase service-role or secret key under `NEXT_PUBLIC_`. Configure values separately in Vercel's environment settings. Local `.env.local` is ignored by Git.
 
 ## Source structure
 
