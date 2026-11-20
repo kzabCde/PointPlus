@@ -161,7 +161,7 @@ BEGIN
     p_book,p_recipient,p_art,p_note,p_key,p_page,p_x,p_y,p_rotation);
   v_request := (v_result->>'request_id')::uuid;
   IF v_request IS NULL THEN RAISE EXCEPTION 'Missing stamp request receipt'; END IF;
-  IF NOT FOUND THEN
+  IF v_prior.id IS NULL THEN
     -- The placement RPC already inserted an authorized and idempotent request.
     -- Scale is written in the same transaction as its approved mark (if any).
     UPDATE public.stamp_book_stamp_requests
