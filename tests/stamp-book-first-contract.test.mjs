@@ -63,7 +63,7 @@ test('new UI contains book form, 18-style picker, giver dialog, slot stamps and 
  assert.match(forms,/GiveStampDialog/)
  assert.match(forms,/ClaimStampRewardForm/)
  assert.match(forms,/ProcessBookRewardForm/)
- assert.match(read('app/(protected)/s/[spaceId]/stamp-books/[bookId]/page.tsx'),/Array\.from\(\{length:current\.target_snapshot\}/)
+ assert.match(read('features/stamp-books/journal.tsx'),/stampPage\(cycle\.target_snapshot, page\)/)
  const layout=read('app/(protected)/s/[spaceId]/layout.tsx')
  assert.match(layout,/stamp-books/)
  assert.doesNotMatch(layout,/href=\{base\+'\/missions'\}/)
@@ -182,8 +182,8 @@ test('Couple Stamp Books: both partners see their shared progress and only creat
  assert.match(data,/readableParticipants\(people,user\.id,manager,context\.space\.kind\)/)
  assert.match(data,/book\.created_by===user\.id/)
  const board=read('app/(protected)/s/[spaceId]/stamp-books/page.tsx')
- assert.match(board,/context\.space\.kind==='couple'/)
- assert.match(board,/<BookShelf books=\{current\} cycles=\{cycles\} people=\{eligible\}/)
+ assert.match(board,/context\.space\.kind\s*===\s*'couple'/)
+ assert.match(board,/<BookShelf books=\{shelf\} cycles=\{cycles\} people=\{eligible\}/)
  assert.match(read('features/stamp-books/presentation.tsx'),/latest\.get\(person\.id\)/)
  const newPage=read('app/(protected)/s/[spaceId]/stamp-books/new/page.tsx')
  assert.match(newPage,/space\.kind!=='couple'&&!canManage\(member\.role\)/)
@@ -195,7 +195,7 @@ test('Couple Stamp Books: both partners see their shared progress and only creat
  assert.match(actions,/space\.kind!=='couple'&&!canManage\(member\.role\)/)
  assert.match(actions,/book\.created_by!==user\.id/)
  const detail=read('app/(protected)/s/[spaceId]/stamp-books/[bookId]/page.tsx')
- assert.match(detail,/book\.created_by===context\.user\.id/)
+ assert.match(detail,/book\.created_by\s*===\s*context\.user\.id/)
  assert.match(detail,/ClaimStampRewardForm/)
 })
 
@@ -251,10 +251,10 @@ test('Couple Memory form is free-text, recipient-only and does not require fixed
  assert.match(actions,/export async function claimCoupleMemoryAction/)
  assert.match(actions,/pointplus_claim_couple_memory/)
  assert.match(actions,/p_message:message,p_key:key/)
- assert.match(detail,/context\.space\.kind==='couple'/)
+ assert.match(detail,/context\.space\.kind\s*===\s*'couple'/)
  assert.match(detail,/ClaimCoupleMemoryForm/)
- assert.match(detail,/book\.status==='active'/)
- assert.match(detail,/book\.status==='archived'/)
+ assert.match(detail,/book\.status\s*===\s*'active'/)
+ assert.match(detail,/book\.status\s*!==\s*'archived'/)
 })
 
 test('stamp feedback follows confirmed RPC outcomes', async () => {
@@ -276,9 +276,10 @@ test('stamp feedback follows confirmed RPC outcomes', async () => {
     eq() { return this },
     async maybeSingle() { return { data: { id: uuid }, error: null } },
    }),
-   rpc: async () => ({ data: { status: rpcStatus }, error: null }),
+   rpc: async () => ({ data: { status: rpcStatus, request_id: uuid }, error: null }),
   })
-  const { status, outcome } = await actions.giveStampAction({ status: 'idle', message: '' }, form)
+  const { status, outcome, receipt } = await actions.giveStampAction({ status: 'idle', message: '' }, form)
   assert.deepEqual({ status, outcome }, expected, rpcStatus)
+  assert.deepEqual(receipt, rpcStatus === 'approved' ? { kind: 'stamp', id: uuid } : undefined, rpcStatus)
  }
 })

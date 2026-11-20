@@ -12,8 +12,8 @@ import {
  claimStampRewardAction,claimCoupleMemoryAction,processStampClaimAction,updateStampBookAction,
  addStampRewardAction,type StampBookState,
 } from './actions'
-
-const idle:StampBookState={status:'idle',message:''}
+import { idle, useBookAction } from './motion'
+import { BookCover } from './presentation'
 function Result({ state }: { state: StampBookState }) {
  const [dismissed, setDismissed] = useState<StampBookState | null>(null)
  useEffect(() => {
@@ -103,6 +103,9 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
     <span>{index + 1}</span>{name}
    </li>)}
   </ol>
+  <div className="wizard-track" aria-hidden="true">
+   <span style={{ transform: 'scaleX(' + (step + 1) / names.length + ')' }}/>
+  </div>
   <h3 ref={heading} tabIndex={-1}>{names[step]}</h3>
   <div className="wizard-panel" hidden={step !== 0} data-wizard-step="0">
    <label htmlFor="stamp-book-title">ชื่อสมุด</label>
@@ -110,7 +113,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
    <label htmlFor="stamp-book-desc">คำอธิบาย (ไม่บังคับ)</label>
    <textarea className="input" id="stamp-book-desc" name="description" maxLength={2000} rows={3}/>
    <div className="wizard-cover">
-    <Image src={coverArt.png} width={76} height={76} alt=""/>
+    <BookCover assetId={cover}/>
     <div className="form-field">
      <label htmlFor="stamp-book-cover">ลายบนปก</label>
      <select className="input" id="stamp-book-cover" value={cover} onChange={e => setCover(e.target.value)}>
@@ -129,10 +132,13 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
    <fieldset className="stamp-picker-set">
     <legend>ผู้สะสม</legend>
     {!recipients.length && <p>ยังไม่มีผู้สะสมที่เลือกได้ <a className="text-link" href={'/s/' + spaceId + '/members'}>ดูสมาชิกในห้อง</a></p>}
-    {recipients.map(person => <label className="stamp-check" key={person.id}>
-     <input type="checkbox" name="recipient_id" value={person.id} defaultChecked={kind === 'personal' || person.user_id !== userId}/>
-     {person.display_name}{person.kind === 'child' ? ' (เด็ก)' : ''}
-    </label>)}
+    <div className="wizard-people">
+     {recipients.map((person, index) => <label className="stamp-check wizard-person" key={person.id}>
+      <input type={kind === 'couple' ? 'radio' : 'checkbox'} name="recipient_id" value={person.id}
+       defaultChecked={kind === 'couple' ? index === 0 : kind === 'personal' || person.user_id !== userId}/>
+      <span>{person.display_name}{person.kind === 'child' ? ' (เด็ก)' : ''}</span>
+     </label>)}
+    </div>
    </fieldset>
    {kind === 'couple' ? <>
     <input type="hidden" name="giver_id" value={userId}/>
@@ -140,10 +146,12 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
     <p className="muted">คุณให้แสตมป์คู่ของคุณได้ทันที</p>
    </> : <>
     <fieldset className="stamp-picker-set"><legend>ผู้ให้แสตมป์</legend>
-     {members.map(member => <label className="stamp-check" key={member.user_id}>
-      <input type="checkbox" name="giver_id" value={member.user_id} defaultChecked/>
-      {participants.find(person => person.user_id === member.user_id)?.display_name ?? 'สมาชิก'}
-     </label>)}
+     <div className="wizard-people">
+      {members.map(member => <label className="stamp-check wizard-person" key={member.user_id}>
+       <input type="checkbox" name="giver_id" value={member.user_id} defaultChecked/>
+       <span>{participants.find(person => person.user_id === member.user_id)?.display_name ?? 'สมาชิก'}</span>
+      </label>)}
+     </div>
     </fieldset>
     <SegmentedField label="วิธีให้แสตมป์" name="approval_policy" defaultValue="direct" options={[
      { value: 'direct', label: 'ให้ได้ทันที' },
@@ -163,7 +171,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
   </div>
   <div className="wizard-panel" hidden={step !== 2} data-wizard-step="2">
    <div className="wizard-preview">
-    <Image src={coverArt.png} alt="" width={76} height={76}/>
+    <BookCover assetId={cover}/>
     <div><strong>{title}</strong><div>{target} ดวงต่อรอบ · {review?.get('repeatable') === 'on' ? 'สะสมได้หลายรอบ' : 'สะสมรอบเดียว'}</div>
      <div>ผู้สะสม: {recipients.filter(person => review?.getAll('recipient_id').includes(person.id)).map(person => person.display_name).join(' · ')}</div>
      <div>ผู้ให้แสตมป์: {kind === 'couple' ? 'คุณ' : members.filter(member => review?.getAll('giver_id').includes(member.user_id)).map(member => participants.find(person => person.user_id === member.user_id)?.display_name ?? 'สมาชิก').join(' · ')}</div>
@@ -195,12 +203,12 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
  </form>
 }
 
-export function GiveStampDialog({spaceId,bookId,recipients,styleIds,canGive,stampKey}:{
- spaceId:string;bookId:string;recipients:Participant[];styleIds:string[];canGive:boolean;stampKey:string
+export function GiveStampDialog({spaceId,bookId,recipients,styleIds,canGive,stampKey,requiresApproval}:{
+ spaceId:string;bookId:string;recipients:Participant[];styleIds:string[];canGive:boolean;stampKey:string;requiresApproval:boolean
 }){
  const router=useRouter()
  const dialog=useRef<HTMLDialogElement>(null)
- const [state,action,pending]=useActionState(giveStampAction,idle)
+ const [state,action,pending]=useBookAction(giveStampAction)
  const styles=pointPlusStamps.filter(s=>styleIds.includes(s.id))
  const [selectedArt, setArt] = useState('')
  const art = styles.some(style => style.id === selectedArt) ? selectedArt : styles[0]?.id
@@ -220,9 +228,13 @@ export function GiveStampDialog({spaceId,bookId,recipients,styleIds,canGive,stam
  return <div>
   <button type="button" className="button button--primary" onClick={()=>dialog.current?.showModal()}>+ ให้แสตมป์</button>
   <dialog className="dialog stamp-dialog" ref={dialog} aria-labelledby="give-stamp-title"
+   aria-describedby={requiresApproval ? "give-stamp-approval" : undefined}
    onCancel={event => { if (pending) event.preventDefault() }}>
    <form action={action} onSubmit={() => setCompletedKey(stampKey)} className="social-form">
-    <h2 id="give-stamp-title">เลือกดวงแสตมป์</h2>
+    <header className="stamp-dialog__heading">
+     <h2 id="give-stamp-title">เลือกดวงแสตมป์</h2>
+     {requiresApproval && <p className="muted" id="give-stamp-approval">แสตมป์จะเพิ่มเมื่อผู้ดูแลอนุมัติ</p>}
+    </header>
 
     <input type="hidden" name="space_id" value={spaceId}/>
     <input type="hidden" name="book_id" value={bookId}/>
@@ -248,7 +260,7 @@ export function GiveStampDialog({spaceId,bookId,recipients,styleIds,canGive,stam
     </div>
     {state.status === 'error' && <Result state={state}/>}
     <div className="hero__actions">
-     <button className="button button--primary" type="submit" disabled={pending || (state.status === 'success' && completedKey === stampKey)}>{pending?'กำลังบันทึก…':'ยืนยันให้ 1 ดวง'}</button>
+     <button className="button button--primary" type="submit" disabled={pending || (state.status === 'success' && completedKey === stampKey)}>{pending ? 'กำลังบันทึก…' : requiresApproval ? 'ส่งคำขอแสตมป์' : 'ยืนยันให้ 1 ดวง'}</button>
      <button type="button" className="button button--secondary" disabled={pending} onClick={()=>dialog.current?.close()}>ปิด</button>
     </div>
    </form>
@@ -261,7 +273,7 @@ export function ClaimStampRewardForm({spaceId,bookId,cycleId,rewards,keyId}:{
  spaceId:string;bookId:string;cycleId:string;rewards:BookReward[];keyId:string
 }){
  const router=useRouter()
- const [state,action,pending]=useActionState(claimStampRewardAction,idle)
+ const [state,action,pending]=useBookAction(claimStampRewardAction)
  useEffect(()=>{if(state.status==='success')router.refresh()},[router,state.status])
  const available=rewards.filter(r=>r.active&&r.stock_remaining!==0)
  if(!available.length)return <p className="muted">ยังไม่มีรางวัลที่พร้อมให้เลือก</p>
@@ -289,7 +301,7 @@ export function ClaimCoupleMemoryForm({spaceId,bookId,cycleId,keyId}:{
  spaceId:string;bookId:string;cycleId:string;keyId:string
 }){
  const router=useRouter()
- const [state,action,pending]=useActionState(claimCoupleMemoryAction,idle)
+ const [state,action,pending]=useBookAction(claimCoupleMemoryAction)
  useEffect(()=>{if(state.status==='success')router.refresh()},[router,state.status])
  return <form action={action} className="stamp-reward-choice">
   <input type="hidden" name="space_id" value={spaceId}/>
@@ -312,7 +324,7 @@ export function ReviewStampForm({spaceId,bookId,requestId}:{
  spaceId:string;bookId:string;requestId:string
 }){
  const router=useRouter()
- const [state,action,pending]=useActionState(reviewStampAction,idle)
+ const [state,action,pending]=useBookAction(reviewStampAction)
  useEffect(()=>{if(state.status==='success')router.refresh()},[state.status,router])
  return <form action={action} className="hero__actions">
   <input type="hidden" name="space_id" value={spaceId}/><input type="hidden" name="book_id" value={bookId}/>
@@ -327,7 +339,7 @@ export function ProcessBookRewardForm({spaceId,bookId,claimId}:{
  spaceId:string;bookId:string;claimId:string
 }){
  const router=useRouter()
- const [state,action,pending]=useActionState(processStampClaimAction,idle)
+ const [state,action,pending]=useBookAction(processStampClaimAction)
  useEffect(()=>{if(state.status==='success')router.refresh()},[state.status,router])
  return <form action={action} className="hero__actions">
   <input type="hidden" name="space_id" value={spaceId}/><input type="hidden" name="book_id" value={bookId}/>

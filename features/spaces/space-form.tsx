@@ -40,7 +40,7 @@ export function CreateSpaceForm() {
 
 export function EditSpaceForm({ space }: { space: Space }) {
   const [state, action, pending] = useActionState(updateSpaceAction, initial)
-  return <form action={action} className="card">
+  return <form action={action} className="card stationery-form">
     <input type="hidden" name="space_id" value={space.id} />
     <FormField id="edit-space-name" name="name" label="ชื่อห้อง" required maxLength={100} defaultValue={space.name} />
     <div className="form-field"><label className="form-field__label" htmlFor="edit-space-timezone">เขตเวลา</label>

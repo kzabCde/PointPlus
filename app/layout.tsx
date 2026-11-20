@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import './motion.css'
 import './globals.css'
 
 export const viewport: Viewport = { viewportFit: 'cover', themeColor: '#fff8f0' }

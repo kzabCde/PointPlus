@@ -11,7 +11,7 @@ const initial: ProfileState = { status: 'idle', message: '' }
 export function ProfileForm({ profile, onboarding = false }: { profile: Profile; onboarding?: boolean }) {
   const [state, action, pending] = useActionState(saveProfileAction, initial)
   return (
-    <form action={action} className="card">
+    <form action={action} className="card stationery-form">
       <FormField id="display_name" name="display_name" label="ชื่อที่แสดง" maxLength={80}
         required defaultValue={profile.display_name === 'Member' ? '' : profile.display_name} />
       <div className="form-field">

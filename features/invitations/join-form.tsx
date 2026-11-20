@@ -18,7 +18,7 @@ export function JoinForm() {
     window.history.replaceState(null, '', '/join')
   }, [])
   return (
-    <div className="card">
+    <div className="card stationery-form">
       <h1 className="page-title">เข้าร่วมพื้นที่</h1>
       <p className="muted">ลิงก์เชิญส่วนตัวใช้ได้ครั้งเดียว</p>
       <form action={action}>

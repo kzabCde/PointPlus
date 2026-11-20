@@ -26,22 +26,24 @@ export function InviteForm({ spaceId, isOwner }: { spaceId: string; isOwner: boo
     }
   }
   return (
-    <form action={action} className="card">
-      <h2>เชิญคนสำคัญเข้าร่วมพื้นที่</h2>
+    <form action={action} className="card stationery-form">
+      <h3>เชิญเข้าห้อง</h3>
       <p className="muted">ส่งลิงก์ให้คนที่ต้องการเชิญ ลิงก์ใช้ได้ครั้งเดียว</p>
       <input type="hidden" name="space_id" value={spaceId} />
-      <div className="form-field">
-        <label className="form-field__label" htmlFor="invite-role">บทบาท</label>
-        <select id="invite-role" name="role" className="input" defaultValue="member">
-          <option value="member">สมาชิก</option>
-          {isOwner && <option value="admin">ผู้ดูแล</option>}
-        </select>
-      </div>
-      <div className="form-field">
-        <label className="form-field__label" htmlFor="invite-days">หมดอายุภายใน</label>
-        <select id="invite-days" name="days" className="input" defaultValue="7">
-          <option value="1">1 วัน</option><option value="3">3 วัน</option><option value="7">7 วัน</option><option value="30">30 วัน</option>
-        </select>
+      <div className="stationery-fields">
+        <div className="form-field">
+          <label className="form-field__label" htmlFor="invite-role">บทบาท</label>
+          <select id="invite-role" name="role" className="input" defaultValue="member">
+            <option value="member">สมาชิก</option>
+            {isOwner && <option value="admin">ผู้ดูแล</option>}
+          </select>
+        </div>
+        <div className="form-field">
+          <label className="form-field__label" htmlFor="invite-days">หมดอายุภายใน</label>
+          <select id="invite-days" name="days" className="input" defaultValue="7">
+            <option value="1">1 วัน</option><option value="3">3 วัน</option><option value="7">7 วัน</option><option value="30">30 วัน</option>
+          </select>
+        </div>
       </div>
       <Button type="submit" disabled={pending}>{pending ? 'กำลังสร้าง…' : 'สร้างลิงก์เชิญ'}</Button>
       {state.message && <p role="status" className={state.status === 'error' ? 'form-field__error' : 'status status--success'}>{state.message}</p>}

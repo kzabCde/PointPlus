@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { SectionHeader } from '@/components/ui/section-header'
 import { roomArt, roomKindLabels, roomRoleLabels } from '@/features/rooms/presentation'
 import { ResumeRoom } from '@/features/rooms/room-usage'
 import { requireUser } from '@/lib/auth/session'
@@ -14,8 +15,7 @@ export default async function RoomsPage() {
   const personal = spaces.filter(space => space.kind === 'personal')
   const destinations = [...rooms, ...personal]
   return <section className="room-launcher">
-    <h1 className="page-title">ห้องของฉัน</h1>
-    <p className="muted">เลือกห้องเพื่อเปิดสมุดสะสมของคุณ</p>
+    <SectionHeader title="ห้องของฉัน" heading="h1"/>
     {destinations.length > 0 && <ResumeRoom accountId={user.id} rooms={destinations} />}
     {destinations.length > 0 && <section aria-label="ห้องของคุณ" className="room-cards">
       {destinations.map(room => <Link href={'/s/' + room.id} className="room-card" data-kind={room.kind} key={room.id}>

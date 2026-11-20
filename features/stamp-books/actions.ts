@@ -4,12 +4,14 @@ import { revalidatePath } from 'next/cache'
 import { field, isUuid } from '@/lib/auth/validation'
 import { canManage, getSpaceContext } from '@/features/spaces/data'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
+import type { BookActivity } from './journal-model'
 
 export type StampBookState = {
   status: 'idle' | 'success' | 'error'
   message: string
   bookId?: string
   outcome?: 'pending' | 'rejected' | 'granted'
+  receipt?: BookActivity
 }
 const fail = (message:string):StampBookState => ({status:'error',message})
 const success = (message:string,bookId?:string):StampBookState => ({status:'success',message,bookId})
@@ -74,7 +76,11 @@ export async function giveStampAction(_prev:StampBookState,form:FormData):Promis
   switch (data?.status) {
     case 'pending': return { ...success('ส่งคำขอแล้ว · รออนุมัติ'), outcome: 'pending' }
     case 'rejected': return { ...success('คำขอแสตมป์ถูกปฏิเสธ'), outcome: 'rejected' }
-    case 'approved': return { ...success('เพิ่มแสตมป์ 1 ดวงแล้ว'), outcome: 'granted' }
+    case 'approved': return {
+      ...success('เพิ่มแสตมป์ 1 ดวงแล้ว'), outcome: 'granted',
+      receipt: typeof data.request_id === 'string' && isUuid(data.request_id)
+        ? { kind: 'stamp', id: data.request_id } : undefined,
+    }
     default: return fail('ยังยืนยันผลไม่ได้ กรุณาตรวจสอบสมุดก่อนส่งอีกครั้ง')
   }
 }
@@ -93,7 +99,9 @@ export async function reviewStampAction(_prev:StampBookState,form:FormData):Prom
   })
   if(error)return fail('ตรวจแสตมป์ไม่สำเร็จ: '+error.message)
   refresh(spaceId,bookId)
-  return success(decision==='approve'?'อนุมัติแสตมป์แล้ว':'ปฏิเสธคำขอแล้ว')
+  return decision === 'approve'
+    ? { ...success('อนุมัติแสตมป์แล้ว'), receipt: { kind: 'stamp', id: requestId } }
+    : success('ปฏิเสธคำขอแล้ว')
 }
 export async function claimStampRewardAction(_prev:StampBookState,form:FormData):Promise<StampBookState> {
   const spaceId=text(form,'space_id'),bookId=text(form,'book_id'),cycle=text(form,'cycle_id')
@@ -112,7 +120,7 @@ export async function claimStampRewardAction(_prev:StampBookState,form:FormData)
   })
   if(error)return fail('เลือกรางวัลไม่สำเร็จ: '+error.message)
   refresh(spaceId,bookId)
-  return success('เลือกรางวัลสำเร็จ รอการส่งมอบโดยผู้ดูแล')
+  return { ...success('เลือกรางวัลแล้ว · รอส่งมอบ'), receipt: { kind: 'requested', id: cycle } }
 }
 export async function claimCoupleMemoryAction(_prev:StampBookState,form:FormData):Promise<StampBookState> {
   const spaceId=text(form,'space_id'),bookId=text(form,'book_id'),cycle=text(form,'cycle_id')
@@ -132,7 +140,7 @@ export async function claimCoupleMemoryAction(_prev:StampBookState,form:FormData
   })
   if(error)return fail('แลกรางวัลไม่สำเร็จ: '+error.message)
   refresh(spaceId,bookId)
-  return success('แลกรางวัลแล้ว สมุดถูกเก็บไว้ในความทรงจำ')
+  return { ...success('ขอรางวัลแล้ว · เก็บสมุดเป็นความทรงจำ'), receipt: { kind: 'requested', id: cycle } }
 }
 
 export async function processStampClaimAction(_prev:StampBookState,form:FormData):Promise<StampBookState> {
@@ -153,7 +161,9 @@ export async function processStampClaimAction(_prev:StampBookState,form:FormData
   })
   if(error)return fail('ดำเนินการไม่สำเร็จ: '+error.message)
   refresh(spaceId,bookId)
-  return success(decision==='fulfilled'?'บันทึกการส่งมอบแล้ว':'ยกเลิกการส่งมอบแล้ว')
+  return decision === 'fulfilled'
+    ? { ...success('บันทึกการส่งมอบแล้ว'), receipt: { kind: 'fulfilled', id: claim } }
+    : success('ยกเลิกการส่งมอบแล้ว')
 }
 export async function updateStampBookAction(_prev:StampBookState,form:FormData):Promise<StampBookState> {
   const spaceId=text(form,'space_id'),bookId=text(form,'book_id'),title=text(form,'title')
