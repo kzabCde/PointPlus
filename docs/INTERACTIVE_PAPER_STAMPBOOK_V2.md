@@ -21,7 +21,7 @@ Branch: `feat/interactive-stampbook-v2` (based on `main`). **Never deploy or mer
 
 ## M02 — Server-authorized placement
 
-**Staged SQL, not applied to production:** `supabase/stamp-book-first/12_interactive_paper_stampbook.sql`
+**Production migration applied on 2026-11-20:** `20261120094702_pointplus_interactive_paper_stampbook_v2` (`12_interactive_paper_stampbook.sql`).
 
 Additive columns:
 - `stamp_books.layout_mode` (notebook by default)
@@ -67,4 +67,20 @@ Before release:
 6. Confirm Preview deployment is disabled before opening or updating a PR if the repository/project automatically deploys PRs.
 7. Apply audited SQL before deploying the new frontend; then deploy once after approval. Roll back application code safely if needed; keep additive columns and existing data rather than deleting marks.
 
-**Known limitations:** No live database migration has been applied from this branch. Browser two-account E2E and actual performance measurements are still required. Creative stamp overlap is allowed; automated collision relocation has not been implemented. A keyboard user can place at the paper center, but future precise keyboard positioning would improve accessibility.
+**Release notes:** Base paper migration 12 is applied to PointPlus Production. The new scale/rotation migration 13 is separate; verify its migration status independently before release. Browser two-account E2E and actual performance measurements are still required. Creative stamp overlap is allowed; automated collision relocation has not been implemented. A keyboard user can place at the paper center, but future precise keyboard positioning would improve accessibility.
+
+## M05 — Stamp sound, free rotation and resizing (2026-11-20)
+
+- The paper no longer artificially clamps the stamp center to a 10% inset. All normalized x/y values from 0 to 1 are valid; intentional edge clipping remains part of the scrapbook feel.
+- Scale is independently adjustable **40–250%** for each new stamp.
+- Rotation is adjustable through the full **360°** circle (-180..180 equivalent), not just +/-15°.
+- On touchscreens, a two-finger twist/pinch changes the *draft* stamp's rotation and size, without accidentally awarding a stamp or navigating the book. A separate tap stamps it; notebook page navigation remains available.
+- On desktop, sliders, 15-degree buttons and reset provide precise control; keyboard arrows continue to move draft placement.
+- Approved and pending stamp marks include their own scale/rotation. Historical marks without scale render at 100%. Archived books remain read-only.
+- Sound effects: stamp thump, page turn, completion and reward reveal use local Web Audio synthesis. No microphone, TTS, third-party audio, tracking or streamed media.
+- An accessible sound toggle and volume control persist per browser using `localStorage`. Browser interaction is required before starting audio; if Web Audio is unavailable, stamp operations continue silently.
+- **SQL migration staged:** `supabase/stamp-book-first/13_free_transform_stamp_sound.sql`. It adds nullable `scale_factor` to approved marks and stamp requests, extends legal rotations and safely adds `pointplus_give_stamp_freely` while keeping `pointplus_give_stamp_at` backwards compatible.
+- The existing historical and reward/claim ledgers are not replaced or reset.
+- Verify latest GitHub CI as well as authenticated two-member browser tests before merging or deploying.
+
+**Important:** Do not re-run migration 12, already applied in Production. Apply migration 13 exactly once, after verifying its dependency and committed SQL. SQL readiness is not permission to deploy the frontend automatically.
