@@ -102,6 +102,27 @@ export async function claimStampRewardAction(_prev:StampBookState,form:FormData)
   refresh(spaceId,bookId)
   return success('เลือกรางวัลสำเร็จ รอการส่งมอบโดยผู้ดูแล')
 }
+export async function claimCoupleMemoryAction(_prev:StampBookState,form:FormData):Promise<StampBookState> {
+  const spaceId=text(form,'space_id'),bookId=text(form,'book_id'),cycle=text(form,'cycle_id')
+  const key=text(form,'idempotency_key'),message=text(form,'reward_message')
+  if(![spaceId,bookId,cycle,key].every(isUuid)||message.length<1||message.length>1000)
+    return fail('กรุณาพิมพ์ข้อความรางวัล 1–1000 ตัวอักษร')
+  const {supabase,space}=await getSpaceContext(spaceId)
+  if(space.kind!=='couple')return fail('การแลกรางวัลนี้ใช้เฉพาะสมุดคู่รัก')
+  const {data:book,error:scopeError}=await supabase.from('stamp_books')
+    .select('id').eq('id',bookId).eq('space_id',spaceId).maybeSingle()
+  if(scopeError||!book)return fail('ไม่พบสมุดในห้องนี้')
+  const {data:completedCycle,error:cycleError}=await supabase.from('stamp_book_cycles')
+    .select('id').eq('id',cycle).eq('book_id',bookId).eq('space_id',spaceId).maybeSingle()
+  if(cycleError||!completedCycle)return fail('ไม่พบรอบสะสมในสมุดนี้')
+  const {error}=await supabase.rpc('pointplus_claim_couple_memory',{
+    p_cycle:cycle,p_message:message,p_key:key,
+  })
+  if(error)return fail('แลกรางวัลไม่สำเร็จ: '+error.message)
+  refresh(spaceId,bookId)
+  return success('แลกรางวัลแล้ว สมุดถูกเก็บไว้ในความทรงจำ')
+}
+
 export async function processStampClaimAction(_prev:StampBookState,form:FormData):Promise<StampBookState> {
   const spaceId=text(form,'space_id'),bookId=text(form,'book_id'),claim=text(form,'claim_id')
   const decision=text(form,'decision')
