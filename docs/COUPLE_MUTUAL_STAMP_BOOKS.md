@@ -34,3 +34,13 @@ All synthetic book, award and claim rows were rolled back. No new test book, mar
 The Next.js UI and Server Action updates live on a feature branch, not `main`, until approved for merge. Run existing GitHub Actions contract tests, TypeScript typecheck and build before release. Browser-based test with two distinct real sessions is still required, as is restored-backup testing and a full rollout review. Do not deploy a preview or production environment from this change in isolation.
 
 **Rollback caution:** restoring the prior creator/manager authorization rules would remove create/edit/give rights for non-manager Couple members, including already-created books; the underlying books and awards would remain intact. Prefer a reviewed forward fix for issues affecting historical couple books.
+
+## v1.2: free-text reward request & memory archive
+
+Once the recipient has collected all target stamps in their Couple Book, they enter a free-text reward message (1–1000 characters) and submit it. The **recipient**, not the creator, invokes the claim. This atomically creates a pending reward claim and sets that book to `archived`. The creator can then mark delivery fulfilled or canceled. The message, the completed stamp pages, giver notes, timestamps and claim history remain readable to both members. Archive does not delete anything.
+
+The v1.2 migration `08_couple_memory_redemption.sql` disables automatic repeat cycles for future Couple books and blocks old fixed-option rewards specifically on Couple Books (other Room types are unchanged). It uses an FK-compatible reward option row for each free-text claim and preserves the full text in `stamp_book_claims.reward_title_snapshot`. The book remains archived even while the physical reward is pending delivery. The old `stamp_book_claims` uniqueness constraint prevents multiple claims per completed cycle. A repeat of the **identical** request key and text returns the original claim; different attempts fail.
+
+The optional feature-pause SQL is `09_couple_memory_redemption_rollback.sql`. It revokes new redemption access but **never reopens previously archived books or deletes memories**. Always prefer a corrective forward migration where possible.
+
+Live database target: `gczribbtkfvhpzzupqre`. Do not merge or deploy frontend from PR #15 until CI and two-user browser E2E pass.
