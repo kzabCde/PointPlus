@@ -56,3 +56,8 @@ export function stampGestureTransform(
     rotation: normalizeStampRotation(initial.rotation + (current.angle - initial.angle) * 180 / Math.PI),
   }
 }
+
+/** Retained for the original deterministic paper layout tests. */
+export function deterministicRotation(x: number, y: number) {
+  return Math.round(((x * 137 + y * 233) % 13) - 6)
+}
