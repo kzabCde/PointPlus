@@ -38,8 +38,8 @@ export async function createStampBookAction(_prev:StampBookState, form:FormData)
      !recipients.every(isUuid)||!givers.every(isUuid)||
      !styles.every(id=>pointPlusStamps.some(s=>s.id===id))||
      rewards.some(s=>s.length>160)) return fail('กรุณาตรวจชื่อ จำนวนช่อง สมาชิก ผู้ให้แสตมป์ ลาย และรายการรางวัล')
-  const {supabase,member}=await getSpaceContext(spaceId)
-  if(!canManage(member.role)) return fail('เฉพาะผู้ดูแลห้องที่สร้างสมุดได้')
+  const {supabase,member,space}=await getSpaceContext(spaceId)
+  if(space.kind!=='couple'&&!canManage(member.role)) return fail('เฉพาะผู้ดูแลห้องที่สร้างสมุดได้')
   const {data,error}=await supabase.rpc('pointplus_create_stamp_book',{
     p_space:spaceId,p_title:title,p_description:description||null,p_target:target,
     p_repeatable:form.get('repeatable')==='on',
@@ -107,11 +107,14 @@ export async function processStampClaimAction(_prev:StampBookState,form:FormData
   const decision=text(form,'decision')
   if(![spaceId,bookId,claim].every(isUuid)||!['fulfilled','canceled'].includes(decision))
     return fail('ข้อมูลการส่งมอบไม่ถูกต้อง')
-  const {supabase,member}=await getSpaceContext(spaceId)
-  if(!canManage(member.role))return fail('เฉพาะผู้ดูแลห้องที่ส่งมอบรางวัลได้')
-  const {data,error:scopeError}=await supabase.from('stamp_book_claims').select('id')
-    .eq('id',claim).eq('book_id',bookId).eq('space_id',spaceId).maybeSingle()
-  if(scopeError||!data)return fail('ไม่พบรายการรางวัลในห้อง')
+  const {supabase,member,space,user}=await getSpaceContext(spaceId)
+  if(space.kind!=='couple'&&!canManage(member.role))return fail('เฉพาะผู้ดูแลห้องที่ส่งมอบรางวัลได้')
+  const [{data,error:scopeError},{data:book,error:bookError}]=await Promise.all([
+   supabase.from('stamp_book_claims').select('id').eq('id',claim).eq('book_id',bookId).eq('space_id',spaceId).maybeSingle(),
+   supabase.from('stamp_books').select('id,created_by').eq('id',bookId).eq('space_id',spaceId).maybeSingle(),
+  ])
+  if(scopeError||bookError||!data||!book)return fail('ไม่พบรายการรางวัลในห้อง')
+  if(space.kind==='couple'&&book.created_by!==user.id)return fail('ผู้สร้างสมุดเท่านั้นที่ส่งมอบรางวัลนี้ได้')
   const {error}=await supabase.rpc('pointplus_process_stamp_book_claim',{
     p_claim:claim,p_decision:decision,
   })
@@ -126,10 +129,11 @@ export async function updateStampBookAction(_prev:StampBookState,form:FormData):
   if(![spaceId,bookId].every(isUuid)||title.length<1||title.length>160||
     description.length>2000||!['active','paused','archived'].includes(status)||
     !Number.isInteger(target)||target<1||target>100)return fail('ข้อมูลสมุดไม่ถูกต้อง')
-  const {supabase,member}=await getSpaceContext(spaceId)
-  if(!canManage(member.role))return fail('ไม่มีสิทธิ์แก้ไขสมุด')
-  const {data,error:scopeError}=await supabase.from('stamp_books').select('id').eq('id',bookId).eq('space_id',spaceId).maybeSingle()
+  const {supabase,member,space,user}=await getSpaceContext(spaceId)
+  if(space.kind!=='couple'&&!canManage(member.role))return fail('ไม่มีสิทธิ์แก้ไขสมุด')
+  const {data,error:scopeError}=await supabase.from('stamp_books').select('id,created_by').eq('id',bookId).eq('space_id',spaceId).maybeSingle()
   if(scopeError||!data)return fail('ไม่พบสมุดในห้อง')
+  if(space.kind==='couple'&&data.created_by!==user.id)return fail('ผู้สร้างสมุดเท่านั้นที่แก้ไขสมุดนี้ได้')
   const {error}=await supabase.rpc('pointplus_update_stamp_book',{
     p_book:bookId,p_title:title,p_description:description||null,p_status:status,p_target:target,
   })
@@ -144,10 +148,11 @@ export async function addStampRewardAction(_prev:StampBookState,form:FormData):P
   if(![spaceId,bookId].every(isUuid)||title.length<1||title.length>160||
     description.length>2000||(stock!==null&&(!Number.isInteger(stock)||stock<0)))
     return fail('ข้อมูลรางวัลไม่ถูกต้อง')
-  const {supabase,member}=await getSpaceContext(spaceId)
-  if(!canManage(member.role))return fail('ไม่มีสิทธิ์เพิ่มรางวัล')
-  const {data,error:scopeError}=await supabase.from('stamp_books').select('id').eq('id',bookId).eq('space_id',spaceId).maybeSingle()
+  const {supabase,member,space,user}=await getSpaceContext(spaceId)
+  if(space.kind!=='couple'&&!canManage(member.role))return fail('ไม่มีสิทธิ์เพิ่มรางวัล')
+  const {data,error:scopeError}=await supabase.from('stamp_books').select('id,created_by').eq('id',bookId).eq('space_id',spaceId).maybeSingle()
   if(scopeError||!data)return fail('ไม่พบสมุดนี้')
+  if(space.kind==='couple'&&data.created_by!==user.id)return fail('ผู้สร้างสมุดเท่านั้นที่เพิ่มรางวัลได้')
   const {error}=await supabase.rpc('pointplus_add_stamp_book_reward',{
     p_book:bookId,p_title:title,p_description:description||null,p_stock:stock,
   })
