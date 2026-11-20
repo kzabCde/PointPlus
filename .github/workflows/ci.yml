@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2, feat/restore-stamp-cards-choice]
+    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2, feat/restore-stamp-cards-choice, feat/tap-stamp-card-slots]
   pull_request:
 
 permissions:
@@ -51,6 +51,8 @@ jobs:
         run: node --test tests/stamp-book-journal.test.mjs tests/interactive-paper-stampbook.test.mjs
       - name: Verify Stamp Card / Book choice and shared reward flow
         run: node --test tests/stamp-card-choice.test.mjs
+      - name: Verify tap-to-stamp card slots and slot RPC
+        run: node --test tests/stamp-card-tap-slots.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build

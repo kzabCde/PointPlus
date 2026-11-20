@@ -194,8 +194,10 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
       onPointerUp={finishSwipe} onPointerCancel={() => { touch.current = null }}>
       <section className="journal-leaf journal-leaf--paper" aria-label={layoutMode === 'stamp_card' ? 'ช่องสะสมแสตมป์' : 'แสตมป์ หน้า ' + (page + 1)}>
         {layoutMode === 'stamp_card'
-          ? <StampCollectionCard cycle={cycle} pendingRequests={pendingRequests}
-              impactRequestId={placed}/>
+          ? <StampCollectionCard cycle={cycle} pendingRequests={cycle.completed_at ? [] : pendingRequests}
+              impactRequestId={placed} spaceId={spaceId} bookId={bookId}
+              participantId={participantId} styleIds={styleIds}
+              canGive={canGive && !cycle.completed_at && cycle.progress_count < cycle.target_snapshot}/>
           : <StampPaper spaceId={spaceId} bookId={bookId} participantId={participantId}
               styleIds={styleIds} marks={cycle.marks} pendingRequests={pendingRequests} page={page} layoutMode={layoutMode}
               canGive={canGive && !cycle.completed_at && cycle.progress_count < cycle.target_snapshot}

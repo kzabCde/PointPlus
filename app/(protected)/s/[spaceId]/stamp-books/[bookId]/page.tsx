@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { randomUUID } from 'node:crypto'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
 import { loadStampBookDetail } from '@/features/stamp-books/data'
-import { ClaimStampRewardForm, ClaimCoupleMemoryForm, ReviewStampForm, ProcessBookRewardForm, GiveStampDialog } from '@/features/stamp-books/forms'
+import { ClaimStampRewardForm, ClaimCoupleMemoryForm, ReviewStampForm, ProcessBookRewardForm } from '@/features/stamp-books/forms'
 import { StampBookJournal } from '@/features/stamp-books/journal'
 import { activityKey, type JournalCycle } from '@/features/stamp-books/journal-model'
 import { BookMotionProvider } from '@/features/stamp-books/motion'
@@ -51,7 +51,7 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
         if (mark.request_id) confirmed.push(activityKey({ kind: 'stamp', id: mark.request_id }))
         return {
           id: mark.id, request_id: mark.request_id, asset_id: mark.asset_id, stamped_at: mark.stamped_at, note: mark.note,
-          page_index: mark.page_index, position_x: mark.position_x, position_y: mark.position_y, rotation_deg: mark.rotation_deg, scale_factor: mark.scale_factor,
+          page_index: mark.page_index, position_x: mark.position_x, position_y: mark.position_y, rotation_deg: mark.rotation_deg, scale_factor: mark.scale_factor, slot_index: mark.slot_index,
           giver: giverNames.get(mark.giver_user_id) ?? 'สมาชิกในห้อง', date: readable(mark.stamped_at),
         }
       })
@@ -95,10 +95,6 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
         </div>
         <div className="hero__actions">
           <BookSoundControls/>
-          {book.layout_mode === 'stamp_card' && <GiveStampDialog
-            spaceId={spaceId} bookId={bookId} recipients={giverRecipients}
-            styleIds={styles} canGive={isGiver} stampKey={randomUUID()}
-            requiresApproval={book.approval_policy === 'approval_required'}/>}
           {book.status === 'archived' && <Link href={bookPath + '?view=archive'}
             className="button button--secondary">กลับไปสมุดเก็บถาวร</Link>}
           

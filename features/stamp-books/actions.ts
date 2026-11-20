@@ -67,6 +67,12 @@ export async function giveStampAction(_prev:StampBookState,form:FormData):Promis
   const y=Number(text(form,'position_y')),rotation=Number(text(form,'rotation_deg'))
   const hasScale=form.has('scale_factor')
   const scale=Number(text(form,'scale_factor'))
+  const hasCardSlot=form.has('card_slot')
+  const cardSlotText=text(form,'card_slot')
+  const cardSlot=Number(cardSlotText)
+  if(hasCardSlot&&(hasPosition||hasScale||!(/^(0|[1-9][0-9]*)$/).test(cardSlotText)||
+     !Number.isInteger(cardSlot)||cardSlot<0||cardSlot>99))
+    return fail('กรุณาเลือกช่องสะสมที่ถูกต้อง')
   if(hasScale&&!hasPosition) return fail('ต้องระบุตำแหน่งแสตมป์เมื่อปรับขนาด')
   if(hasScale&&(!Number.isFinite(scale)||scale<0.4||scale>2.5))
     return fail('ขนาดแสตมป์ต้องอยู่ระหว่าง 40 ถึง 250 เปอร์เซ็นต์')
@@ -79,10 +85,11 @@ export async function giveStampAction(_prev:StampBookState,form:FormData):Promis
   const {data:book,error:bookError}=await supabase.from('stamp_books')
     .select('id').eq('space_id',spaceId).eq('id',bookId).maybeSingle()
   if(bookError||!book) return fail('ไม่พบสมุดนี้ในห้อง')
-  const {data,error}=await supabase.rpc(hasScale ? 'pointplus_give_stamp_freely' : hasPosition ? 'pointplus_give_stamp_at' : 'pointplus_give_stamp',{
+  const {data,error}=await supabase.rpc(hasCardSlot ? 'pointplus_give_stamp_to_card' : hasScale ? 'pointplus_give_stamp_freely' : hasPosition ? 'pointplus_give_stamp_at' : 'pointplus_give_stamp',{
     p_book:bookId,p_recipient:person,p_art:art,p_note:note||null,p_key:key,
     ...(hasPosition ? {p_page:page,p_x:x,p_y:y,p_rotation:rotation} : {}),
     ...(hasScale ? {p_scale:scale} : {}),
+    ...(hasCardSlot ? {p_slot:cardSlot} : {}),
   })
   if (error) {
     const permissionError = error.code === '42501' ||
