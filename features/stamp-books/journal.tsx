@@ -7,6 +7,7 @@ import { locateActivity, stampPage, type BookActivity, type JournalCycle, type J
 import { useBookMotion } from './motion'
 import { useBookSound } from './sound'
 import { StampPaper } from './paper'
+import { StampCollectionCard } from './card'
 import { paperPageCount } from './paper-model'
 import { BookProgress } from './presentation'
 import type { BookRequest } from './data'
@@ -54,7 +55,7 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
   styleIds: string[]
   pendingRequests: BookRequest[]
   canGive: boolean
-  layoutMode: 'single_sheet' | 'notebook'
+  layoutMode: 'single_sheet' | 'notebook' | 'stamp_card'
 }) {
   const motion = useBookMotion()
   const sound = useBookSound()
@@ -72,10 +73,10 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
   const touch = useRef<{ id: number; x: number; y: number } | null>(null)
 
   const cycle = cycles.find(item => item.id === view.cycleId) ?? cycles[0]
-  const total = paperPageCount(cycle.target_snapshot, layoutMode)
+  const total = layoutMode === 'stamp_card' ? 1 : paperPageCount(cycle.target_snapshot, layoutMode)
   const page = Math.min(view.page, total - 1)
   const slots = stampPage(cycle.target_snapshot, page)
-  const marks = cycle.marks.filter((mark, index) => (layoutMode === 'single_sheet' ? 0 : mark.page_index ?? Math.floor(index / 6)) === page)
+  const marks = layoutMode === 'stamp_card' ? cycle.marks : cycle.marks.filter((mark, index) => (layoutMode === 'single_sheet' ? 0 : mark.page_index ?? Math.floor(index / 6)) === page)
   const placed = view.activity?.kind === 'stamp' ? view.activity.id : undefined
   const activityKind = view.activity?.kind
   const reveal = activityKind === cycle.claim?.status ? activityKind : undefined
@@ -182,7 +183,7 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
       {total > 1 && <button className="button button--secondary journal-page-button" type="button"
         aria-label="หน้าก่อน" aria-disabled={page === 0} aria-controls={journalId + '-spread'}
         onClick={() => goToPage(page - 1)}><span aria-hidden="true">←</span></button>}
-      <span className="journal-pagination__position" role="status">หน้า {page + 1} / {total}</span>
+      <span className="journal-pagination__position" role="status">{layoutMode === 'stamp_card' ? 'การ์ดสะสม' : 'หน้า ' + (page + 1) + ' / ' + total}</span>
       {total > 1 && <button className="button button--secondary journal-page-button" type="button"
         aria-label="หน้าถัดไป" aria-disabled={page === total - 1} aria-controls={journalId + '-spread'}
         onClick={() => goToPage(page + 1)}><span aria-hidden="true">→</span></button>}
@@ -191,17 +192,20 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
     <div className="journal-spread journal-spread--paper" data-layout={layoutMode} id={journalId + '-spread'}
       ref={slotRef} data-legacy-slots={slots.length} onPointerDown={startSwipe}
       onPointerUp={finishSwipe} onPointerCancel={() => { touch.current = null }}>
-      <section className="journal-leaf journal-leaf--paper" aria-label={'แสตมป์ หน้า ' + (page + 1)}>
-        <StampPaper spaceId={spaceId} bookId={bookId} participantId={participantId}
-          styleIds={styleIds} marks={cycle.marks} pendingRequests={pendingRequests} page={page} layoutMode={layoutMode}
-          canGive={canGive && !cycle.completed_at && cycle.progress_count < cycle.target_snapshot}
-          impactRequestId={placed}/>
+      <section className="journal-leaf journal-leaf--paper" aria-label={layoutMode === 'stamp_card' ? 'ช่องสะสมแสตมป์' : 'แสตมป์ หน้า ' + (page + 1)}>
+        {layoutMode === 'stamp_card'
+          ? <StampCollectionCard cycle={cycle} pendingRequests={pendingRequests}
+              impactRequestId={placed}/>
+          : <StampPaper spaceId={spaceId} bookId={bookId} participantId={participantId}
+              styleIds={styleIds} marks={cycle.marks} pendingRequests={pendingRequests} page={page} layoutMode={layoutMode}
+              canGive={canGive && !cycle.completed_at && cycle.progress_count < cycle.target_snapshot}
+              impactRequestId={placed}/>}
       </section>
       <section className="journal-leaf journal-leaf--notes" aria-labelledby={journalId + '-notes'}>
         <h4 id={journalId + '-notes'}>บันทึกหน้านี้</h4>
         <StampNotes marks={marks}/>
       </section>
-      {view.turn && <span key={view.turn.step} className="journal-turn-leaf"
+      {layoutMode !== 'stamp_card' && view.turn && <span key={view.turn.step} className="journal-turn-leaf"
         data-turn={view.turn.direction} aria-hidden="true"/>}
     </div>
 
