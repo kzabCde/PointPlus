@@ -413,6 +413,8 @@ export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
   <input type="hidden" name="giver_id" value={userId}/>
   <input type="hidden" name="approval_policy" value="direct"/>
   <input type="hidden" name="asset_id" value={cover}/>
+  {pointPlusStamps.filter(stamp => stamp.id !== cover).map(stamp =>
+   <input type="hidden" key={stamp.id} name="asset_id" value={stamp.id}/>)}
   <input type="hidden" name="rewards" value="ข้อความรางวัลเมื่อสะสมครบเล่ม"/>
   <h3>สมุดเล่มใหม่สำหรับ {partner.display_name}</h3>
   <label htmlFor="couple-book-title">ชื่อสมุด</label>
