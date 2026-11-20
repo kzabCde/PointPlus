@@ -47,8 +47,9 @@ try {
 
     await book.getByRole('button', { name: 'หน้าถัดไป' }).press('Enter')
     await book.getByText('จดหมายถึงเธอ', { exact: true }).waitFor()
-    await book.getByRole('button', { name: 'หน้าก่อน' }).click()
+    await book.getByRole('button', { name: 'หน้าถัดไป' }).press('ArrowLeft')
     await book.getByText('หน้า 1 / 2', { exact: true }).waitFor()
+    assert.equal(await book.evaluate(element => element.getAnimations({ subtree: true }).length), 0)
     await book.getByRole('button', { name: 'ปิดสมุด' }).press('Space')
     await book.getByRole('button', { name: 'เปิดสมุดดู' }).waitFor()
     assert.equal(await book.getByText('ขอบคุณที่คอยอยู่ข้าง ๆ', { exact: true }).count(), 0)
@@ -68,6 +69,28 @@ try {
   await page.getByLabel('อีเมล').waitFor()
   assert.deepEqual(errors, [])
   console.log('Sample stamp and public auth links passed')
+
+  const motionContext = await browser.newContext({ locale: 'th-TH', viewport: { width: 1440, height: 900 } })
+  const animated = await motionContext.newPage()
+  animated.on('pageerror', error => errors.push(error.message))
+  await animated.addInitScript(() => {
+    window.livingMotion = []
+    for (const event of ['animationstart', 'transitionstart']) {
+      document.addEventListener(event, entry => window.livingMotion.push(entry.animationName ?? entry.propertyName))
+    }
+  })
+  await animated.goto(origin)
+  await animated.locator('.living-book[data-revealed]').waitFor()
+  await animated.getByRole('button', { name: 'เปิดสมุดดู' }).click()
+  await animated.waitForFunction(() => window.livingMotion.includes('transform'))
+  await animated.getByRole('button', { name: 'หน้าถัดไป' }).click()
+  await animated.waitForFunction(() => window.livingMotion.some(name => name.includes('leaf-turn')))
+  await animated.locator('.living-story--stamp').scrollIntoViewIfNeeded()
+  await animated.getByRole('button', { name: 'ลองประทับแสตมป์' }).click()
+  await animated.waitForFunction(() => window.livingMotion.some(name => name.includes('press-die')))
+  await animated.waitForFunction(() => window.livingMotion.includes('pointplus-heart-reaction'))
+  assert.deepEqual(errors, [])
+  console.log('Cover, page turn, press, mascot reaction and scroll entry passed with motion enabled')
 } finally {
   await browser.close()
 }

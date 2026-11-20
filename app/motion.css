@@ -1,11 +1,15 @@
 :root {
-  --motion-press: 150ms;
+  --motion-press: 120ms;
   --motion-hover: 180ms;
   --motion-dialog: 220ms;
-  --motion-enter: 280ms;
+  --motion-enter: 340ms;
   --motion-progress: 450ms;
   --motion-stamp: 450ms;
   --motion-page: 600ms;
+  --motion-cover: 780ms;
+  --motion-leaf: 360ms;
+  --motion-leaf-animation: pointplus-leaf-turn;
+  --motion-breath: 2800ms;
   --motion-reveal: 900ms;
   --motion-out: cubic-bezier(.22, 1, .36, 1);
   --motion-turn: cubic-bezier(.46, .04, .26, 1);
@@ -21,6 +25,9 @@
     --motion-progress: 0ms;
     --motion-stamp: 0ms;
     --motion-page: 0ms;
+    --motion-cover: 0ms;
+    --motion-leaf: 0ms;
+    --motion-breath: 0ms;
     --motion-reveal: 0ms;
   }
 }
@@ -28,4 +35,10 @@
 @keyframes pointplus-enter {
   from { opacity: .72; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
+}
+
+@keyframes pointplus-leaf-turn {
+  0% { opacity: .87; transform: rotateY(0deg); }
+  55% { opacity: .62; transform: rotateY(calc(102deg * var(--leaf-turn, -1))); }
+  100% { opacity: 0; transform: rotateY(calc(169deg * var(--leaf-turn, -1))); }
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Brand } from '@/components/brand/pointplus-mark'
+import { LandingReveals } from '@/components/landing/landing-reveals'
 import { InteractiveStampBook } from '@/components/landing/interactive-stamp-book'
 import { flowersStamp, heartStamp, letterStamp } from '@/components/landing/illustrative-stamps'
 import { StampPressPreview } from '@/components/landing/stamp-press-preview'
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return <div className="living-landing">
+    <LandingReveals/>
     <header className="site-header">
       <div className="container site-header__inner">
         <Brand/>
@@ -41,7 +43,7 @@ export default function HomePage() {
 
       <div className="living-stories" id="how-it-works">
         <section className="living-story" id="spaces" aria-labelledby="create-book-heading">
-          <div className="container living-story__grid">
+          <div className="container living-story__grid" data-living-reveal>
             <div className="living-story__copy">
               <h2 id="create-book-heading">เริ่มจากสมุดหนึ่งเล่ม</h2>
               <p>ตั้งชื่อสมุด เลือกลายบนปก และกำหนดจำนวนแสตมป์ที่อยากสะสม สมุดเล่มนี้มีไว้ให้คนสำคัญของคุณโดยเฉพาะ</p>
@@ -63,7 +65,7 @@ export default function HomePage() {
         </section>
 
         <section className="living-story living-story--stamp" aria-labelledby="give-stamp-heading">
-          <div className="container living-story__grid">
+          <div className="container living-story__grid" data-living-reveal>
             <div className="living-story__copy">
               <h2 id="give-stamp-heading">ให้แสตมป์แทนคำขอบคุณ</h2>
               <p>นทีให้แสตมป์ในสมุดของเตยได้ และเตยก็สร้างสมุดอีกเล่มไว้ให้แสตมป์นทีได้ ต่างคนต่างสะสมเรื่องราวในสมุดของตัวเอง</p>
@@ -77,7 +79,7 @@ export default function HomePage() {
         </section>
 
         <section className="living-story" aria-labelledby="memories-heading">
-          <div className="container living-story__grid">
+          <div className="container living-story__grid" data-living-reveal>
             <div className="living-story__copy">
               <h2 id="memories-heading">ครบเล่มแล้ว เก็บไว้เป็นความทรงจำ</h2>
               <p>เมื่อสมุดคู่รักสะสมครบ ผู้สะสมแลกรางวัลและเขียนข้อความถึงอีกคนได้ สมุดจะปิดและเก็บไว้ให้ทั้งคู่กลับมาเปิดอ่าน</p>

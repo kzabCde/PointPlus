@@ -1,9 +1,10 @@
 'use client'
 
 import Image from 'next/image'
-import { useId, useState } from 'react'
+import { useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { PaperBook, PaperLeaf } from '@/components/motion/paper-book'
+import { HeartMascot } from './heart-mascot'
 import { flowersStamp, heartStamp, letterStamp } from './illustrative-stamps'
 
 const spreads = [
@@ -14,15 +15,31 @@ const spreads = [
 export function InteractiveStampBook() {
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
+  const [turn, setTurn] = useState<{ sequence: number; direction: 'forward' | 'backward' }>()
+  const sequence = useRef(0)
   const pagesId = useId()
   const current = spreads[page]
 
-  return <figure className="living-book" data-open={open}>
+  function goToPage(next: number) {
+    if (!open || next < 0 || next >= spreads.length || next === page) return
+    setTurn({ sequence: ++sequence.current, direction: next > page ? 'forward' : 'backward' })
+    setPage(next)
+  }
+
+  function pageKeys(event: KeyboardEvent<HTMLDivElement>) {
+    if (!open || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault()
+      goToPage(page + (event.key === 'ArrowRight' ? 1 : -1))
+    }
+  }
+
+  return <figure className="living-book" data-open={open} data-living-reveal>
     <div className="living-book__table">
       <div className="living-book__scene">
-        <PaperBook open={open} pagesId={pagesId} cover={
+        <PaperBook open={open} pagesId={pagesId} turn={turn} cover={
           <div className="living-book__cover-print">
-            <Image src="/icons/icon-192x192.png" width={100} height={100} alt="" loading="eager"/>
+            <HeartMascot/>
             <span>สมุดของเรา</span>
           </div>
         }>
@@ -34,7 +51,7 @@ export function InteractiveStampBook() {
             </div>}
           </PaperLeaf>
           <PaperLeaf>
-            {open && <ul className="living-book__slots" aria-label="ช่องแสตมป์ในหน้าตัวอย่าง">
+            {open && <ul className="living-book__slots" role="list" aria-label="ช่องแสตมป์ในหน้าตัวอย่าง">
               {Array.from({ length: 3 }, (_, index) => <li key={index}>
                 {current.stamps[index]
                   ? <Image src={current.stamps[index]} width={72} height={72} alt={'แสตมป์ดวงที่ ' + (index + 1)}/>
@@ -44,13 +61,13 @@ export function InteractiveStampBook() {
           </PaperLeaf>
         </PaperBook>
       </div>
-      <div className="living-book__controls">
+      <div className="living-book__controls" onKeyDown={pageKeys}>
         <button className="living-book__arrow" aria-label="หน้าก่อน" type="button"
-          disabled={page === 0} onClick={() => setPage(value => value - 1)}>←</button>
+          aria-disabled={page === 0} aria-controls={pagesId} onClick={() => goToPage(page - 1)}>←</button>
         <Button className="living-book__toggle" variant="secondary" aria-expanded={open} aria-controls={pagesId}
-          onClick={() => setOpen(value => !value)}>{open ? 'ปิดสมุด' : 'เปิดสมุดดู'}</Button>
+          onClick={() => { setTurn(undefined); setOpen(value => !value) }}>{open ? 'ปิดสมุด' : 'เปิดสมุดดู'}</Button>
         <button className="living-book__arrow" aria-label="หน้าถัดไป" type="button"
-          disabled={page === spreads.length - 1} onClick={() => setPage(value => value + 1)}>→</button>
+          aria-disabled={page === spreads.length - 1} aria-controls={pagesId} onClick={() => goToPage(page + 1)}>→</button>
       </div>
     </div>
     <figcaption>

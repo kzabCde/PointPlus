@@ -1,0 +1,62 @@
+.press {
+  display: grid;
+  place-items: center;
+  position: relative;
+  inline-size: var(--stamp-press-size, 100%);
+  aspect-ratio: 1;
+  isolation: isolate;
+}
+
+.impression { grid-area: 1 / 1; display: grid; place-items: center; inline-size: 95%; }
+.impression img { inline-size: 100%; block-size: auto; }
+.contact {
+  position: absolute;
+  inset: 7%;
+  border: 2px solid #be7064;
+  border-radius: 22%;
+  opacity: 0;
+}
+
+.die {
+  position: absolute;
+  inset: 9%;
+  display: grid;
+  place-items: center;
+  background: #bc7362;
+  border: 1px solid #995647;
+  border-radius: 8px;
+  box-shadow: 0 4px 0 #854940, 0 7px 8px #78453935;
+  opacity: 0;
+  pointer-events: none;
+}
+.die span {
+  inline-size: 45%;
+  block-size: 40%;
+  border-radius: 50% 50% 38% 38%;
+  background: linear-gradient(#e6b592, #c18b70);
+  border: 1px solid #a56a54;
+  box-shadow: 0 3px 0 #9d6353;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .impression { animation: pointplus-press-impression var(--motion-stamp) var(--motion-settle) var(--stamp-press-delay, 0ms) both; }
+  .die { animation: pointplus-press-die var(--motion-stamp) var(--motion-settle) var(--stamp-press-delay, 0ms) both; }
+  .contact { animation: pointplus-press-contact var(--motion-stamp) var(--motion-out) var(--stamp-press-delay, 0ms) both; }
+}
+@keyframes pointplus-press-die {
+  0% { opacity: 0; transform: translateY(-48%) rotate(-8deg) scale(1.15); }
+  30% { opacity: 1; }
+  48% { opacity: 1; transform: translateY(0) rotate(0) scale(1.06, .93); }
+  64% { opacity: 1; transform: translateY(-11%) rotate(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-48%) rotate(4deg) scale(1.08); }
+}
+@keyframes pointplus-press-impression {
+  0%, 43% { opacity: 0; transform: scale(.94); }
+  66% { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes pointplus-press-contact {
+  0%, 44% { opacity: 0; transform: scale(.84); }
+  51% { opacity: .56; }
+  100% { opacity: 0; transform: scale(1.27); }
+}

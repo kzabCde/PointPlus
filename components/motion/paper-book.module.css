@@ -66,3 +66,30 @@
 }
 
 .book[data-open="true"] .cover { transform: rotateY(-173deg); }
+
+.turn { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .book { transition: translate var(--motion-cover) var(--motion-turn); }
+  .cover { transition: transform var(--motion-cover) var(--motion-turn); }
+
+  .turn {
+    position: absolute;
+    z-index: 2;
+    display: block;
+    inset: 0 0 0 50%;
+    border: 1px solid #d8ad99;
+    border-radius: 0 8px 8px 0;
+    background: linear-gradient(90deg, #dfb49e, #f4e2d5 28%, #fff3e6);
+    box-shadow: 7px 1px 12px #76514129;
+    transform-origin: left center;
+    pointer-events: none;
+    opacity: 0;
+    animation: var(--motion-leaf-animation) var(--motion-leaf) var(--motion-turn) backwards;
+  }
+  .turn[data-leaf-turn="backward"] {
+    inset: 0 50% 0 0;
+    transform-origin: right center;
+    --leaf-turn: 1;
+  }
+}

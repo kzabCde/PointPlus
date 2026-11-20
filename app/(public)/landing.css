@@ -57,7 +57,7 @@
 .living-book__controls { display: flex; align-items: center; gap: 6px; }
 .living-book__toggle { min-inline-size: 118px; }
 .living-book__arrow { inline-size: 44px; block-size: 44px; border: 1px solid #dcc2b2; border-radius: 10px; background: var(--paper); color: var(--action); }
-.living-book__arrow:disabled { color: var(--disabled-ink); background: var(--disabled-bg); cursor: default; }
+.living-book__arrow[aria-disabled="true"] { color: var(--disabled-ink); background: var(--disabled-bg); cursor: default; }
 .living-book[data-open="false"] .living-book__arrow { visibility: hidden; }
 .living-book > figcaption { display: flex; justify-content: space-between; min-block-size: 22px; margin-block-start: 8px; color: var(--muted); font-size: 13px; }
 
@@ -130,4 +130,40 @@
   .living-book__table { min-block-size: 16rem; padding-block: 26px 12px; }
   .living-story__grid { grid-template-columns: minmax(0, 1fr); }
   .living-story--stamp .living-story__copy { order: 0; }
+}
+
+.living-heart { display: block; transform-origin: 50% 75%; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .living-book__scene { transition: rotate var(--motion-cover) var(--motion-turn), transform var(--motion-hover) var(--motion-out); }
+  [data-living-reveal][data-revealed] { animation: pointplus-enter var(--motion-enter) var(--motion-out) backwards; }
+  .living-book[data-revealed] .living-heart {
+    animation: pointplus-heart-breath var(--motion-breath) ease-in-out 2;
+  }
+  .living-book[data-open="true"] .living-heart { animation-play-state: paused; }
+  .living-book__table:has(.living-book__toggle:active) .living-heart { transform: scale(.94, 1.04); }
+  .living-heart { transition: transform var(--motion-press) var(--motion-settle); }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .living-book[data-open="false"] .living-book__table:hover .living-book__scene {
+    transform: perspective(1000px) rotateY(-5deg) rotateX(3deg) translateY(-3px);
+  }
+}
+@keyframes pointplus-heart-breath {
+  0%, 100% { transform: none; }
+  52% { transform: rotate(-2deg) scale(1.035, 1.045); }
+}
+
+.stamp-preview__cheer { grid-column: 1 / -1; block-size: 29px; justify-self: end; }
+.stamp-preview__cheer img { inline-size: 29px; block-size: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  .stamp-preview__cheer .living-heart {
+    animation: pointplus-heart-reaction var(--motion-enter) var(--motion-settle) calc(var(--motion-stamp) * .45) both;
+  }
+}
+@keyframes pointplus-heart-reaction {
+  from { opacity: 0; transform: scale(.85, 1.05) rotate(6deg); }
+  64% { opacity: 1; transform: scale(1.06, .99) rotate(-4deg); }
+  to { opacity: 1; transform: none; }
 }
