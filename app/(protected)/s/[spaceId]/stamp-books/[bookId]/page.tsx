@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { randomUUID } from 'node:crypto'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
 import { loadStampBookDetail } from '@/features/stamp-books/data'
-import { ClaimStampRewardForm, ClaimCoupleMemoryForm, GiveStampDialog, ReviewStampForm, ProcessBookRewardForm } from '@/features/stamp-books/forms'
+import { ClaimStampRewardForm, ClaimCoupleMemoryForm, ReviewStampForm, ProcessBookRewardForm } from '@/features/stamp-books/forms'
 import { StampBookJournal } from '@/features/stamp-books/journal'
 import { activityKey, type JournalCycle } from '@/features/stamp-books/journal-model'
 import { BookMotionProvider } from '@/features/stamp-books/motion'
@@ -50,6 +50,7 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
         if (mark.request_id) confirmed.push(activityKey({ kind: 'stamp', id: mark.request_id }))
         return {
           id: mark.id, request_id: mark.request_id, asset_id: mark.asset_id, stamped_at: mark.stamped_at, note: mark.note,
+          page_index: mark.page_index, position_x: mark.position_x, position_y: mark.position_y, rotation_deg: mark.rotation_deg,
           giver: giverNames.get(mark.giver_user_id) ?? 'สมาชิกในห้อง', date: readable(mark.stamped_at),
         }
       })
@@ -93,9 +94,7 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
         <div className="hero__actions">
           {book.status === 'archived' && <Link href={bookPath + '?view=archive'}
             className="button button--secondary">กลับไปสมุดเก็บถาวร</Link>}
-          <GiveStampDialog spaceId={spaceId} bookId={bookId} recipients={giverRecipients}
-            styleIds={styles} canGive={isGiver} stampKey={randomUUID()}
-            requiresApproval={book.approval_policy === 'approval_required'}/>
+          
           {manager && book.status !== 'archived' && <Link href={bookPath + '/' + bookId + '/edit'}
             className="button button--secondary">จัดการสมุด</Link>}
         </div>
@@ -104,7 +103,9 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
       {journals.length === 0 && <div className="card empty-state">ยังไม่มีหน้าสะสมที่คุณเปิดดูได้</div>}
       {journals.map(({ person, journalCycles, initialCycleId, rewardContent }, index) =>
         <StampBookJournal key={person.id} label={person.display_name} status={bookStatus[book.status]} cycles={journalCycles}
-          initialCycleId={initialCycleId} rewardContent={rewardContent} openOnMount={index === 0}/>)}
+          initialCycleId={initialCycleId} rewardContent={rewardContent} openOnMount={index === 0}
+          spaceId={spaceId} bookId={bookId} participantId={person.id} styleIds={styles}
+          layoutMode={book.layout_mode} canGive={isGiver && giverRecipients.some(recipient => recipient.id === person.id)}/>)}
 
       {(requests.length > 0 || ownReviews.length > 0) && <section className="stamp-book-claims">
         <h3>คำขอแสตมป์</h3>
