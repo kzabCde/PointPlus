@@ -7,22 +7,7 @@ import { pointPlusStamps } from '@/lib/point-plus/assets'
 import { giveStampAction } from './actions'
 import { useBookAction } from './motion'
 import type { JournalMark } from './journal-model'
-
-export const stampsOnNotebookPage = 8
-
-export function paperPageCount(target: number, layout: 'single_sheet' | 'notebook') {
-  return layout === 'single_sheet' ? 1 : Math.max(1, Math.ceil(target / stampsOnNotebookPage))
-}
-
-export function legacyPaperPosition(index: number) {
-  const slot = index % stampsOnNotebookPage
-  return {
-    pageIndex: Math.floor(index / stampsOnNotebookPage),
-    x: (slot % 4 + 0.5) / 4,
-    y: (Math.floor(slot / 4) + 0.5) / 2,
-    rotation: (index % 5 - 2) * 3,
-  }
-}
+import { legacyPaperPosition, normalizedPaperPosition, deterministicRotation } from './paper-model'
 
 type PaperProps = {
   spaceId: string
@@ -75,7 +60,7 @@ export function StampPaper({
     inFlight.current = true
     const safeX = Math.max(0.10, Math.min(0.90, x))
     const safeY = Math.max(0.10, Math.min(0.90, y))
-    const rotation = Math.round(((safeX * 137 + safeY * 233) % 13) - 6)
+    const rotation = deterministicRotation(safeX, safeY)
     const form = new FormData()
     form.set('space_id', spaceId)
     form.set('book_id', bookId)
@@ -104,17 +89,15 @@ export function StampPaper({
     if (!press || press.id !== event.pointerId) return
     if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 12) return
     const rect = event.currentTarget.getBoundingClientRect()
-    if (!rect.width || !rect.height) return
-    place((event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height)
+    const position = normalizedPaperPosition(event.clientX, event.clientY, rect)
+    if (position) place(position.x, position.y)
   }
 
   function pointerMove(event: PointerEvent<HTMLDivElement>) {
     if (!canGive || !artId || event.pointerType !== 'mouse' || pending) return
     const rect = event.currentTarget.getBoundingClientRect()
-    if (rect.width && rect.height) setPreview({
-      x: Math.max(.10, Math.min(.90, (event.clientX - rect.left) / rect.width)),
-      y: Math.max(.10, Math.min(.90, (event.clientY - rect.top) / rect.height)),
-    })
+    const position = normalizedPaperPosition(event.clientX, event.clientY, rect)
+    if (position) setPreview(position)
   }
 
   function onKeys(event: KeyboardEvent<HTMLDivElement>) {
@@ -145,7 +128,7 @@ export function StampPaper({
           {art && <Image src={art.png} width={92} height={92} alt="" draggable={false}/>}
         </span>
       })}
-      {placed && !visibleMarks.some(item => item.mark.request_id === impactRequestId) && page === page &&
+      {placed && !visibleMarks.some(item => item.mark.request_id === impactRequestId) &&
         <span className="paper-stamp-mark paper-stamp-mark--pending" aria-hidden="true"
           style={{ left: (placed.x * 100) + '%', top: (placed.y * 100) + '%' }}>
           <Image src={pointPlusStamps.find(stamp => stamp.id === placed.art)?.png ?? '/point-plus/stamps/couple/heart.png'}
