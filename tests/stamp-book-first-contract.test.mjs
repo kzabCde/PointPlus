@@ -93,7 +93,7 @@ function compiledActions(mock){
   'next/cache':{revalidatePath(){}},
   '@/lib/auth/validation':{field:(f,n)=>String(f.get(n)??'').trim(),isUuid},
   '@/features/spaces/data':{
-   getSpaceContext:async()=>({supabase:mock,member:{role:'owner'}}),
+   getSpaceContext:async()=>({supabase:mock,member:{role:'owner'},space:{kind:'family'}}),
    canManage:role=>role==='owner'||role==='admin',
   },
   '@/lib/point-plus/assets':{pointPlusStamps:art},
