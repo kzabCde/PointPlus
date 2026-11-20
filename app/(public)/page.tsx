@@ -56,7 +56,7 @@ export default function HomePage() {
                 <span className="sample-label__caption">สมุดตัวอย่าง</span>
                 <strong>วันดี ๆ ของเรา</strong>
                 <dl>
-                  <div><dt>ผู้สะสม</dt><dd>เตย</dd></div>
+                  <div><dt>ผู้สะสม</dt><dd>คนสำคัญ</dd></div>
                   <div><dt>เป้าหมาย</dt><dd>3 ดวง</dd></div>
                 </dl>
               </figcaption>
@@ -68,10 +68,10 @@ export default function HomePage() {
           <div className="container living-story__grid" data-living-reveal>
             <div className="living-story__copy">
               <h2 id="give-stamp-heading">ให้แสตมป์แทนคำขอบคุณ</h2>
-              <p>นทีให้แสตมป์ในสมุดของเตยได้ และเตยก็สร้างสมุดอีกเล่มไว้ให้แสตมป์นทีได้ ต่างคนต่างสะสมเรื่องราวในสมุดของตัวเอง</p>
+              <p>แต่ละคนสร้างสมุดเพื่อมอบแสตมป์ให้คนสำคัญได้ และอีกคนก็สร้างสมุดอีกเล่มเพื่อมอบแสตมป์กลับมาได้เช่นกัน ต่างคนต่างสะสมเรื่องราวของตัวเอง</p>
               <div className="reciprocal-example" role="group" aria-label="ตัวอย่างการให้แสตมป์ทั้งสองทาง">
-                <span>นที <span aria-hidden="true">→</span><span className="sr-only"> ให้ </span> เตย</span>
-                <span>เตย <span aria-hidden="true">→</span><span className="sr-only"> ให้ </span> นที</span>
+                <span>คุณ <span aria-hidden="true">→</span><span className="sr-only"> ให้ </span> คนสำคัญ</span>
+                <span>คนสำคัญ <span aria-hidden="true">→</span><span className="sr-only"> ให้ </span> คุณ</span>
               </div>
             </div>
             <StampPressPreview/>
@@ -90,7 +90,7 @@ export default function HomePage() {
                 {[heartStamp, flowersStamp, letterStamp].map(src => <Image key={src} src={src} width={64} height={64} alt=""/>)}
               </div>
               <blockquote>“ไว้ไปดูพระอาทิตย์ตกด้วยกันอีกนะ”</blockquote>
-              <span>เตย · ผู้สะสม</span>
+              <span>ข้อความจากผู้สะสม</span>
             </figure>
           </div>
         </section>
