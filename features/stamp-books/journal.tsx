@@ -3,8 +3,9 @@
 import Image from 'next/image'
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
-import { locateActivity, pageCount, stampPage, type BookActivity, type JournalCycle, type JournalMark } from './journal-model'
+import { locateActivity, stampPage, type BookActivity, type JournalCycle, type JournalMark } from './journal-model'
 import { useBookMotion } from './motion'
+import { StampPaper, paperPageCount } from './paper'
 import { BookProgress } from './presentation'
 
 const claimLabels = { requested: 'รอส่งมอบ', fulfilled: 'ส่งมอบแล้ว', canceled: 'ยกเลิก' }
@@ -37,13 +38,19 @@ function StampNotes({ marks }: { marks: JournalMark[] }) {
   </ul>
 }
 
-export function StampBookJournal({ label, status, cycles, initialCycleId, openOnMount, rewardContent }: {
+export function StampBookJournal({ label, status, cycles, initialCycleId, openOnMount, rewardContent, spaceId, bookId, participantId, styleIds, canGive, layoutMode }: {
   label: string
   status: string
   cycles: JournalCycle[]
   initialCycleId: string
   openOnMount: boolean
   rewardContent: Record<string, ReactNode>
+  spaceId: string
+  bookId: string
+  participantId: string
+  styleIds: string[]
+  canGive: boolean
+  layoutMode: 'single_sheet' | 'notebook'
 }) {
   const motion = useBookMotion()
   const [view, setView] = useState<View>({
@@ -51,16 +58,16 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
   })
   const journalId = useId()
   const turn = useRef(0)
-  const slotRef = useRef<HTMLLIElement>(null)
+  const slotRef = useRef<HTMLDivElement>(null)
   const rewardRef = useRef<HTMLParagraphElement>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const touch = useRef<{ id: number; x: number; y: number } | null>(null)
 
   const cycle = cycles.find(item => item.id === view.cycleId) ?? cycles[0]
-  const total = pageCount(cycle.target_snapshot)
+  const total = paperPageCount(cycle.target_snapshot, layoutMode)
   const page = Math.min(view.page, total - 1)
   const slots = stampPage(cycle.target_snapshot, page)
-  const marks = slots.flatMap(index => cycle.marks[index] ? [cycle.marks[index]] : [])
+  const marks = cycle.marks.filter((mark, index) => (layoutMode === 'single_sheet' ? 0 : mark.page_index ?? Math.floor(index / 8)) === page)
   const placed = view.activity?.kind === 'stamp' ? view.activity.id : undefined
   const activityKind = view.activity?.kind
   const reveal = activityKind === cycle.claim?.status ? activityKind : undefined
@@ -118,12 +125,12 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
     goToPage(targets[event.key])
   }
 
-  function startSwipe(event: PointerEvent<HTMLOListElement>) {
+  function startSwipe(event: PointerEvent<HTMLDivElement>) {
     if (!event.isPrimary || event.pointerType === 'mouse') return
     touch.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
   }
 
-  function finishSwipe(event: PointerEvent<HTMLOListElement>) {
+  function finishSwipe(event: PointerEvent<HTMLDivElement>) {
     const start = touch.current
     if (!start || start.id !== event.pointerId) return
     touch.current = null
@@ -164,38 +171,24 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
         onClick={() => goToPage(page + 1)}><span aria-hidden="true">→</span></button>}
     </nav>
 
-    <div className="journal-spread" id={journalId + '-spread'}>
-      <section className="journal-leaf journal-leaf--slots" aria-label={'แสตมป์ หน้า ' + (page + 1)}>
-        <ol className="journal-slots" role="list" start={slots[0] + 1} onPointerDown={startSwipe} onPointerUp={finishSwipe}
-          onPointerCancel={() => { touch.current = null }}>
-          {slots.map(index => {
-            const mark = cycle.marks[index]
-            const art = mark ? stampArt.get(mark.asset_id) : undefined
-            const earned = !!mark || index < cycle.progress_count
-            const impact = !!placed && mark?.request_id === placed
-
-            return <li className="journal-slot" data-earned={earned} data-impact={impact || undefined}
-              key={cycle.id + ':' + index} ref={impact ? slotRef : undefined}>
-              <span className="journal-slot__well">
-                {art
-                  ? <Image className="journal-slot__art" src={art.png} alt="" width={88} height={88}
-                    loading={impact ? 'eager' : 'lazy'}/>
-                  : <span className="journal-slot__symbol" aria-hidden="true">{earned ? '✓' : '+'}</span>}
-              </span>
-              <span className="journal-slot__number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-              <span className="sr-only">ช่อง {index + 1} · {art?.nameTh ?? (earned ? 'ได้รับแล้ว' : 'ยังว่าง')}</span>
-            </li>
-          })}
-        </ol>
+    <div className="journal-spread journal-spread--paper" id={journalId + '-spread'}
+      ref={slotRef} data-legacy-slots={slots.length} onPointerDown={startSwipe}
+      onPointerUp={finishSwipe} onPointerCancel={() => { touch.current = null }}>
+      <section className="journal-leaf journal-leaf--paper" aria-label={'แสตมป์ หน้า ' + (page + 1)}>
+        <StampPaper spaceId={spaceId} bookId={bookId} participantId={participantId}
+          styleIds={styleIds} marks={cycle.marks} page={page} layoutMode={layoutMode}
+          canGive={canGive && !cycle.completed_at && cycle.progress_count < cycle.target_snapshot}
+          impactRequestId={placed}/>
       </section>
       <section className="journal-leaf journal-leaf--notes" aria-labelledby={journalId + '-notes'}>
         <h4 id={journalId + '-notes'}>บันทึกหน้านี้</h4>
         <StampNotes marks={marks}/>
       </section>
-      {view.turn && <span key={view.turn.step} className="journal-turn-leaf" data-turn={view.turn.direction} aria-hidden="true"/>}
+      {view.turn && <span key={view.turn.step} className="journal-turn-leaf"
+        data-turn={view.turn.direction} aria-hidden="true"/>}
     </div>
 
-    {cycle.completed_at && <section className="journal-reward" aria-labelledby={journalId + '-reward'}>
+        {cycle.completed_at && <section className="journal-reward" aria-labelledby={journalId + '-reward'}>
       <header className="journal-reward__heading">
         <div>
           <h4 id={journalId + '-reward'}>สะสมครบแล้ว</h4>
