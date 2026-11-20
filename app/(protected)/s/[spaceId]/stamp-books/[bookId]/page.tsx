@@ -105,6 +105,7 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
         <StampBookJournal key={person.id} label={person.display_name} status={bookStatus[book.status]} cycles={journalCycles}
           initialCycleId={initialCycleId} rewardContent={rewardContent} openOnMount={index === 0}
           spaceId={spaceId} bookId={bookId} participantId={person.id} styleIds={styles}
+          pendingRequests={requests.filter(request => request.participant_id === person.id)}
           layoutMode={book.layout_mode} canGive={isGiver && giverRecipients.some(recipient => recipient.id === person.id)}/>)}
 
       {(requests.length > 0 || ownReviews.length > 0) && <section className="stamp-book-claims">
