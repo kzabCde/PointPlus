@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/stamp-book-first-rebuild]
+    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2]
   pull_request:
 
 permissions:

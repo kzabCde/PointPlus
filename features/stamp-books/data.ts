@@ -14,7 +14,7 @@ export type StampCycle = {
 export type BookMark = {
  id:string;request_id:string;cycle_id:string;participant_id:string;asset_id:string;giver_user_id:string;
  note:string|null;stamped_at:string;
- page_index:number|null;position_x:number|null;position_y:number|null;rotation_deg:number|null
+ page_index:number|null;position_x:number|null;position_y:number|null;rotation_deg:number|null;scale_factor:number|null
 }
 export type BookClaim = {
  id:string;cycle_id:string;participant_id:string;reward_option_id:string;
@@ -25,7 +25,7 @@ export type BookReward = {
 }
 export type BookRequest = {
  id:string;participant_id:string;asset_id:string;giver_user_id:string;note:string|null;created_at:string;status:string;
- page_index:number|null;position_x:number|null;position_y:number|null;rotation_deg:number|null
+ page_index:number|null;position_x:number|null;position_y:number|null;rotation_deg:number|null;scale_factor:number|null
 }
 export const readableParticipants = (people:Participant[],userId:string,manager:boolean,kind?:string) =>
  people.filter(p=>(kind==='couple'&&p.kind==='adult')||manager||p.user_id===userId||(p.kind==='child'&&p.guardian_user_id===userId))
@@ -67,13 +67,13 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
  supabase.from('stamp_book_reward_options').select('id,title,description,stock_remaining,active').eq('book_id',bookId),
  supabase.from('stamp_book_cycles').select('id,book_id,participant_id,space_id,cycle_no,target_snapshot,progress_count,completed_at,created_at')
   .eq('book_id',bookId).order('cycle_no',{ascending:false}).limit(400),
- supabase.from('stamp_book_marks').select('id,request_id,cycle_id,participant_id,asset_id,giver_user_id,note,stamped_at,page_index,position_x,position_y,rotation_deg')
+ supabase.from('stamp_book_marks').select('id,request_id,cycle_id,participant_id,asset_id,giver_user_id,note,stamped_at,page_index,position_x,position_y,rotation_deg,scale_factor')
   .eq('book_id',bookId).order('stamped_at',{ascending:true}).order('id').limit(1000),
  supabase.from('stamp_book_claims').select('id,cycle_id,participant_id,reward_option_id,reward_title_snapshot,status,claimed_at')
   .eq('book_id',bookId).order('claimed_at',{ascending:false}).limit(400),
- supabase.from('stamp_book_stamp_requests').select('id,participant_id,asset_id,giver_user_id,note,created_at,status,page_index,position_x,position_y,rotation_deg')
+ supabase.from('stamp_book_stamp_requests').select('id,participant_id,asset_id,giver_user_id,note,created_at,status,page_index,position_x,position_y,rotation_deg,scale_factor')
   .eq('book_id',bookId).eq('status','pending').order('created_at',{ascending:true}).limit(100),
- supabase.from('stamp_book_stamp_requests').select('id,participant_id,asset_id,giver_user_id,note,created_at,status,page_index,position_x,position_y,rotation_deg')
+ supabase.from('stamp_book_stamp_requests').select('id,participant_id,asset_id,giver_user_id,note,created_at,status,page_index,position_x,position_y,rotation_deg,scale_factor')
   .eq('book_id',bookId).eq('giver_user_id',user.id).eq('status','rejected').order('created_at',{ascending:false}).limit(20),
  ])
  if([recipients,givers,styles,rewards,cycles,marks,claims,requests,ownReviews].some(r=>r.error))
