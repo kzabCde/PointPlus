@@ -5,7 +5,8 @@ import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type Poin
 import { pointPlusStamps } from '@/lib/point-plus/assets'
 import { locateActivity, stampPage, type BookActivity, type JournalCycle, type JournalMark } from './journal-model'
 import { useBookMotion } from './motion'
-import { StampPaper, paperPageCount } from './paper'
+import { StampPaper } from './paper'
+import { paperPageCount } from './paper-model'
 import { BookProgress } from './presentation'
 
 const claimLabels = { requested: 'รอส่งมอบ', fulfilled: 'ส่งมอบแล้ว', canceled: 'ยกเลิก' }
@@ -67,7 +68,7 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
   const total = paperPageCount(cycle.target_snapshot, layoutMode)
   const page = Math.min(view.page, total - 1)
   const slots = stampPage(cycle.target_snapshot, page)
-  const marks = cycle.marks.filter((mark, index) => (layoutMode === 'single_sheet' ? 0 : mark.page_index ?? Math.floor(index / 8)) === page)
+  const marks = cycle.marks.filter((mark, index) => (layoutMode === 'single_sheet' ? 0 : mark.page_index ?? Math.floor(index / 6)) === page)
   const placed = view.activity?.kind === 'stamp' ? view.activity.id : undefined
   const activityKind = view.activity?.kind
   const reveal = activityKind === cycle.claim?.status ? activityKind : undefined
