@@ -5,6 +5,7 @@ import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type Poin
 import { pointPlusStamps } from '@/lib/point-plus/assets'
 import { locateActivity, stampPage, type BookActivity, type JournalCycle, type JournalMark } from './journal-model'
 import { useBookMotion } from './motion'
+import { useBookSound } from './sound'
 import { StampPaper } from './paper'
 import { paperPageCount } from './paper-model'
 import { BookProgress } from './presentation'
@@ -56,6 +57,10 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
   layoutMode: 'single_sheet' | 'notebook'
 }) {
   const motion = useBookMotion()
+  const sound = useBookSound()
+  const playSound = sound?.play
+  const unlockSound = sound?.unlock
+  const lastRewardSound = useRef<string | null>(null)
   const [view, setView] = useState<View>({
     cycleId: initialCycleId, page: 0, turn: openOnMount && layoutMode === 'notebook' ? { step: 0, direction: 'opening' } : undefined,
   })
@@ -80,6 +85,11 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
     for (const receipt of motion.receipts) {
       const destination = locateActivity(cycles, receipt)
       if (!destination || !motion.take(receipt)) continue
+      if (destination.completedByStamp) playSound?.('complete')
+      if (receipt.kind === 'requested' || receipt.kind === 'fulfilled') {
+        const key = receipt.kind + ':' + receipt.id
+        if (lastRewardSound.current !== key) { lastRewardSound.current = key; playSound?.('reward') }
+      }
       setView(previous => ({
         cycleId: destination.cycleId,
         page: destination.page ?? (previous.cycleId === destination.cycleId ? previous.page : 0),
@@ -87,7 +97,7 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
         completedByStamp: destination.completedByStamp,
       }))
     }
-  }, [cycles, motion])
+  }, [cycles, motion, playSound])
 
   useLayoutEffect(() => {
     if (!view.activity) return
@@ -104,6 +114,8 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
 
   function goToPage(next: number) {
     if (next < 0 || next >= total || next === page) return
+    unlockSound?.()
+    playSound?.('page')
     setView({
       cycleId: cycle.id, page: next,
       turn: { step: ++turn.current, direction: next > page ? 'forward' : 'backward' },
@@ -114,6 +126,8 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
     const currentIndex = cycles.findIndex(item => item.id === cycle.id)
     const nextIndex = cycles.findIndex(item => item.id === next)
     if (currentIndex === nextIndex || nextIndex < 0) return
+    unlockSound?.()
+    playSound?.('page')
     setView({
       cycleId: next, page: 0,
       turn: { step: ++turn.current, direction: nextIndex > currentIndex ? 'forward' : 'backward' },
