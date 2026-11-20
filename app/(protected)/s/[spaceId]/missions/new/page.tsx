@@ -15,7 +15,7 @@ export default async function NewMissionPage({params}: {params:Promise<{spaceId:
       mode={space.kind === 'couple' ? 'couple' : space.kind === 'family' ? 'family' : 'personal'} />
     <details className="room-create" style={{ marginTop: 20 }}>
       <summary>ตั้งค่าภารกิจขั้นสูงและกิจกรรมแนะนำ</summary>
-    <CreateMissionForm spaceId={spaceId} timezone={space.timezone}
+    <CreateMissionForm spaceId={spaceId} timezone={'Asia/Bangkok'}
       campaigns={catalog.campaigns} stampCards={catalog.stampCards}
       mode={space.kind === 'couple' ? 'couple' : space.kind === 'family' ? 'family' : 'personal'} />
     </details>
