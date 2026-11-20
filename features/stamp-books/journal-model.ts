@@ -36,7 +36,7 @@ export function locateActivity(cycles: readonly JournalCycle[], activity: BookAc
       const slot = cycle.marks.findIndex(mark => mark.request_id === activity.id)
       if (slot >= 0 && slot < cycle.target_snapshot) {
         return {
-          cycleId: cycle.id, page: cycle.marks[slot].page_index ?? Math.floor(slot / 8),
+          cycleId: cycle.id, page: cycle.marks[slot].page_index ?? Math.floor(slot / slotsPerPage),
           completedByStamp: !!cycle.completed_at && slot === cycle.target_snapshot - 1,
         }
       }
