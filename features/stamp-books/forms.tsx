@@ -40,19 +40,26 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
   </div>
   <fieldset className="stamp-picker-set">
    <legend className="form-field__label">ใครเป็นเจ้าของสมุดนี้บ้าง</legend>
-   <p className="muted">แต่ละคนจะมีหน้าและความคืบหน้าของตัวเอง ในห้องร่วมกันผู้ให้แสตมป์ไม่สามารถให้ตัวเองได้</p>
-   {participants.map(p=><label className="stamp-check" key={p.id}>
+   <p className="muted">{kind==='couple'
+    ? 'สมุดเล่มนี้เป็นของคู่ของคุณ ผู้สร้างเป็นคนให้แสตมป์ และทั้งสองคนดูความคืบหน้าได้'
+    : 'แต่ละคนจะมีหน้าและความคืบหน้าของตัวเอง ในห้องร่วมกันผู้ให้แสตมป์ไม่สามารถให้ตัวเองได้'}</p>
+   {participants.filter(p=>kind!=='couple'||(p.kind==='adult'&&p.user_id!==userId)).map(p=><label className="stamp-check" key={p.id}>
     <input type="checkbox" name="recipient_id" value={p.id} defaultChecked={kind==='personal'||p.user_id!==userId} />
     <span>{p.display_name}{p.kind==='child'?' (เด็ก)':''}</span>
    </label>)}
   </fieldset>
-  <fieldset className="stamp-picker-set">
-   <legend className="form-field__label">ใครบ้างที่ให้แสตมป์ได้</legend>
-   {members.map(m=><label className="stamp-check" key={m.user_id}>
-    <input type="checkbox" name="giver_id" value={m.user_id} defaultChecked/>
-    <span>{participants.find(p=>p.user_id===m.user_id)?.display_name??'สมาชิก'} ({m.role})</span>
-   </label>)}
-  </fieldset>
+  {kind==='couple'
+   ? <div className="card">
+      <input type="hidden" name="giver_id" value={userId}/>
+      <p className="muted">คุณเป็นผู้ให้แสตมป์ของสมุดที่สร้างเสมอ คู่ของคุณสามารถสร้างสมุดอีกเล่มเพื่อให้แสตมป์คุณได้เช่นกัน</p>
+     </div>
+   : <fieldset className="stamp-picker-set">
+      <legend className="form-field__label">ใครบ้างที่ให้แสตมป์ได้</legend>
+      {members.map(m=><label className="stamp-check" key={m.user_id}>
+       <input type="checkbox" name="giver_id" value={m.user_id} defaultChecked/>
+       <span>{participants.find(p=>p.user_id===m.user_id)?.display_name??'สมาชิก'} ({m.role})</span>
+      </label>)}
+     </fieldset>}
   <fieldset className="stamp-picker-set">
    <legend className="form-field__label">เลือกแสตมป์ที่ใช้ในสมุด</legend>
    <p className="muted">เลือกได้ทุกลาย ไม่จำกัดประเภทห้อง และเปลี่ยนลายได้ทุกครั้งที่ให้แสตมป์</p>
@@ -71,13 +78,15 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
     required placeholder="หนึ่งบรรทัดต่อหนึ่งรางวัล"/>
    <span className="form-field__hint">ผู้สะสมเลือกได้ 1 รายการต่อสมุดที่ครบหนึ่งรอบ ไม่หักแต้ม</span>
   </div>
-  <div className="form-field">
-   <label className="form-field__label" htmlFor="stamp-book-approval">วิธีให้แสตมป์</label>
-   <select id="stamp-book-approval" name="approval_policy" className="input" defaultValue="direct">
-    <option value="direct">ผู้มีสิทธิ์ให้แสตมป์ได้ทันที</option>
-    <option value="approval_required">ต้องให้ผู้ดูแลคนอื่นอนุมัติ (ต้องมีผู้ตรวจที่ไม่ใช่ผู้ให้)</option>
-   </select>
-  </div>
+  {kind==='couple'
+   ? <input type="hidden" name="approval_policy" value="direct"/>
+   : <div className="form-field">
+      <label className="form-field__label" htmlFor="stamp-book-approval">วิธีให้แสตมป์</label>
+      <select id="stamp-book-approval" name="approval_policy" className="input" defaultValue="direct">
+       <option value="direct">ผู้มีสิทธิ์ให้แสตมป์ได้ทันที</option>
+       <option value="approval_required">ต้องให้ผู้ดูแลคนอื่นอนุมัติ (ต้องมีผู้ตรวจที่ไม่ใช่ผู้ให้)</option>
+      </select>
+     </div>}
   <label className="stamp-check"><input name="repeatable" type="checkbox" defaultChecked/> เริ่มสะสมรอบใหม่ได้เมื่อครบ</label>
   {kind==='personal'&&<label className="stamp-check"><input name="allow_self_stamp" type="checkbox"/> ให้แสตมป์ตัวเองได้ (พื้นที่ส่วนตัวเท่านั้น)</label>}
   <Result state={state}/>
