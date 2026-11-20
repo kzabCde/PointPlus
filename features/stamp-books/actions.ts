@@ -68,8 +68,10 @@ export async function giveStampAction(_prev:StampBookState,form:FormData):Promis
   const hasScale=form.has('scale_factor')
   const scale=Number(text(form,'scale_factor'))
   const hasCardSlot=form.has('card_slot')
-  const cardSlot=Number(text(form,'card_slot'))
-  if(hasCardSlot&&(hasPosition||hasScale||!Number.isInteger(cardSlot)||cardSlot<0||cardSlot>99))
+  const cardSlotText=text(form,'card_slot')
+  const cardSlot=Number(cardSlotText)
+  if(hasCardSlot&&(hasPosition||hasScale||!(/^(0|[1-9][0-9]*)$/).test(cardSlotText)||
+     !Number.isInteger(cardSlot)||cardSlot<0||cardSlot>99))
     return fail('กรุณาเลือกช่องสะสมที่ถูกต้อง')
   if(hasScale&&!hasPosition) return fail('ต้องระบุตำแหน่งแสตมป์เมื่อปรับขนาด')
   if(hasScale&&(!Number.isFinite(scale)||scale<0.4||scale>2.5))
