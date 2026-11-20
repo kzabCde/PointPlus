@@ -11,15 +11,18 @@ export const metadata:Metadata={title:'สมุดสะสมแสตมป�
 export default async function StampBooksPage({params}:{params:Promise<{spaceId:string}>}){
  const {spaceId}=await params
  const {context,books,cycles,eligible}=await loadStampBookBoard(spaceId)
- const manager=canManage(context.member.role)
+ const manager=context.space.kind==='couple'||canManage(context.member.role)
  const active=books.filter(b=>b.status!=='archived')
  const archived=books.filter(b=>b.status==='archived')
  const url='/s/'+spaceId+'/stamp-books'
  const cover=(id:string|null)=>pointPlusStamps.find(s=>s.id===id)?.png??'/point-plus/stamps/couple/heart.png'
  const progress=(id:string)=>{
-  const relevant=cycles.filter(c=>c.book_id===id)
-  const open=relevant.filter(c=>!c.completed_at)
-  return open.length ? Math.max(...open.map(c=>c.progress_count)) : null
+  const currentByRecipient=eligible.flatMap(person=>{
+   const latest=cycles.filter(c=>c.book_id===id&&c.participant_id===person.id)
+     .sort((a,b)=>b.cycle_no-a.cycle_no)[0]
+   return latest?[person.display_name+' '+latest.progress_count+'/'+latest.target_snapshot]:[]
+  })
+  return currentByRecipient.join(' · ') || 'ยังไม่มีการสะสม'
  }
  return <section className="stamp-book-page">
   <header className="stamp-book-hero">
@@ -41,7 +44,7 @@ export default async function StampBooksPage({params}:{params:Promise<{spaceId:s
    {active.map(b=><Link href={url+'/'+b.id} className="stamp-book-cover" key={b.id}>
     <div className="stamp-book-cover__header"><Image src={cover(b.cover_asset_id)} width={68} height={68} alt=""/><span>{b.status==='paused'?'พักสะสม':'กำลังสะสม'}</span></div>
     <h3>{b.title}</h3><p>{b.description||'เรื่องดี ๆ ที่สะสมร่วมกัน'}</p>
-    <div className="stamp-book-cover__footer"><strong>{progress(b.id)??'—'} / {b.target_count}</strong><span>ดวงต่อรอบ</span></div>
+    <div className="stamp-book-cover__footer"><strong>{progress(b.id)}</strong><span>ความคืบหน้า</span></div>
    </Link>)}
   </div>
   {!!archived.length&&<details className="stamp-book-archive">
@@ -50,6 +53,6 @@ export default async function StampBooksPage({params}:{params:Promise<{spaceId:s
     <Image src={cover(b.cover_asset_id)} width={54} height={54} alt=""/><h3>{b.title}</h3><p>ดูประวัติสะสมและรางวัล</p>
    </Link>)}</div>
   </details>}
-  {!!eligible.length&&<p className="muted">ความคืบหน้าจะแสดงเฉพาะผู้สะสมที่บัญชีของคุณได้รับอนุญาตให้ดู</p>}
+  {!!eligible.length&&<p className="muted">{context.space.kind==='couple'?'คู่รักทั้งสองคนดูความคืบหน้าของกันและกันได้': 'ความคืบหน้าจะแสดงเฉพาะผู้สะสมที่บัญชีของคุณได้รับอนุญาตให้ดู'}</p>}
  </section>
 }

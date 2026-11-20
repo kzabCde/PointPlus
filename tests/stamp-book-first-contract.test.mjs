@@ -93,7 +93,7 @@ function compiledActions(mock){
   'next/cache':{revalidatePath(){}},
   '@/lib/auth/validation':{field:(f,n)=>String(f.get(n)??'').trim(),isUuid},
   '@/features/spaces/data':{
-   getSpaceContext:async()=>({supabase:mock,member:{role:'owner'}}),
+   getSpaceContext:async()=>({supabase:mock,member:{role:'owner'},space:{kind:'family'}}),
    canManage:role=>role==='owner'||role==='admin',
   },
   '@/lib/point-plus/assets':{pointPlusStamps:art},
@@ -151,4 +151,107 @@ test('a stamp action invokes only new, scoped one-stamp RPC',async()=>{
  assert.equal(calls[0].name,'pointplus_give_stamp')
  assert.equal(calls[0].args.p_key,uuid)
  assert.equal(calls[0].args.p_art,artId)
+})
+
+test('Couple Stamp Books: SQL allows both members to create a partner book and protects self-stamping',()=>{
+ const couple=read('supabase/stamp-book-first/06_couple_mutual_books.sql')
+ assert.match(couple,/s\.kind='couple' AND m\.user_id=v_uid/)
+ assert.match(couple,/p_approval<>'direct'/)
+ assert.match(couple,/partner\.user_id<>v_uid/)
+ assert.match(couple,/partner\.id=p_recipients\[1\]/)
+ assert.match(couple,/UNION SELECT v_uid WHERE v_kind='couple'/)
+ assert.match(couple,/b\.created_by=v_uid/)
+ assert.match(couple,/Self-stamping is not permitted/)
+ assert.match(couple,/book_can_edit\(b\.id,v_uid\)/)
+ assert.match(couple,/book_can_edit\(cl\.book_id,v_uid\)/)
+ assert.doesNotMatch(couple,/\b(?:TRUNCATE|DROP TABLE|DELETE FROM)\b/i)
+ assert.equal((couple.match(/^BEGIN;/gm)||[]).length,1)
+ assert.equal((couple.match(/^COMMIT;/gm)||[]).length,1)
+})
+
+test('Couple Stamp Books: both partners see their shared progress and only creator edits',()=>{
+ const couple=read('supabase/stamp-book-first/06_couple_mutual_books.sql')
+ for(const name of [
+  'stamp_book_recipients','stamp_book_cycles','stamp_book_stamp_requests',
+  'stamp_book_marks','stamp_book_claims',
+ ]) assert.match(couple,new RegExp('pointplus_couple_'+name+'_read'))
+ assert.match(couple,/pointplus_private\.is_member\(space_id\)/)
+ assert.match(couple,/s\.kind='couple'/)
+ const data=read('features/stamp-books/data.ts')
+ assert.match(data,/kind==='couple'&&p\.kind==='adult'/)
+ assert.match(data,/readableParticipants\(people,user\.id,manager,context\.space\.kind\)/)
+ assert.match(data,/book\.created_by===user\.id/)
+ const board=read('app/(protected)/s/[spaceId]/stamp-books/page.tsx')
+ assert.match(board,/context\.space\.kind==='couple'/)
+ assert.match(board,/person\.display_name/)
+ const newPage=read('app/(protected)/s/[spaceId]/stamp-books/new/page.tsx')
+ assert.match(newPage,/space\.kind!=='couple'&&!canManage\(member\.role\)/)
+ const forms=read('features/stamp-books/forms.tsx')
+ assert.match(forms,/p\.kind==='adult'&&p\.user_id!==userId/)
+ assert.match(forms,/name="giver_id" value={userId}/)
+ assert.match(forms,/name="approval_policy" value="direct"/)
+ const actions=read('features/stamp-books/actions.ts')
+ assert.match(actions,/space\.kind!=='couple'&&!canManage\(member\.role\)/)
+ assert.match(actions,/book\.created_by!==user\.id/)
+ const detail=read('app/(protected)/s/[spaceId]/stamp-books/[bookId]/page.tsx')
+ assert.match(detail,/book\.created_by===context\.user\.id/)
+ assert.match(detail,/ClaimStampRewardForm/)
+})
+
+test('Couple Stamp Books: partner recipient filtering is confined to Couple Rooms',()=>{
+ const c=ts.transpileModule(read('features/stamp-books/data.ts'),{
+  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true},
+  fileName:'features/stamp-books/data.ts',
+ })
+ const module={exports:{}}
+ new Function('require','module','exports',c.outputText)(()=>{
+  return {
+   notFound(){throw new Error('not-found')},
+   canManage(){return false},getSpaceContext(){},getSpaceParticipants(){},getSpaceMembers(){},
+  }
+ },module,module.exports)
+ const both=[
+  {id:'a',kind:'adult',user_id:'A',guardian_user_id:null},
+  {id:'b',kind:'adult',user_id:'B',guardian_user_id:null},
+  {id:'child',kind:'child',user_id:null,guardian_user_id:'A'},
+ ]
+ const filter=module.exports.readableParticipants
+ assert.deepEqual(filter(both,'A',false,'couple').map(x=>x.id),['a','b','child'])
+ assert.deepEqual(filter(both,'A',false,'group').map(x=>x.id),['a','child'])
+ assert.deepEqual(filter(both,'B',false,'couple').map(x=>x.id),['a','b'])
+})
+
+test('Couple Memory final redemption is message-based, unique and archives original book',()=>{
+ const sql=read('supabase/stamp-book-first/08_couple_memory_redemption.sql')
+ assert.match(sql,/CREATE FUNCTION public\.pointplus_claim_couple_memory/)
+ assert.match(sql,/v_text:=btrim\(coalesce\(p_message,''\)\)/)
+ assert.match(sql,/length\(v_text\) NOT BETWEEN 1 AND 1000/)
+ assert.match(sql,/pointplus_private\.book_can_claim/)
+ assert.match(sql,/v_prior\.reward_title_snapshot=v_text/)
+ assert.match(sql,/FOR UPDATE OF b/)
+ assert.match(sql,/v_cycle\.completed_at IS NULL/)
+ assert.match(sql,/UPDATE public\.stamp_books SET status='archived',repeatable=false/)
+ assert.match(sql,/reward_title_snapshot,claimed_by,idempotency_key,status/)
+ assert.match(sql,/pointplus_claim_stamp_book_reward/)
+ assert.match(sql,/Couple memory rewards require a message/)
+ assert.match(sql,/s\.kind='couple'/)
+ assert.match(sql,/pointplus_private\.book_apply_stamp/)
+ assert.doesNotMatch(sql,/DROP TABLE|TRUNCATE TABLE|DELETE FROM/i)
+})
+
+test('Couple Memory form is free-text, recipient-only and does not require fixed reward options',()=>{
+ const forms=read('features/stamp-books/forms.tsx')
+ const actions=read('features/stamp-books/actions.ts')
+ const detail=read('app/(protected)/s/[spaceId]/stamp-books/[bookId]/page.tsx')
+ assert.match(forms,/export function ClaimCoupleMemoryForm/)
+ assert.match(forms,/name="reward_message"/)
+ assert.match(forms,/maxLength=\{1000\}/)
+ assert.match(forms,/name="rewards" value="ข้อความรางวัล/)
+ assert.match(actions,/export async function claimCoupleMemoryAction/)
+ assert.match(actions,/pointplus_claim_couple_memory/)
+ assert.match(actions,/p_message:message,p_key:key/)
+ assert.match(detail,/context\.space\.kind==='couple'/)
+ assert.match(detail,/ClaimCoupleMemoryForm/)
+ assert.match(detail,/book\.status==='active'/)
+ assert.match(detail,/book\.status==='archived'/)
 })
