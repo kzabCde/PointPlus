@@ -24,14 +24,14 @@ export type BookReward = {
 export type BookRequest = {
  id:string;participant_id:string;asset_id:string;giver_user_id:string;note:string|null;created_at:string;status:string
 }
-export const readableParticipants = (people:Participant[],userId:string,manager:boolean) =>
- people.filter(p=>manager||p.user_id===userId||(p.kind==='child'&&p.guardian_user_id===userId))
+export const readableParticipants = (people:Participant[],userId:string,manager:boolean,kind?:string) =>
+ people.filter(p=>(kind==='couple'&&p.kind==='adult')||manager||p.user_id===userId||(p.kind==='child'&&p.guardian_user_id===userId))
 
 export async function loadStampBookBoard(spaceId:string) {
  const [context,people] = await Promise.all([getSpaceContext(spaceId),getSpaceParticipants(spaceId)])
  const {supabase,user,member}=context
  const manager=canManage(member.role)
- const eligible=readableParticipants(people,user.id,manager)
+ const eligible=readableParticipants(people,user.id,manager,context.space.kind)
  const {data:books,error}=await supabase.from('stamp_books')
    .select('id,space_id,created_by,title,description,cover_asset_id,target_count,repeatable,allow_self_stamp,approval_policy,status,created_at')
    .eq('space_id',spaceId).order('created_at',{ascending:false}).limit(80)
@@ -76,10 +76,13 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
  const allowedRecipients=new Set((recipients.data??[]).map(x=>x.participant_id))
  const assigned=eligible.filter(p=>allowedRecipients.has(p.id))
  const giverRecipients=people.filter(p=>allowedRecipients.has(p.id)
-   && (manager || p.kind==='adult' || p.guardian_user_id===user.id))
+   && (manager || p.kind==='adult' || p.guardian_user_id===user.id)
+   && (context.space.kind!=='couple'||p.user_id!==user.id))
+ const bookManager=context.space.kind==='couple' ? book.created_by===user.id : manager
  return {
- context,manager,people,assigned,giverRecipients,members,book:book as StampBook,
- givers:(givers.data??[]).map(x=>x.user_id) as string[],
+ context,manager:bookManager,people,assigned,giverRecipients,members,book:book as StampBook,
+ givers:[...new Set([...(givers.data??[]).map(x=>x.user_id),
+   ...(context.space.kind==='couple'?[book.created_by]:[])])] as string[],
  styles:(styles.data??[]).map(x=>x.asset_id) as string[],
  rewards:(rewards.data??[]) as BookReward[],
  cycles:(cycles.data??[]) as StampCycle[],marks:(marks.data??[]) as BookMark[],
