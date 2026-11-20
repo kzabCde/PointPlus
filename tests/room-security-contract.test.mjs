@@ -8,9 +8,11 @@ test('R08: additional redemption room ownership and participant checks exist',()
  assert.match(a,/eq\('id',participantId\)\.is\('archived_at',null\)/)
  assert.match(a,/eq\('space_id',spaceId\)\.eq\('id',redemptionId\)/)
 })
-test('R08: badge unlock mapping requires room and official slug, not artwork only',()=>{
- const a=read('app/(protected)/s/[spaceId]/collection/page.tsx')
- assert.match(a,/r.space_id === spaceId && r.slug === item.id && r.image_key === item.id/)
+test('R08: new Stamp Book claim is Room scoped and never uses old point wallet',()=>{
+ const a=read('features/stamp-books/actions.ts')
+ assert.match(a,/pointplus_claim_stamp_book_reward/)
+ assert.match(a,/eq\('book_id',bookId\)\.eq\('space_id',spaceId\)/)
+ assert.doesNotMatch(a,/point_wallets|pointplus_redeem_reward/)
 })
 test('R08: performance script never prints auth cookie or saves secrets',()=>{
  const a=read('scripts/measure-room-latency.mjs')

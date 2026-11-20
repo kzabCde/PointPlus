@@ -4,7 +4,7 @@ import { Brand } from '@/components/brand/pointplus-mark'
 import { ButtonLink } from '@/components/ui/button'
 
 export const metadata: Metadata = {
-  title: 'ภารกิจเล็ก ๆ ความหมายดี ๆ',
+  title: 'สมุดสะสมแสตมป์ของคนสำคัญ',
 }
 
 const sampleStamps = [
@@ -57,8 +57,7 @@ export default function HomePage() {
               <span className="eyebrow">ทำเรื่องเล็กให้มีความหมาย</span>
               <h1 id="hero-heading">ทุกความตั้งใจ<br />มีค่าเมื่อเรา<span>ทำไปด้วยกัน</span></h1>
               <p className="hero__text">
-                PointPlus คือพื้นที่ทำภารกิจ สะสมความสำเร็จ และให้กำลังใจกัน
-                สำหรับตัวคุณเอง คนรัก และครอบครัว โดยไม่เกี่ยวกับการซื้อขายหรือธุรกิจ
+                PointPlus คือสมุดสะสมแสตมป์สำหรับคนสำคัญ สร้างสมุด เลือกลายแสตมป์ให้กัน แล้วเลือกรางวัลเมื่อครบจำนวน สำหรับคู่รัก ครอบครัว และเพื่อน โดยไม่เกี่ยวกับการซื้อขายหรือธุรกิจ
               </p>
               <div className="hero__actions">
                 <ButtonLink href="/register">เริ่มใช้งาน PointPlus <span aria-hidden="true">→</span></ButtonLink>
@@ -70,8 +69,8 @@ export default function HomePage() {
             <div className="hero-art">
               <div className="preview">
                 <div className="preview__top">
-                  <strong>เรื่องดี ๆ ที่อยากทำ</strong>
-                  <small>ตัวอย่างภาพแสตมป์</small>
+                  <strong>สมุดสะสมความสุข</strong>
+                  <small>เลือกภาพได้ทุกครั้ง</small>
                 </div>
                 <div className="preview__stamps">
                   {sampleStamps.map((stamp) => (
@@ -90,7 +89,7 @@ export default function HomePage() {
             <div className="section-heading">
               <span className="eyebrow">พื้นที่ที่เหมาะกับเรา</span>
               <h2 id="spaces-title">ความสัมพันธ์แต่ละแบบ มีวิธีเติบโตที่ต่างกัน</h2>
-              <p>เลือกใช้ PointPlus ในแบบที่เข้ากับชีวิตประจำวันของคุณ โดยไม่ต้องซื้ออะไรเพิ่มเพื่อเก็บแต้ม</p>
+              <p>สร้างสมุดสะสมในห้องของคุณ เลือกผู้รับและรางวัลได้เอง ทุกดวงเป็นเรื่องราวที่มีความหมาย</p>
             </div>
             <div className="feature-grid">
               {spaceTypes.map((space) => (
@@ -111,23 +110,23 @@ export default function HomePage() {
             <div className="section-heading">
               <span className="eyebrow">แนวคิดการใช้งาน</span>
               <h2 id="steps-title">สามขั้นตอน สร้างแรงใจได้ทุกวัน</h2>
-              <p>ภารกิจเป็นเรื่องที่เราตั้งใจทำจริง ไม่ได้ให้แต้มเพียงเพราะเปิดแอปหรือเช็กอิน</p>
+              <p>ไม่จำเป็นต้องสร้างภารกิจก่อนให้แสตมป์ ทุกดวงมีผู้ให้และวันที่บันทึกชัดเจน</p>
             </div>
             <ol className="steps">
               <li>
                 <span className="steps__number">1</span>
-                <strong>กำหนดสิ่งที่อยากทำ</strong>
-                <p>สร้างภารกิจที่เข้ากับเป้าหมายของตัวเอง หรือกิจกรรมที่อยากทำร่วมกับคนสำคัญ</p>
+                <strong>สร้างสมุดสะสม</strong>
+                <p>ตั้งชื่อสมุด เลือกจำนวนดวงและคนที่จะสะสม พร้อมเพิ่มตัวเลือกรางวัล</p>
               </li>
               <li>
                 <span className="steps__number">2</span>
-                <strong>ลงมือและบันทึกความสำเร็จ</strong>
-                <p>ทำภารกิจจริง แล้วส่งให้ผู้ที่เกี่ยวข้องตรวจสอบตามรูปแบบพื้นที่ของคุณ</p>
+                <strong>เลือกแสตมป์ให้กัน</strong>
+                <p>คนที่มีสิทธิ์เลือกลายแสตมป์จาก 18 แบบ และมอบให้ผู้สะสมทีละดวง</p>
               </li>
               <li>
                 <span className="steps__number">3</span>
-                <strong>สะสมกำลังใจ</strong>
-                <p>รับแต้ม แสตมป์ และความสำเร็จที่มีความหมายระหว่างกัน ไม่ใช่เงินหรือส่วนลด</p>
+                <strong>สะสมครบแล้วเลือกรางวัล</strong>
+                <p>เมื่อครบจำนวนที่กำหนด ผู้สะสมเลือกหนึ่งรางวัลที่ตกลงกัน โดยไม่หักแต้ม</p>
               </li>
             </ol>
           </div>
