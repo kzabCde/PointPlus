@@ -65,8 +65,13 @@ export async function giveStampAction(_prev:StampBookState,form:FormData):Promis
     return fail('ข้อมูลตำแหน่งแสตมป์ไม่ครบ')
   const page=Number(text(form,'page_index')),x=Number(text(form,'position_x'))
   const y=Number(text(form,'position_y')),rotation=Number(text(form,'rotation_deg'))
+  const hasScale=form.has('scale_factor')
+  const scale=Number(text(form,'scale_factor'))
+  if(hasScale&&!hasPosition) return fail('ต้องระบุตำแหน่งแสตมป์เมื่อปรับขนาด')
+  if(hasScale&&(!Number.isFinite(scale)||scale<0.4||scale>2.5))
+    return fail('ขนาดแสตมป์ต้องอยู่ระหว่าง 40 ถึง 250 เปอร์เซ็นต์')
   if(hasPosition&&(!Number.isInteger(page)||page<0||page>99||
-     ![x,y,rotation].every(Number.isFinite)||x<0||x>1||y<0||y>1||rotation< -15||rotation>15))
+     ![x,y,rotation].every(Number.isFinite)||x<0||x>1||y<0||y>1||rotation< -180||rotation>180))
     return fail('ตำแหน่งแสตมป์ไม่ถูกต้อง')
   if(![spaceId,bookId,person,key].every(isKey)||!pointPlusStamps.some(s=>s.id===art)||note.length>1000)
     return fail('ข้อมูลการให้แสตมป์ไม่ถูกต้อง')
@@ -74,9 +79,10 @@ export async function giveStampAction(_prev:StampBookState,form:FormData):Promis
   const {data:book,error:bookError}=await supabase.from('stamp_books')
     .select('id').eq('space_id',spaceId).eq('id',bookId).maybeSingle()
   if(bookError||!book) return fail('ไม่พบสมุดนี้ในห้อง')
-  const {data,error}=await supabase.rpc(hasPosition ? 'pointplus_give_stamp_at' : 'pointplus_give_stamp',{
+  const {data,error}=await supabase.rpc(hasScale ? 'pointplus_give_stamp_freely' : hasPosition ? 'pointplus_give_stamp_at' : 'pointplus_give_stamp',{
     p_book:bookId,p_recipient:person,p_art:art,p_note:note||null,p_key:key,
     ...(hasPosition ? {p_page:page,p_x:x,p_y:y,p_rotation:rotation} : {}),
+    ...(hasScale ? {p_scale:scale} : {}),
   })
   if (error) {
     const permissionError = error.code === '42501' ||
