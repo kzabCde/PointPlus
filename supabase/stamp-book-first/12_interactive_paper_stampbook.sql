@@ -38,7 +38,8 @@ ALTER TABLE public.stamp_book_stamp_requests
 ALTER TABLE public.stamp_book_stamp_requests
   ADD CONSTRAINT stamp_book_requests_paper_position_check CHECK (
     (page_index IS NULL AND position_x IS NULL AND position_y IS NULL AND rotation_deg IS NULL)
-    OR (page_index BETWEEN 0 AND 99 AND position_x BETWEEN 0 AND 1
+    OR (page_index IS NOT NULL AND position_x IS NOT NULL AND position_y IS NOT NULL AND rotation_deg IS NOT NULL
+        AND page_index BETWEEN 0 AND 99 AND position_x BETWEEN 0 AND 1
         AND position_y BETWEEN 0 AND 1 AND rotation_deg BETWEEN -15 AND 15)
   );
 ALTER TABLE public.stamp_book_marks
@@ -46,7 +47,8 @@ ALTER TABLE public.stamp_book_marks
 ALTER TABLE public.stamp_book_marks
   ADD CONSTRAINT stamp_book_marks_paper_position_check CHECK (
     (page_index IS NULL AND position_x IS NULL AND position_y IS NULL AND rotation_deg IS NULL)
-    OR (page_index BETWEEN 0 AND 99 AND position_x BETWEEN 0 AND 1
+    OR (page_index IS NOT NULL AND position_x IS NOT NULL AND position_y IS NOT NULL AND rotation_deg IS NOT NULL
+        AND page_index BETWEEN 0 AND 99 AND position_x BETWEEN 0 AND 1
         AND position_y BETWEEN 0 AND 1 AND rotation_deg BETWEEN -15 AND 15)
   );
 
@@ -109,7 +111,7 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'Book not found'; END IF;
 
   v_max_page := CASE WHEN v_book.layout_mode = 'single_sheet'
-    THEN 0 ELSE (v_book.target_count - 1) / 8 END;
+    THEN 0 ELSE (v_book.target_count - 1) / 6 END;
   IF p_page IS NULL OR p_page NOT BETWEEN 0 AND v_max_page
     OR p_x IS NULL OR p_x NOT BETWEEN 0 AND 1
     OR p_y IS NULL OR p_y NOT BETWEEN 0 AND 1
