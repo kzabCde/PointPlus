@@ -14,7 +14,7 @@ const claimLabels={requested:'รอส่งมอบ',fulfilled:'ส่งม�
 export default async function StampBookDetailPage({params}:{params:Promise<{spaceId:string;bookId:string}>}){
  const {spaceId,bookId}=await params
  const {book,context,manager,assigned,giverRecipients,people,givers,styles,rewards,cycles,marks,claims,requests}=await loadStampBookDetail(spaceId,bookId)
- const isGiver=givers.includes(context.user.id)&&book.status==='active'
+ const isGiver=(givers.includes(context.user.id)||(context.space.kind==='couple'&&book.created_by===context.user.id))&&book.status==='active'
  const lookup=(id:string)=>people.find(p=>p.id===id)?.display_name??'ผู้สะสม'
  const bookPath='/s/'+spaceId+'/stamp-books'
  const [totalCompleted,waiting]=[
@@ -26,7 +26,7 @@ export default async function StampBookDetailPage({params}:{params:Promise<{spac
   <header className="stamp-book-detail-head">
    <div><span className="eyebrow">POINT+ · STAMP BOOK</span><h2 className="page-title">{book.title}</h2>
     <p className="muted">{book.description||'ค่อย ๆ เติมความทรงจำทีละดวง'}</p>
-    <p className="muted">{book.target_count} ดวงต่อรอบ · {book.repeatable?'เริ่มรอบใหม่ได้':'ครบแล้วจบเล่ม'} · {book.status==='active'?'เปิดสะสม':book.status==='paused'?'พักสะสม':'เก็บถาวร'}</p></div>
+    <p className="muted">{context.space.kind==='couple'?'ผู้สร้างให้แสตมป์คู่ของตนได้เสมอ · ':''}{book.target_count} ดวงต่อรอบ · {book.repeatable?'เริ่มรอบใหม่ได้':'ครบแล้วจบเล่ม'} · {book.status==='active'?'เปิดสะสม':book.status==='paused'?'พักสะสม':'เก็บถาวร'}</p></div>
    <div className="hero__actions">
     <GiveStampDialog spaceId={spaceId} bookId={bookId} recipients={giverRecipients} styleIds={styles} canGive={isGiver} stampKey={randomUUID()}/>
     {manager&&book.status!=='archived'&&<Link href={bookPath+'/'+bookId+'/edit'} className="button button--secondary">จัดการสมุด</Link>}
