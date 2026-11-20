@@ -49,7 +49,7 @@ BEGIN
   VALUES(book.id,cyc.participant_id,book.space_id,cyc.cycle_no+1,book.target_count);
  END IF;
  RETURN v_mark;
-END $function$
+END $function$;
 
 
 -- Prevent legacy fixed-option redemption from bypassing a Couple memory message.
@@ -90,7 +90,7 @@ BEGIN
  VALUES(cyc.id,cyc.book_id,cyc.participant_id,cyc.space_id,
  rw.id,rw.title,v_uid,p_key) RETURNING id INTO v_claim;
  RETURN v_claim;
-END $function$
+END $function$;
 
 
 -- Recipient enters a free-text reward and archives the completed book.
