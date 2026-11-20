@@ -8,6 +8,7 @@ import { ClaimStampRewardForm, ClaimCoupleMemoryForm, ReviewStampForm, ProcessBo
 import { StampBookJournal } from '@/features/stamp-books/journal'
 import { activityKey, type JournalCycle } from '@/features/stamp-books/journal-model'
 import { BookMotionProvider } from '@/features/stamp-books/motion'
+import { BookSoundControls, BookSoundProvider } from '@/features/stamp-books/sound'
 import { BookCover, bookStatus } from '@/features/stamp-books/presentation'
 
 export const metadata: Metadata = { title: 'สมุดสะสมแสตมป์' }
@@ -50,7 +51,7 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
         if (mark.request_id) confirmed.push(activityKey({ kind: 'stamp', id: mark.request_id }))
         return {
           id: mark.id, request_id: mark.request_id, asset_id: mark.asset_id, stamped_at: mark.stamped_at, note: mark.note,
-          page_index: mark.page_index, position_x: mark.position_x, position_y: mark.position_y, rotation_deg: mark.rotation_deg,
+          page_index: mark.page_index, position_x: mark.position_x, position_y: mark.position_y, rotation_deg: mark.rotation_deg, scale_factor: mark.scale_factor,
           giver: giverNames.get(mark.giver_user_id) ?? 'สมาชิกในห้อง', date: readable(mark.stamped_at),
         }
       })
@@ -81,7 +82,7 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
   })
   const pendingClaims = manager ? claims.filter(claim => claim.status === 'requested') : []
 
-  return <BookMotionProvider key={bookId} confirmed={confirmed}>
+  return <BookSoundProvider><BookMotionProvider key={bookId} confirmed={confirmed}>
     <section className="stamp-book-page">
       <header className="stamp-book-detail-head">
         <BookCover assetId={book.cover_asset_id} eager/>
@@ -92,6 +93,7 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
           <p className="muted">{book.target_count} ดวงต่อรอบ · {book.repeatable ? 'สะสมได้หลายรอบ' : 'สะสมรอบเดียว'}</p>
         </div>
         <div className="hero__actions">
+          <BookSoundControls/>
           {book.status === 'archived' && <Link href={bookPath + '?view=archive'}
             className="button button--secondary">กลับไปสมุดเก็บถาวร</Link>}
           
@@ -135,5 +137,5 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
         </article>)}
       </section>}
     </section>
-  </BookMotionProvider>
+  </BookMotionProvider></BookSoundProvider>
 }
