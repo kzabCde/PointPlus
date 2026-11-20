@@ -39,7 +39,7 @@ test('both regular and couple creators choose card vs book explicitly', () => {
 })
 test('fixed-slot cards restore the original sequential accumulation and confirmed marks only',()=>{
   assert.match(card, /Array\.from\(\{ length: count \}/)
-  assert.match(card, /cycle\.marks\[index\]/)
+  assert.match(card, /cardMarkSlots\(cycle\.marks, count\)/)
   assert.match(card, /data-earned=\{!!mark\}/)
   assert.match(card, /status === 'pending'/)
   assert.match(journal, /layoutMode === 'stamp_card'/)
@@ -55,14 +55,16 @@ test('fixed-slot cards restore the original sequential accumulation and confirme
 test('card giving uses the original authorized/idempotent RPC, without placement-only fields',()=>{
   const give = form.slice(form.indexOf('export function GiveStampDialog'),
     form.indexOf('export function ClaimStampRewardForm'))
-  assert.match(detail, /GiveStampDialog/)
-  assert.match(detail, /layout_mode === 'stamp_card'/)
+  assert.doesNotMatch(detail, /GiveStampDialog/)
+  assert.match(journal, /layoutMode === 'stamp_card'/)
+  assert.match(card, /onClick=\{\(\) => openSlot\(index\)\}/)
+  assert.match(card, /form\.set\('card_slot', String\(selectedSlot\)\)/)
   assert.match(give, /useBookAction\(giveStampAction\)/)
   assert.match(give, /idempotency_key/)
   assert.match(give, /recipient_id/)
   assert.match(give, /name="asset_id"/)
   assert.doesNotMatch(give, /name="position_x"|name="rotation_deg"/)
-  assert.match(actions, /hasScale \? 'pointplus_give_stamp_freely' : hasPosition \? 'pointplus_give_stamp_at' : 'pointplus_give_stamp'/)
+  assert.match(actions, /hasCardSlot \? 'pointplus_give_stamp_to_card'/)
 })
 test('creating a stamp card dispatches unchanged creator parameters plus the chosen layout',async()=>{
   const compiled = ts.transpileModule(actions, {
