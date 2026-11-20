@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import './stamp-books/stamp-books.css'
+import './stamp-books/journal.css'
 import Link from 'next/link'
 import { Navigation } from '../../navigation'
 import { roomKindLabels } from '@/features/rooms/presentation'

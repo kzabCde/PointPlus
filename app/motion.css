@@ -1,0 +1,31 @@
+:root {
+  --motion-press: 150ms;
+  --motion-hover: 180ms;
+  --motion-dialog: 220ms;
+  --motion-enter: 280ms;
+  --motion-progress: 450ms;
+  --motion-stamp: 450ms;
+  --motion-page: 600ms;
+  --motion-reveal: 900ms;
+  --motion-out: cubic-bezier(.22, 1, .36, 1);
+  --motion-turn: cubic-bezier(.46, .04, .26, 1);
+  --motion-settle: cubic-bezier(.25, .8, .3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-press: 0ms;
+    --motion-hover: 0ms;
+    --motion-dialog: 0ms;
+    --motion-enter: 0ms;
+    --motion-progress: 0ms;
+    --motion-stamp: 0ms;
+    --motion-page: 0ms;
+    --motion-reveal: 0ms;
+  }
+}
+
+@keyframes pointplus-enter {
+  from { opacity: .72; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}

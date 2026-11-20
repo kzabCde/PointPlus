@@ -7,26 +7,29 @@ import { BookShelf } from '@/features/stamp-books/presentation'
 
 export const metadata: Metadata = { title: 'สมุดสะสมแสตมป์' }
 
-export default async function StampBooksPage({ params }: { params: Promise<{ spaceId: string }> }) {
-  const { spaceId } = await params
+export default async function StampBooksPage({ params, searchParams }: {
+  params: Promise<{ spaceId: string }>
+  searchParams: Promise<{ view?: string | string[] }>
+}) {
+  const [{ spaceId }, { view }] = await Promise.all([params, searchParams])
   const { context, books, cycles, eligible } = await loadStampBookBoard(spaceId)
-  const manager = context.space.kind==='couple' || canManage(context.member.role)
-  const current = books.filter(book => book.status !== 'archived')
-  const archive = books.filter(book => book.status === 'archived')
+  const manager = context.space.kind === 'couple' || canManage(context.member.role)
+  const archived = view === 'archive'
+  const shelf = books.filter(book => (book.status === 'archived') === archived)
   const base = '/s/' + spaceId + '/stamp-books'
   const create = manager && <Link href={base + '/new'} className="button button--primary">สร้างสมุดใหม่</Link>
 
   return <section className="stamp-book-page">
-    <SectionHeader title="สมุดสะสมของเรา" actions={current.length > 0 && create}/>
-    {current.length > 0
-      ? <BookShelf books={current} cycles={cycles} people={eligible} base={base}/>
+    <SectionHeader title="สมุดสะสมของเรา" actions={(archived || shelf.length > 0) && create}/>
+    <nav className="shelf-nav" aria-label="ชั้นสมุด">
+      <Link href={base} aria-current={archived ? undefined : 'page'}>สมุดในห้อง</Link>
+      <Link href={base + '?view=archive'} aria-current={archived ? 'page' : undefined}>สมุดเก็บถาวร</Link>
+    </nav>
+    {shelf.length > 0
+      ? <BookShelf books={shelf} cycles={cycles} people={eligible} base={base}/>
       : <div className="card empty-state">
-        <h3>ยังไม่มีสมุดที่เปิดอยู่</h3>
-        {create}
+        <h3>{archived ? 'ยังไม่มีสมุดเก็บถาวร' : 'ยังไม่มีสมุดที่เปิดอยู่'}</h3>
+        {archived ? <Link href={base} className="button button--secondary">กลับไปสมุดในห้อง</Link> : create}
       </div>}
-    {archive.length > 0 && <details className="stamp-book-archive">
-      <summary>สมุดเก็บถาวร ({archive.length})</summary>
-      <BookShelf books={archive} cycles={cycles} people={eligible} base={base}/>
-    </details>}
   </section>
 }

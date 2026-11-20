@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { canManage, getSpaceContext, getSpaceParticipants, getSpaceMembers, type Participant } from '@/features/spaces/data'
+import { canManage, getSpaceContext, getSpaceParticipants, type Participant } from '@/features/spaces/data'
 
 export type StampBook = {
  id:string; space_id:string; created_by:string; title:string; description:string|null;
@@ -11,7 +11,7 @@ export type StampCycle = {
  target_snapshot:number;progress_count:number;completed_at:string|null;created_at:string
 }
 export type BookMark = {
- id:string;cycle_id:string;participant_id:string;asset_id:string;giver_user_id:string;
+ id:string;request_id:string;cycle_id:string;participant_id:string;asset_id:string;giver_user_id:string;
  note:string|null;stamped_at:string
 }
 export type BookClaim = {
@@ -46,8 +46,8 @@ export async function loadStampBookBoard(spaceId:string) {
  return {context,books:(books??[]) as StampBook[],cycles:(result.data??[]) as StampCycle[],eligible}
 }
 export async function loadStampBookDetail(spaceId:string,bookId:string) {
- const [context,people,members]=await Promise.all([
-   getSpaceContext(spaceId),getSpaceParticipants(spaceId, { includeArchived: true }),getSpaceMembers(spaceId),
+ const [context,people]=await Promise.all([
+   getSpaceContext(spaceId),getSpaceParticipants(spaceId, { includeArchived: true }),
  ])
  const {supabase,user,member}=context
  const manager=canManage(member.role)
@@ -64,8 +64,8 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
  supabase.from('stamp_book_reward_options').select('id,title,description,stock_remaining,active').eq('book_id',bookId),
  supabase.from('stamp_book_cycles').select('id,book_id,participant_id,space_id,cycle_no,target_snapshot,progress_count,completed_at,created_at')
   .eq('book_id',bookId).order('cycle_no',{ascending:false}).limit(400),
- supabase.from('stamp_book_marks').select('id,cycle_id,participant_id,asset_id,giver_user_id,note,stamped_at')
-  .eq('book_id',bookId).order('stamped_at',{ascending:true}).limit(1000),
+ supabase.from('stamp_book_marks').select('id,request_id,cycle_id,participant_id,asset_id,giver_user_id,note,stamped_at')
+  .eq('book_id',bookId).order('stamped_at',{ascending:true}).order('id').limit(1000),
  supabase.from('stamp_book_claims').select('id,cycle_id,participant_id,reward_option_id,reward_title_snapshot,status,claimed_at')
   .eq('book_id',bookId).order('claimed_at',{ascending:false}).limit(400),
  supabase.from('stamp_book_stamp_requests').select('id,participant_id,asset_id,giver_user_id,note,created_at,status')
@@ -84,7 +84,7 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
        || (cycles.data ?? []).some(cycle => cycle.participant_id === p.id && !cycle.completed_at && cycle.progress_count < cycle.target_snapshot)))
  const bookManager=context.space.kind==='couple' ? book.created_by===user.id : manager
  return {
- context,manager:bookManager,people,assigned,giverRecipients,members,book:book as StampBook,
+ context,manager:bookManager,people,assigned,giverRecipients,book:book as StampBook,
  givers:[...new Set([...(givers.data??[]).map(x=>x.user_id),
    ...(context.space.kind==='couple'?[book.created_by]:[])])] as string[],
  styles:(styles.data??[]).map(x=>x.asset_id) as string[],

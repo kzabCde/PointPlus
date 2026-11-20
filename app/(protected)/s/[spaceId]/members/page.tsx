@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getSpaceContext, getSpaceMembers, getSpaceParticipants, canManage } from '@/features/spaces/data'
+import { SectionHeader } from '@/components/ui/section-header'
 import { roomRoleLabels } from '@/features/rooms/presentation'
 import { InviteForm } from '@/features/invitations/invite-form'
 
@@ -11,8 +12,8 @@ export default async function MembersPage({ params }: { params: Promise<{ spaceI
   ])
   const names = new Map(participants.filter((p) => p.kind === 'adult').map((p) => [p.user_id, p.display_name]))
   return (
-    <>
-      <h2>สมาชิกของพื้นที่</h2>
+    <section className="stationery-stack">
+      <SectionHeader title="สมาชิกของพื้นที่"/>
       <ul className="card member-list">
         {members.map(person => {
           const name = names.get(person.user_id) ?? 'สมาชิก'
@@ -22,10 +23,9 @@ export default async function MembersPage({ params }: { params: Promise<{ spaceI
           </li>
         })}
       </ul>
-      {space.kind !== 'personal' && canManage(member.role) && <div style={{ marginTop: 20 }}>
-        <InviteForm spaceId={space.id} isOwner={member.role === 'owner'} />
-      </div>}
+      {space.kind !== 'personal' && canManage(member.role) &&
+        <InviteForm spaceId={space.id} isOwner={member.role === 'owner'}/>}
       {!canManage(member.role) && <p className="muted">ผู้ดูแลพื้นที่เป็นผู้สร้างคำเชิญสมาชิก</p>}
-    </>
+    </section>
   )
 }

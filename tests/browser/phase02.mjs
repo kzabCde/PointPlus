@@ -21,16 +21,21 @@ const ids = {
   paused: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   reward: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   claim: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  otherClaim: '13131313-1313-4313-8313-131313131313',
   notice: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   cycle: '88888888-8888-4888-8888-888888888888',
   otherCycle: '99999999-9999-4999-8999-999999999999',
+  pastCycle: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+  nextCycle: '12121212-1212-4212-8212-121212121212',
+  approvedRequest: '23232323-2323-4232-8232-232323232323',
 }
 const now = '2025-06-07T09:00:00Z'
 const authUser = { id: ids.user, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: now }
 const room = { id: ids.room, name: 'บ้านของเรา', kind: 'family', owner_id: ids.user, timezone: 'Asia/Bangkok' }
-const firstBook = { id: ids.book, space_id: room.id, created_by: ids.user, title: 'ช่วงเวลาดี ๆ ของเรา', description: 'เก็บวันที่เราได้อ่านหนังสือและใช้เวลาด้วยกัน', cover_asset_id: 'family-books', target_count: 6, repeatable: true, allow_self_stamp: false, approval_policy: 'approval_required', status: 'active', created_at: now }
+const firstBook = { id: ids.book, space_id: room.id, created_by: ids.user, title: 'ช่วงเวลาดี ๆ ของเรา', description: 'เก็บวันที่เราได้อ่านหนังสือและใช้เวลาด้วยกัน', cover_asset_id: 'family-books', target_count: 8, repeatable: true, allow_self_stamp: false, approval_policy: 'approval_required', status: 'active', created_at: now }
 const tables = {
   spaces: [room],
+  profiles: [{ id: ids.user, display_name: 'ใบบัว', locale: 'th', timezone: 'Asia/Bangkok', avatar_path: null }],
   space_members: [
     { space_id: room.id, user_id: ids.user, role: 'owner', joined_at: now },
     { space_id: room.id, user_id: ids.partner, role: 'admin', joined_at: now },
@@ -41,12 +46,15 @@ const tables = {
   ],
   stamp_books: [firstBook, { ...firstBook, id: ids.paused, status: 'paused', title: 'บันทึกช่วงเวลาพิเศษ', description: null, cover_asset_id: 'couple-heart' }, { ...firstBook, id: ids.archive, status: 'archived', title: 'สมุดวันหยุด', cover_asset_id: 'personal-sunrise' }],
   stamp_book_cycles: [
-    { id: ids.cycle, book_id: ids.book, space_id: room.id, participant_id: ids.participant, cycle_no: 1, target_snapshot: 6, progress_count: 2, completed_at: null, created_at: now },
-    { id: ids.otherCycle, book_id: ids.book, space_id: room.id, participant_id: ids.otherParticipant, cycle_no: 1, target_snapshot: 6, progress_count: 0, completed_at: null, created_at: now },
+    { id: ids.cycle, book_id: ids.book, space_id: room.id, participant_id: ids.participant, cycle_no: 2, target_snapshot: 8, progress_count: 2, completed_at: null, created_at: now },
+    { id: ids.pastCycle, book_id: ids.book, space_id: room.id, participant_id: ids.participant, cycle_no: 1, target_snapshot: 1, progress_count: 1, completed_at: now, created_at: now },
+    { id: ids.otherCycle, book_id: ids.book, space_id: room.id, participant_id: ids.otherParticipant, cycle_no: 1, target_snapshot: 8, progress_count: 0, completed_at: null, created_at: now },
   ],
   stamp_book_marks: [
-    { id: 'mark-a', book_id: ids.book, cycle_id: ids.cycle, participant_id: ids.participant, asset_id: 'family-books', giver_user_id: ids.user, stamped_at: now, note: 'ขอบคุณที่อ่านด้วยกัน' },
-    { id: 'mark-b', book_id: ids.book, cycle_id: ids.cycle, participant_id: ids.participant, asset_id: 'couple-heart', giver_user_id: ids.user, stamped_at: now, note: null },
+    { id: 'mark-past', request_id: 'past-stamp', book_id: ids.book, cycle_id: ids.pastCycle, participant_id: ids.participant,
+      asset_id: 'family-books', giver_user_id: ids.user, stamped_at: now, note: 'ความทรงจำรอบแรก' },
+    { id: 'mark-a', request_id: 'original-a', book_id: ids.book, cycle_id: ids.cycle, participant_id: ids.participant, asset_id: 'family-books', giver_user_id: ids.user, stamped_at: now, note: 'ขอบคุณที่อ่านด้วยกัน' },
+    { id: 'mark-b', request_id: 'original-b', book_id: ids.book, cycle_id: ids.cycle, participant_id: ids.participant, asset_id: 'couple-heart', giver_user_id: ids.user, stamped_at: now, note: null },
   ],
   stamp_book_recipients: [
     { book_id: ids.book, participant_id: ids.participant },
@@ -63,6 +71,7 @@ const calls = []
 const inviteToken = 'a'.repeat(64)
 let inviteUsed = false
 let failNextCreate = true
+let forcedStampResult = null
 const fixture = createServer(async (request, response) => {
   const url = new URL(request.url, 'http://127.0.0.1')
   function json(payload, status = 200) {
@@ -83,11 +92,29 @@ const fixture = createServer(async (request, response) => {
       return json(ids.book)
     }
     if (table === 'pointplus_give_stamp') {
-      tables.stamp_book_stamp_requests.push({
-        id: 'pending-stamp', book_id: ids.book, participant_id: ids.participant, asset_id: calls.at(-1).payload.p_art,
-        giver_user_id: ids.user, status: 'pending', created_at: now, note: calls.at(-1).payload.p_note,
-      })
-      return json({ request_id: 'pending-stamp', status: 'pending' })
+      const forced = forcedStampResult
+      forcedStampResult = null
+      if (forced === 'denied') return json({ message: 'Not authorized to give this stamp', code: '42501' }, 403)
+      if (forced === 'rejected') return json({ request_id: ids.approvedRequest, status: 'rejected' })
+      const { p_art, p_note } = calls.at(-1).payload
+      if (firstBook.approval_policy === 'approval_required') {
+        tables.stamp_book_stamp_requests.push({
+          id: 'pending-stamp', book_id: ids.book, participant_id: ids.participant, asset_id: p_art,
+          giver_user_id: ids.user, status: 'pending', created_at: now, note: p_note,
+        })
+        return json({ request_id: 'pending-stamp', status: 'pending' })
+      }
+      if (!tables.stamp_book_marks.some(mark => mark.request_id === ids.approvedRequest)) {
+        const current = tables.stamp_book_cycles.find(cycle => cycle.id === ids.cycle)
+        tables.stamp_book_marks.push({
+          id: 'mark-confirmed', request_id: ids.approvedRequest, book_id: ids.book, cycle_id: current.id,
+          participant_id: ids.participant, asset_id: p_art, giver_user_id: ids.user, stamped_at: '2025-06-08T09:00:00Z', note: p_note,
+        })
+        current.progress_count++
+        current.completed_at = '2025-06-08T09:00:00Z'
+        tables.stamp_book_cycles.push({ ...current, id: ids.nextCycle, cycle_no: 3, progress_count: 0, completed_at: null })
+      }
+      return json({ request_id: ids.approvedRequest, status: 'approved' })
     }
     if (table === 'pointplus_claim_stamp_book_reward') {
       tables.stamp_book_claims.push({
@@ -98,7 +125,10 @@ const fixture = createServer(async (request, response) => {
       return json(ids.claim)
     }
     if (table === 'pointplus_process_stamp_book_claim') {
-      tables.stamp_book_claims[0].status = calls.at(-1).payload.p_decision
+      const { p_claim, p_decision } = calls.at(-1).payload
+      const claim = tables.stamp_book_claims.find(entry => entry.id === p_claim)
+      if (!claim) return json({ message: 'Claim not found' }, 404)
+      claim.status = p_decision
       return json(null)
     }
     if (table === 'pointplus_create_invite') return json(inviteToken)
@@ -143,7 +173,22 @@ try {
     await setTimeout(500)
   }
   browser = await chromium.launch({ executablePath: process.env.POINTPLUS_CHROMIUM ?? '/usr/bin/chromium', args: ['--no-sandbox'] })
-  const context = await browser.newContext({ reducedMotion: 'reduce', locale: 'th-TH' })
+  const context = await browser.newContext({ reducedMotion: 'reduce', locale: 'th-TH', hasTouch: true })
+  await context.addInitScript(() => {
+    window.pointplusMeasures = { start: [], end: [], shifts: 0 }
+    for (const [event, state] of [['animationstart', 'start'], ['animationend', 'end']]) {
+      document.addEventListener(event, ({ animationName, elapsedTime }) => {
+        if (animationName.startsWith('pointplus-')) {
+          window.pointplusMeasures[state].push({ animationName, elapsedMs: Math.round(elapsedTime * 1000), at: performance.now() })
+        }
+      })
+    }
+    new PerformanceObserver(list => {
+      for (const entry of list.getEntries()) {
+        if (!entry.hadRecentInput) window.pointplusMeasures.shifts += entry.value
+      }
+    }).observe({ type: 'layout-shift', buffered: true })
+  })
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base })
   const page = await context.newPage()
   page.setDefaultTimeout(12000)
@@ -190,6 +235,8 @@ try {
     [library + '/new', 'สร้างสมุดเล่มใหม่', 'wizard'],
     [detail, firstBook.title, 'journal'],
     [root + '/members', 'สมาชิกของพื้นที่', 'members'],
+    [root + '/settings', 'ตั้งค่าห้อง', 'settings'],
+    ['/profile', 'โปรไฟล์ของฉัน', 'profile'],
     ['/notifications', 'การแจ้งเตือน', 'notifications'],
     ['/join', 'เข้าร่วมพื้นที่', 'join'],
   ]
@@ -230,6 +277,10 @@ try {
       }
       if (screenshots && ((width === 390 && !['members', 'notifications', 'join'].includes(filename)) || (width === 1440 && ['library', 'journal'].includes(filename)))) {
         await screenshot(filename + '-' + width)
+        if (filename === 'journal' && width === 390) {
+          await page.locator('.journal-spread').first().scrollIntoViewIfNeeded()
+          await screenshot('journal-spread-390')
+        }
       }
     }
     console.log('Layout checks passed at ' + width + 'px')
@@ -286,8 +337,41 @@ try {
     assert.deepEqual(payload.p_recipients, [ids.participant])
   }
 
-  await page.getByText(/รายละเอียดแสตมป์/).click()
-  await page.getByText('ขอบคุณที่อ่านด้วยกัน', { exact: true }).waitFor()
+  const journal = page.getByRole('article', { name: 'มะลิ', exact: true })
+  const spread = journal.locator('.journal-spread')
+  const slots = journal.locator('.journal-slots')
+  const nextLeaf = journal.getByRole('button', { name: 'หน้าถัดไป' })
+  const previousLeaf = journal.getByRole('button', { name: 'หน้าก่อน' })
+  await journal.getByText('ขอบคุณที่อ่านด้วยกัน', { exact: true }).waitFor()
+  assert.equal(await spread.locator('.journal-slot').count(), 6)
+  const initialHeight = (await spread.boundingBox()).height
+  await nextLeaf.click()
+  await journal.getByText('หน้า 2 / 2', { exact: true }).waitFor()
+  assert.equal(await spread.locator('.journal-slot').count(), 2)
+  assert.equal((await spread.boundingBox()).height, initialHeight)
+  assert.equal(await spread.evaluate(el => el.getAnimations({ subtree: true }).length), 0)
+  await nextLeaf.press('ArrowLeft')
+  await journal.getByText('หน้า 1 / 2', { exact: true }).waitFor()
+  assert.equal(await nextLeaf.evaluate(el => el === document.activeElement), true)
+  await previousLeaf.press('End')
+  await journal.getByText('หน้า 2 / 2', { exact: true }).waitFor()
+  await previousLeaf.press('Home')
+  await journal.getByText('หน้า 1 / 2', { exact: true }).waitFor()
+
+  await slots.scrollIntoViewIfNeeded()
+  const box = await slots.boundingBox()
+  const x = Math.round(box.x + box.width * .8)
+  const y = Math.round(box.y + box.height * .24)
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 80, y }] })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await journal.getByText('หน้า 2 / 2', { exact: true }).waitFor()
+  await cdp.detach()
+  await journal.getByLabel('รอบสะสม').selectOption(ids.pastCycle)
+  await journal.getByText('ความทรงจำรอบแรก', { exact: true }).waitFor()
+  await journal.getByLabel('รอบสะสม').selectOption(ids.cycle)
+
   const give = page.getByRole('button', { name: '+ ให้แสตมป์' })
   await give.click()
   await page.getByRole('dialog').waitFor()
@@ -298,25 +382,125 @@ try {
   await give.click()
   await page.getByLabel(/ข้อความสั้น/).fill('ข้อความทดสอบ')
   await screenshot('give-stamp-390')
-  await page.getByRole('button', { name: 'ยืนยันให้ 1 ดวง' }).click()
+  await page.getByRole('button', { name: 'ส่งคำขอแสตมป์' }).click()
   await page.getByText('ส่งคำขอแล้ว · รออนุมัติ', { exact: true }).waitFor()
-  assert.equal(await page.getByRole('progressbar', { name: 'แสตมป์ของ มะลิ' }).getAttribute('value'), '2')
+  assert.equal(await journal.getByRole('progressbar').getAttribute('value'), '2')
+  assert.equal(await page.locator('[data-impact]').count(), 0)
   assert.equal(calls.at(-1).rpc, 'pointplus_give_stamp')
+
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  const openCycle = tables.stamp_book_cycles.find(cycle => cycle.id === ids.cycle)
+  openCycle.progress_count = 7
+  for (let index = 2; index < 7; index++) {
+    tables.stamp_book_marks.push({
+      id: 'setup-' + index, request_id: 'existing-' + index, book_id: ids.book, cycle_id: ids.cycle,
+      participant_id: ids.participant, asset_id: 'family-books', giver_user_id: ids.user, stamped_at: now, note: null,
+    })
+  }
+  firstBook.approval_policy = 'direct'
+  await page.goto(base + detail)
+  await page.waitForFunction(() => window.pointplusMeasures.end.some(event => event.animationName === 'pointplus-leaf-turn'))
+  await nextLeaf.click()
+  await page.waitForFunction(() => window.pointplusMeasures.end.filter(event => event.animationName === 'pointplus-leaf-turn').length === 2)
+  await previousLeaf.click()
+  await page.waitForFunction(() => window.pointplusMeasures.end.filter(event => event.animationName === 'pointplus-leaf-turn').length === 3)
+
+  forcedStampResult = 'rejected'
+  await give.click()
+  await page.getByRole('button', { name: 'ยืนยันให้ 1 ดวง' }).click()
+  await page.getByRole('alert').getByText('คำขอแสตมป์ถูกปฏิเสธ').waitFor()
+  assert.equal(await journal.getByRole('progressbar').getAttribute('value'), '7')
+  assert.equal(await page.locator('[data-impact]').count(), 0)
+
+  forcedStampResult = 'denied'
+  await give.click()
+  await page.getByRole('button', { name: 'ยืนยันให้ 1 ดวง' }).click()
+  await page.getByRole('alert').getByText('บัญชีนี้ไม่มีสิทธิ์ให้แสตมป์แก่ผู้สะสมคนนี้').waitFor()
+  assert.equal(await journal.getByRole('progressbar').getAttribute('value'), '7')
+  assert.equal(await page.locator('[data-impact]').count(), 0)
+
+  await page.getByLabel(/ข้อความสั้น/).fill('แสตมป์ดวงสุดท้าย')
+  const giveKey = await page.locator('dialog [name=idempotency_key]').inputValue()
+  await page.getByRole('button', { name: 'ยืนยันให้ 1 ดวง' }).click()
+  await journal.getByText('หน้า 2 / 2', { exact: true }).waitFor()
+  await journal.locator('[data-impact] .journal-slot__art').waitFor()
+  await journal.getByText('แสตมป์ดวงสุดท้าย', { exact: true }).waitFor()
+  assert.equal(await journal.getByRole('progressbar').getAttribute('value'), '8')
+  assert.equal(await journal.getByLabel('รอบสะสม').inputValue(), ids.cycle)
+  assert.equal(await journal.locator('[data-impact] .journal-slot__number').textContent(), '08')
+  assert.equal(await journal.locator('[data-celebrate]').count(), 1)
+  await page.waitForFunction(() => window.pointplusMeasures.end.some(event => event.animationName === 'pointplus-stamp-impact'))
+  const impactMeasures = await page.evaluate(() => window.pointplusMeasures)
+  assert.equal(impactMeasures.end.find(event => event.animationName === 'pointplus-stamp-impact').elapsedMs, 450)
+  assert.equal(impactMeasures.end.find(event => event.animationName === 'pointplus-leaf-turn').elapsedMs, 600)
+  assert.ok(impactMeasures.shifts <= .01, 'Unexpected layout shift while applying a confirmed stamp')
+  await screenshot('completed-cycle-390')
+  await journal.getByLabel('รอบสะสม').selectOption(ids.nextCycle)
+  assert.equal(await journal.getByRole('progressbar').getAttribute('value'), '0')
+  await journal.getByLabel('รอบสะสม').selectOption(ids.cycle)
+  assert.equal(await journal.locator('[data-impact]').count(), 0)
+  const callsBeforeReplay = calls.length
+  await give.click()
+  await page.getByLabel(/ข้อความสั้น/).fill('แสตมป์ดวงสุดท้าย')
+  await page.getByRole('button', { name: 'ยืนยันให้ 1 ดวง' }).evaluate((submit, key) => {
+    submit.form.elements.namedItem('idempotency_key').value = key
+    submit.form.requestSubmit(submit)
+  }, giveKey)
+  await page.getByRole('dialog').waitFor({ state: 'hidden' })
+  assert.equal(calls.length, callsBeforeReplay + 1)
+  await page.getByText('เพิ่มแสตมป์ 1 ดวงแล้ว', { exact: true }).waitFor()
+  assert.equal(calls.at(-1).payload.p_key, giveKey)
+  assert.equal(await journal.locator('[data-impact]').count(), 0)
+  assert.equal(await journal.getByRole('progressbar').getAttribute('value'), '8')
+
   const complete = tables.stamp_book_cycles.find(cycle => cycle.id === ids.otherCycle)
-  Object.assign(complete, { progress_count: 6, completed_at: now })
+  Object.assign(complete, { progress_count: complete.target_snapshot, completed_at: now })
   await page.goto(base + detail)
   const reward = page.getByRole('radio', { name: /เลือกหนังดูด้วยกัน/ })
   await reward.check()
   await screenshot('reward-selection-390')
   await page.getByRole('button', { name: 'ยืนยันขอรางวัล' }).click()
   await page.getByText('รางวัล: เลือกหนังดูด้วยกัน · รอส่งมอบ', { exact: true }).waitFor()
+  await page.locator('[data-status="requested"] [data-reveal="requested"]').waitFor()
+  assert.equal(await page.locator('[data-reveal="fulfilled"]').count(), 0)
+  await page.waitForFunction(() => window.pointplusMeasures.end
+    .some(event => event.animationName === 'pointplus-reward-lid' && event.elapsedMs === 900))
   assert.deepEqual(
     Object.fromEntries(Object.entries(calls.at(-1).payload).filter(([key]) => key !== 'p_key')),
     { p_cycle: ids.otherCycle, p_reward: ids.reward },
   )
   await page.getByRole('button', { name: 'ส่งมอบแล้ว', exact: true }).click()
   await page.getByText('รางวัล: เลือกหนังดูด้วยกัน · ส่งมอบแล้ว', { exact: true }).waitFor()
+  await page.locator('[data-status="fulfilled"] [data-reveal="fulfilled"]').waitFor()
   assert.equal(calls.at(-1).rpc, 'pointplus_process_stamp_book_claim')
+  await page.waitForFunction(() => window.pointplusMeasures.end.filter(event => event.animationName === 'pointplus-reward-lid').length >= 2)
+  const rewardMeasures = await page.evaluate(() => window.pointplusMeasures)
+  assert.ok(rewardMeasures.shifts <= .01, 'Unexpected layout shift during reward reveal')
+  await screenshot('reward-fulfilled-390')
+
+  tables.stamp_book_claims.push({
+    ...tables.stamp_book_claims[0], id: ids.otherClaim, cycle_id: ids.cycle,
+    participant_id: ids.participant, reward_title_snapshot: 'เลือกกิจกรรมวันหยุด', status: 'requested',
+  })
+  await page.goto(base + detail)
+  await journal.getByLabel('รอบสะสม').selectOption(ids.cycle)
+  assert.equal(await page.locator('[data-reveal]').count(), 0)
+  await page.getByRole('button', { name: 'ยกเลิก', exact: true }).click()
+  await journal.getByText('รางวัล: เลือกกิจกรรมวันหยุด · ยกเลิก', { exact: true }).waitFor()
+  assert.equal(calls.at(-1).payload.p_claim, ids.otherClaim)
+  assert.equal(await page.locator('[data-reveal]').count(), 0)
+  function wallTime(metrics, name, occurrence = 0) {
+    const started = metrics.start.filter(event => event.animationName === name)[occurrence]
+    const ended = metrics.end.filter(event => event.animationName === name)[occurrence]
+    return Math.round(ended.at - started.at)
+  }
+  console.log('Motion measurements: ' + JSON.stringify({
+    openingMs: wallTime(impactMeasures, 'pointplus-leaf-turn'),
+    turnMs: wallTime(impactMeasures, 'pointplus-leaf-turn', 1),
+    impactMs: wallTime(impactMeasures, 'pointplus-stamp-impact'),
+    rewardMs: wallTime(rewardMeasures, 'pointplus-reward-lid'),
+    stampLayoutShift: impactMeasures.shifts, rewardLayoutShift: rewardMeasures.shifts,
+  }))
 
   await page.goto(base + root + '/members')
   await page.getByRole('button', { name: 'สร้างลิงก์เชิญ' }).click()
@@ -341,7 +525,7 @@ try {
   await page.goto(base + '/s/ffffffff-ffff-4fff-8fff-ffffffffffff')
   await page.getByRole('heading', { name: 'เปิดห้องหรือสมุดนี้ไม่ได้' }).waitFor()
   assert.equal(errors.length, 0, errors.join('\n'))
-  console.log('Fixture checks passed for wizard validation and retry, journal history, dialog focus, pending stamps, reward request and fulfillment, invitation copy and join, and notification read state.')
+  console.log('Fixture checks passed for keyboard, touch, reduced motion, historical and repeat cycles, wizard validation and retry, dialog focus, pending, rejected and denied stamps, exact confirmed placement and harmless replay, reward request, fulfillment and cancellation, invitation copy and join, and notification read state.')
 } finally {
   await browser?.close()
   next.kill()

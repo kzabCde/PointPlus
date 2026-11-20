@@ -17,11 +17,19 @@ export function BookCover({ assetId, eager = false }: { assetId: string | null; 
   </span>
 }
 
-export function BookProgress({ label, cycle, showLabel = true }: { label: string; cycle: StampCycle; showLabel?: boolean }) {
+export function BookProgress({ label, cycle, showLabel = true }: {
+  label: string
+  cycle: Pick<StampCycle, 'progress_count' | 'target_snapshot'>
+  showLabel?: boolean
+}) {
+  const fraction = cycle.progress_count / cycle.target_snapshot
   return <div className={'book-progress' + (showLabel ? '' : ' book-progress--single')}>
     {showLabel && <span>{label}</span>}
     <strong>{cycle.progress_count} / {cycle.target_snapshot} ดวง</strong>
-    <progress aria-label={'แสตมป์ของ ' + label} max={cycle.target_snapshot} value={cycle.progress_count}/>
+    <span className="book-progress__track" aria-hidden="true">
+      <span className="book-progress__fill" style={{ transform: 'scaleX(' + fraction + ')' }}/>
+    </span>
+    <progress className="sr-only" aria-label={'แสตมป์ของ ' + label} max={cycle.target_snapshot} value={cycle.progress_count}/>
   </div>
 }
 
@@ -46,14 +54,14 @@ export function BookShelf({ books, cycles, people, base }: {
   return <div className="stamp-book-library">
     {books.map((book, index) => {
       const latest = latestByBook.get(book.id)
+      const creator = latest?.size ? undefined : people.find(person => person.user_id === book.created_by)
       return <article className="stamp-book-cover" key={book.id}>
-        <div className="book-card__visual">
-          <BookCover assetId={book.cover_asset_id} eager={index === 0}/>
-          <span className="book-status" data-status={book.status}>{bookStatus[book.status]}</span>
-        </div>
+        <div className="book-card__visual"><BookCover assetId={book.cover_asset_id} eager={index === 0}/></div>
         <div className="book-card__content">
+          <span className="book-status" data-status={book.status}>{bookStatus[book.status]}</span>
           <h3>{book.title}</h3>
           {book.description && <p>{book.description}</p>}
+          {creator && <p>สร้างโดย {creator.display_name}</p>}
           {!!latest?.size && <div className="book-card__progress">{people.flatMap(person => {
             const cycle = latest.get(person.id)
             return cycle ? [<BookProgress label={person.display_name} cycle={cycle} key={person.id}/>] : []
