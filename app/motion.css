@@ -42,3 +42,9 @@
   55% { opacity: .62; transform: rotateY(calc(102deg * var(--leaf-turn, -1))); }
   100% { opacity: 0; transform: rotateY(calc(169deg * var(--leaf-turn, -1))); }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-opening-entry] .app-content:not(:has([data-entry-loading])) {
+    animation: pointplus-enter var(--motion-dialog) var(--motion-out) backwards;
+  }
+}

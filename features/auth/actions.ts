@@ -1,6 +1,8 @@
 'use server'
 
-import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { redirect, RedirectType } from 'next/navigation'
+import { openingCookie, opensProtectedBook } from '@/lib/auth/opening'
 import { createClient } from '@/utils/supabase/server'
 import { safeNextPath, siteOrigin } from '@/lib/auth/redirects'
 
@@ -20,18 +22,25 @@ export async function signInAction(_state: AuthState, form: FormData): Promise<A
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) return invalid('เข้าสู่ระบบไม่สำเร็จ โปรดตรวจสอบข้อมูลหรือยืนยันอีเมลก่อน')
-  const next = safeNextPath(value(form, 'next'))
+  let destination = safeNextPath(value(form, 'next'))
   // First sign-in should lead to the real profile onboarding, but explicit
   // deep links (e.g. after joining) take priority.
-  if (next === '/rooms' || next === '/dashboard') {
+  if (destination === '/rooms' || destination === '/dashboard') {
     const { data: identity } = await supabase.auth.getUser()
     if (identity.user) {
       const { data: profile } = await supabase.from('profiles')
-        .select('display_name').eq('id',identity.user.id).maybeSingle()
-      if (!profile || profile.display_name === 'Member') redirect('/onboarding')
+        .select('display_name').eq('id', identity.user.id).maybeSingle()
+      if (!profile || profile.display_name === 'Member') destination = '/onboarding'
     }
   }
-  redirect(next)
+
+  if (value(form, 'opening') === '1' && opensProtectedBook(destination)) {
+    const cookieStore = await cookies()
+    cookieStore.set(openingCookie, '1', {
+      maxAge: 45, path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production',
+    })
+  }
+  redirect(destination, RedirectType.replace)
 }
 
 export async function signUpAction(_state: AuthState, form: FormData): Promise<AuthState> {

@@ -93,3 +93,32 @@
     --leaf-turn: 1;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .book[data-opening] {
+    animation: book-arrive var(--motion-dialog) var(--motion-out) both,
+      book-center var(--motion-cover) var(--motion-turn) var(--motion-dialog) both;
+  }
+  .book[data-opening] .cover {
+    animation: cover-open var(--motion-cover) var(--motion-turn) var(--motion-dialog) backwards;
+  }
+  .book[data-opening] .leaf:first-child {
+    animation: book-page-appear var(--motion-leaf) var(--motion-out) var(--motion-dialog) backwards;
+  }
+}
+@keyframes book-arrive {
+  from { opacity: .6; scale: .88; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes book-center {
+  from { translate: -25% 0; }
+  to { translate: 0; }
+}
+@keyframes cover-open {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(-173deg); }
+}
+@keyframes book-page-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
