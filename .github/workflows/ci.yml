@@ -45,6 +45,8 @@ jobs:
         run: node --test tests/database-v3-contract.test.mjs
       - name: Verify Stamp Book First contracts
         run: node --test tests/stamp-book-first-contract.test.mjs
+      - name: Verify Living Stamp Book login contracts
+        run: node --test tests/living-auth.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build

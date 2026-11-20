@@ -54,7 +54,7 @@ export function InteractiveStampBook() {
             {open && <ul className="living-book__slots" role="list" aria-label="ช่องแสตมป์ในหน้าตัวอย่าง">
               {Array.from({ length: 3 }, (_, index) => <li key={index}>
                 {current.stamps[index]
-                  ? <Image src={current.stamps[index]} width={72} height={72} alt={'แสตมป์ดวงที่ ' + (index + 1)}/>
+                  ? <Image src={current.stamps[index]} width={72} height={72} sizes="(max-width: 500px) 52px, 72px" alt={'แสตมป์ดวงที่ ' + (index + 1)}/>
                   : <span className="sr-only">ช่องว่าง</span>}
               </li>)}
             </ul>}

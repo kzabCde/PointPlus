@@ -69,7 +69,7 @@ export default function HomePage() {
             <div className="living-story__copy">
               <h2 id="give-stamp-heading">ให้แสตมป์แทนคำขอบคุณ</h2>
               <p>นทีให้แสตมป์ในสมุดของเตยได้ และเตยก็สร้างสมุดอีกเล่มไว้ให้แสตมป์นทีได้ ต่างคนต่างสะสมเรื่องราวในสมุดของตัวเอง</p>
-              <div className="reciprocal-example" aria-label="ตัวอย่างการให้แสตมป์ทั้งสองทาง">
+              <div className="reciprocal-example" role="group" aria-label="ตัวอย่างการให้แสตมป์ทั้งสองทาง">
                 <span>นที <span aria-hidden="true">→</span><span className="sr-only"> ให้ </span> เตย</span>
                 <span>เตย <span aria-hidden="true">→</span><span className="sr-only"> ให้ </span> นที</span>
               </div>

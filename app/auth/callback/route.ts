@@ -5,6 +5,15 @@ import { safeNextPath } from '@/lib/auth/redirects'
 
 const otpTypes: readonly EmailOtpType[] = ['signup', 'recovery', 'invite', 'magiclink', 'email_change', 'email']
 
+function redirectWithinApp(path: string, requestUrl: URL) {
+  // The request URL may contain Next's internal host. A relative Location
+  // keeps the browser on the origin where the session cookies were set.
+  const target = new URL(path, requestUrl.origin)
+  const location = target.pathname.startsWith('//')
+    ? '/rooms' : target.pathname + target.search + target.hash
+  return new NextResponse(null, { status: 307, headers: { Location: location } })
+}
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const next = safeNextPath(url.searchParams.get('next'), '/dashboard')
@@ -20,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (user && typeof name === 'string' && name.trim().length >= 1 && name.trim().length <= 80) {
       await supabase.from('profiles').update({ display_name: name.trim() }).eq('id', user.id).eq('display_name', 'Member')
     }
-    return NextResponse.redirect(new URL(next, url.origin))
+    return redirectWithinApp(next, url)
   }
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
@@ -29,5 +38,5 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType as EmailOtpType })
     if (!error) return finishSignIn()
   }
-  return NextResponse.redirect(new URL('/login?error=confirmation', url.origin))
+  return redirectWithinApp('/login?error=confirmation', url)
 }

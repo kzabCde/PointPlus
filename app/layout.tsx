@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="th">
+    <html lang="th" data-scroll-behavior="smooth">
       <body>
         <a className="skip-link" href="#main-content">ข้ามไปยังเนื้อหา</a>
         {children}

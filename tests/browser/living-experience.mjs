@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { verifyAccessibility } from './axe-check.mjs'
 
 const playwright = process.env.POINTPLUS_PLAYWRIGHT_CORE
 assert.ok(playwright, 'Set POINTPLUS_PLAYWRIGHT_CORE to playwright-core/index.mjs')
@@ -20,6 +21,11 @@ try {
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   const book = page.locator('.living-book')
+  await page.goto(origin)
+  await page.keyboard.press('Tab')
+  assert.equal(await page.locator('.skip-link').evaluate(link => link === document.activeElement), true)
+  await page.keyboard.press('Enter')
+  await page.waitForURL(origin + '/#main-content')
 
   async function capture(name) {
     if (!screenshots) return
@@ -39,10 +45,12 @@ try {
     const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
     assert.equal(await fits(), true, 'Closed landing overflow at ' + viewport.width)
     assert.equal(await book.getByRole('button', { name: 'เปิดสมุดดู' }).getAttribute('aria-expanded'), 'false')
+    if (viewport.width === 390) await verifyAccessibility(page, 'closed landing at 390px')
     if (viewport.width === 1440 || viewport.width === 390) await capture('landing-' + viewport.width)
     await book.getByRole('button', { name: 'เปิดสมุดดู' }).tap()
     await book.getByText('ขอบคุณที่คอยอยู่ข้าง ๆ', { exact: true }).waitFor()
     assert.equal(await fits(), true, 'Open book overflow at ' + viewport.width)
+    if (viewport.width === 390) await verifyAccessibility(page, 'open landing book at 390px')
     if (viewport.width === 1440 || viewport.width === 390) await capture('open-book-' + viewport.width)
 
     await book.getByRole('button', { name: 'หน้าถัดไป' }).press('Enter')

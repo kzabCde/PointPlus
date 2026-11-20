@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto'
+import { createHmac, randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 
 const memberId = '11111111-1111-4111-8111-111111111111'
@@ -32,11 +32,12 @@ export async function startAuthFixture(port = 0) {
   const barriers = new Map()
   const observed = { password: 0, signup: [], recovery: [], verified: [], accepted: 0 }
   let invited = false
+  let membershipFailure = false
 
   function issueSession(identity, { expired = false } = {}) {
     const expiry = Math.floor(Date.now() / 1000) + (expired ? -60 : 3600)
     const token = jwtPart({ alg: 'HS256', typ: 'JWT' }) + '.' +
-      jwtPart({ aud: 'authenticated', sub: identity.id, exp: expiry, role: 'authenticated' })
+      jwtPart({ aud: 'authenticated', sub: identity.id, jti: randomUUID(), exp: expiry, role: 'authenticated' })
     const access_token = token + '.' + createHmac('sha256', 'local-fixture-only').update(token).digest('base64url')
     if (!expired) usersByToken.set(access_token, identity)
     return { access_token, token_type: 'bearer', expires_in: expired ? 0 : 3600,
@@ -61,9 +62,14 @@ export async function startAuthFixture(port = 0) {
       }
 
       if (pathname === '/auth/v1/token' && method === 'POST') {
-        if (searchParams.get('grant_type') !== 'password') return json({ code: 'refresh_token_not_found', msg: 'Fixture session expired' }, 400)
-        observed.password++
         const credentials = await read()
+        const grant = searchParams.get('grant_type')
+        if (grant === 'pkce' && credentials.auth_code === 'recovery-code-fixture' && credentials.code_verifier) {
+          observed.verified.push('pkce')
+          return json(issueSession(accounts.get(member)))
+        }
+        if (grant !== 'password') return json({ code: 'refresh_token_not_found', msg: 'Fixture session expired' }, 400)
+        observed.password++
         await barriers.get('password')
         const identity = accounts.get(credentials.email)
         if (!identity || credentials.password !== password) return json({ code: 'invalid_credentials', msg: 'Invalid credentials' }, 400)
@@ -116,6 +122,10 @@ export async function startAuthFixture(port = 0) {
         rows = [profiles.get(caller.id)]
       } else if (table === 'space_members') {
         await barriers.get('memberships')
+        if (membershipFailure) {
+          membershipFailure = false
+          return json({ message: 'Fixture memberships unavailable' }, 400)
+        }
         rows = caller.id === memberId || invited ? [membership] : []
       } else if (table === 'spaces') {
         rows = [room]
@@ -143,6 +153,7 @@ export async function startAuthFixture(port = 0) {
   return {
     observed,
     origin: 'http://127.0.0.1:' + server.address().port,
+    failNextMemberships() { membershipFailure = true },
     hold(name) {
       let release
       barriers.set(name, new Promise(resolve => { release = resolve }))
