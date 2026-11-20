@@ -9,6 +9,7 @@ export type StampBookState = {
   status: 'idle' | 'success' | 'error'
   message: string
   bookId?: string
+  outcome?: 'pending' | 'rejected' | 'granted'
 }
 const fail = (message:string):StampBookState => ({status:'error',message})
 const success = (message:string,bookId?:string):StampBookState => ({status:'success',message,bookId})
@@ -46,7 +47,7 @@ export async function createStampBookAction(_prev:StampBookState, form:FormData)
     p_allow_self:form.get('allow_self_stamp')==='on',
     p_approval:approval,p_recipients:recipients,p_givers:givers,p_styles:styles,p_rewards:rewards,
   })
-  if(error||!data||!isUuid(String(data))) return fail('สร้างสมุดไม่สำเร็จ กรุณาตรวจสอบการติดตั้งฐานข้อมูลใหม่และสิทธิ์')
+  if(error||!data||!isUuid(String(data))) return fail('สร้างสมุดไม่สำเร็จ ตรวจสอบการเชื่อมต่อและสิทธิ์ในห้องแล้วลองอีกครั้ง')
   refresh(spaceId,String(data))
   return success('สร้างสมุดสะสมแล้ว',String(data))
 }
@@ -62,9 +63,20 @@ export async function giveStampAction(_prev:StampBookState,form:FormData):Promis
   const {data,error}=await supabase.rpc('pointplus_give_stamp',{
     p_book:bookId,p_recipient:person,p_art:art,p_note:note||null,p_key:key,
   })
-  if(error)return fail('ให้แสตมป์ไม่สำเร็จ: '+error.message)
+  if (error) {
+    const permissionError = error.code === '42501' ||
+      /not permitted|not allowed|authorized|authentication required/i.test(error.message)
+    return fail(permissionError
+      ? 'บัญชีนี้ไม่มีสิทธิ์ให้แสตมป์แก่ผู้สะสมคนนี้'
+      : 'ให้แสตมป์ไม่สำเร็จ ตรวจสอบการเชื่อมต่อและสถานะสมุดก่อนลองอีกครั้ง')
+  }
   refresh(spaceId,bookId)
-  return success(data?.status==='pending'?'ส่งคำขอแสตมป์ รอผู้ดูแลอนุมัติ':'เพิ่มแสตมป์ 1 ดวงแล้ว')
+  switch (data?.status) {
+    case 'pending': return { ...success('ส่งคำขอแล้ว · รออนุมัติ'), outcome: 'pending' }
+    case 'rejected': return { ...success('คำขอแสตมป์ถูกปฏิเสธ'), outcome: 'rejected' }
+    case 'approved': return { ...success('เพิ่มแสตมป์ 1 ดวงแล้ว'), outcome: 'granted' }
+    default: return fail('ยังยืนยันผลไม่ได้ กรุณาตรวจสอบสมุดก่อนส่งอีกครั้ง')
+  }
 }
 export async function reviewStampAction(_prev:StampBookState,form:FormData):Promise<StampBookState> {
   const spaceId=text(form,'space_id'),bookId=text(form,'book_id'),requestId=text(form,'request_id')

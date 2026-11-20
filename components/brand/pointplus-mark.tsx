@@ -14,9 +14,9 @@ export function PointPlusMark() {
   )
 }
 
-export function Brand({ href = '/' }: { href?: string }) {
+export function Brand({ href = '/', label = 'Point+ — หน้าหลัก' }: { href?: string; label?: string }) {
   return (
-    <Link href={href} className="brand" aria-label="Point+ — หน้าหลัก">
+    <Link href={href} className="brand" aria-label={label}>
       <PointPlusMark />
       <span>Point<span className="brand__plus">+</span></span>
     </Link>

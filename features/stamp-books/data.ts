@@ -28,7 +28,7 @@ export const readableParticipants = (people:Participant[],userId:string,manager:
  people.filter(p=>(kind==='couple'&&p.kind==='adult')||manager||p.user_id===userId||(p.kind==='child'&&p.guardian_user_id===userId))
 
 export async function loadStampBookBoard(spaceId:string) {
- const [context,people] = await Promise.all([getSpaceContext(spaceId),getSpaceParticipants(spaceId)])
+ const [context,people] = await Promise.all([getSpaceContext(spaceId),getSpaceParticipants(spaceId, { includeArchived: true })])
  const {supabase,user,member}=context
  const manager=canManage(member.role)
  const eligible=readableParticipants(people,user.id,manager,context.space.kind)
@@ -47,7 +47,7 @@ export async function loadStampBookBoard(spaceId:string) {
 }
 export async function loadStampBookDetail(spaceId:string,bookId:string) {
  const [context,people,members]=await Promise.all([
-   getSpaceContext(spaceId),getSpaceParticipants(spaceId),getSpaceMembers(spaceId),
+   getSpaceContext(spaceId),getSpaceParticipants(spaceId, { includeArchived: true }),getSpaceMembers(spaceId),
  ])
  const {supabase,user,member}=context
  const manager=canManage(member.role)
@@ -57,7 +57,7 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
  .eq('space_id',spaceId).eq('id',bookId).maybeSingle()
  if(error)throw new Error('Cannot open Stamp Book')
  if(!book)notFound()
- const [recipients,givers,styles,rewards,cycles,marks,claims,requests]=await Promise.all([
+ const [recipients,givers,styles,rewards,cycles,marks,claims,requests,ownReviews]=await Promise.all([
  supabase.from('stamp_book_recipients').select('participant_id').eq('book_id',bookId),
  supabase.from('stamp_book_givers').select('user_id').eq('book_id',bookId),
  supabase.from('stamp_book_styles').select('asset_id').eq('book_id',bookId),
@@ -70,14 +70,18 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
   .eq('book_id',bookId).order('claimed_at',{ascending:false}).limit(400),
  supabase.from('stamp_book_stamp_requests').select('id,participant_id,asset_id,giver_user_id,note,created_at,status')
   .eq('book_id',bookId).eq('status','pending').order('created_at',{ascending:true}).limit(100),
+ supabase.from('stamp_book_stamp_requests').select('id,participant_id,asset_id,giver_user_id,note,created_at,status')
+  .eq('book_id',bookId).eq('giver_user_id',user.id).eq('status','rejected').order('created_at',{ascending:false}).limit(20),
  ])
- if([recipients,givers,styles,rewards,cycles,marks,claims,requests].some(r=>r.error))
+ if([recipients,givers,styles,rewards,cycles,marks,claims,requests,ownReviews].some(r=>r.error))
    throw new Error('Cannot load protected Stamp Book details')
  const allowedRecipients=new Set((recipients.data??[]).map(x=>x.participant_id))
  const assigned=eligible.filter(p=>allowedRecipients.has(p.id))
- const giverRecipients=people.filter(p=>allowedRecipients.has(p.id)
+ const giverRecipients=people.filter(p=>!p.archived_at && allowedRecipients.has(p.id)
    && (manager || p.kind==='adult' || p.guardian_user_id===user.id)
-   && (context.space.kind!=='couple'||p.user_id!==user.id))
+   && (p.user_id !== user.id || (context.space.kind === 'personal' && book.allow_self_stamp))
+   && (!(cycles.data ?? []).some(cycle => cycle.participant_id === p.id)
+       || (cycles.data ?? []).some(cycle => cycle.participant_id === p.id && !cycle.completed_at && cycle.progress_count < cycle.target_snapshot)))
  const bookManager=context.space.kind==='couple' ? book.created_by===user.id : manager
  return {
  context,manager:bookManager,people,assigned,giverRecipients,members,book:book as StampBook,
@@ -86,6 +90,6 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
  styles:(styles.data??[]).map(x=>x.asset_id) as string[],
  rewards:(rewards.data??[]) as BookReward[],
  cycles:(cycles.data??[]) as StampCycle[],marks:(marks.data??[]) as BookMark[],
- claims:(claims.data??[]) as BookClaim[],requests:(requests.data??[]) as BookRequest[],
+ claims:(claims.data??[]) as BookClaim[],requests:(requests.data??[]) as BookRequest[],ownReviews:(ownReviews.data??[]) as BookRequest[],
  }
 }

@@ -183,7 +183,8 @@ test('Couple Stamp Books: both partners see their shared progress and only creat
  assert.match(data,/book\.created_by===user\.id/)
  const board=read('app/(protected)/s/[spaceId]/stamp-books/page.tsx')
  assert.match(board,/context\.space\.kind==='couple'/)
- assert.match(board,/person\.display_name/)
+ assert.match(board,/<BookShelf books=\{current\} cycles=\{cycles\} people=\{eligible\}/)
+ assert.match(read('features/stamp-books/presentation.tsx'),/latest\.get\(person\.id\)/)
  const newPage=read('app/(protected)/s/[spaceId]/stamp-books/new/page.tsx')
  assert.match(newPage,/space\.kind!=='couple'&&!canManage\(member\.role\)/)
  const forms=read('features/stamp-books/forms.tsx')
@@ -254,4 +255,30 @@ test('Couple Memory form is free-text, recipient-only and does not require fixed
  assert.match(detail,/ClaimCoupleMemoryForm/)
  assert.match(detail,/book\.status==='active'/)
  assert.match(detail,/book\.status==='archived'/)
+})
+
+test('stamp feedback follows confirmed RPC outcomes', async () => {
+ const form = new FormData()
+ for (const [key, value] of Object.entries({
+  space_id: space, book_id: uuid, recipient_id: person,
+  asset_id: artId, idempotency_key: uuid,
+ })) form.set(key, value)
+
+ for (const [rpcStatus, expected] of [
+  ['pending', { status: 'success', outcome: 'pending' }],
+  ['approved', { status: 'success', outcome: 'granted' }],
+  ['rejected', { status: 'success', outcome: 'rejected' }],
+  ['unexpected', { status: 'error', outcome: undefined }],
+ ]) {
+  const actions = compiledActions({
+   from: () => ({
+    select() { return this },
+    eq() { return this },
+    async maybeSingle() { return { data: { id: uuid }, error: null } },
+   }),
+   rpc: async () => ({ data: { status: rpcStatus }, error: null }),
+  })
+  const { status, outcome } = await actions.giveStampAction({ status: 'idle', message: '' }, form)
+  assert.deepEqual({ status, outcome }, expected, rpcStatus)
+ }
 })

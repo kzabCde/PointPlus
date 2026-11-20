@@ -1,12 +1,14 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
+
+export const viewport: Viewport = { viewportFit: 'cover', themeColor: '#fff8f0' }
 
 export const metadata: Metadata = {
   title: {
-    default: 'PointPlus — ภารกิจเล็ก ๆ ความหมายดี ๆ',
+    default: 'Point+ — สมุดสะสมของคนสำคัญ',
     template: '%s | PointPlus',
   },
-  description: 'สร้างภารกิจและกำลังใจให้ตัวเอง คนรัก และคนในครอบครัว ผ่านพื้นที่ส่วนตัวที่ไม่เกี่ยวข้องกับการค้า',
+  description: 'เก็บช่วงเวลาดี ๆ ด้วยสมุดแสตมป์ส่วนตัวสำหรับตัวเอง คนรัก ครอบครัว และเพื่อน',
   applicationName: 'Point+',
   manifest: '/manifest.webmanifest',
   icons: {

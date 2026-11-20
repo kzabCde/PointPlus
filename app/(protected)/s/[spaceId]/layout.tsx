@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react'
+import './stamp-books/stamp-books.css'
 import Link from 'next/link'
+import { Navigation } from '../../navigation'
+import { roomKindLabels } from '@/features/rooms/presentation'
 import { RememberRoom } from '@/features/rooms/room-usage'
 import { getSpaceContext } from '@/features/spaces/data'
 
@@ -12,16 +15,16 @@ export default async function SpaceLayout({children,params}:{
  return <>
   <RememberRoom accountId={user.id} spaceId={spaceId}/>
   <div className="space-header">
-   <div><span className="eyebrow">{space.kind==='personal'?'พื้นที่ส่วนตัว':space.kind==='couple'?'ห้องคู่รัก':space.kind==='family'?'ห้องครอบครัว':'ห้องทั่วไป'}</span>
+   <div><span className="room-meta">{roomKindLabels[space.kind]}</span>
     <h1 className="page-title">{space.name}</h1></div>
    <Link className="button button--secondary" href="/rooms">เปลี่ยนห้อง</Link>
   </div>
-  <nav className="space-tabs" aria-label="เมนูภายในห้อง">
-   <Link href={base}>หน้าห้อง</Link>
-   <Link href={base+'/stamp-books'}>สมุดสะสม</Link>
-   {space.kind!=='personal'&&<Link href={base+'/members'}>สมาชิก</Link>}
-   <Link href={base+'/settings'}>ตั้งค่า</Link>
-  </nav>
+  <Navigation label="เมนูภายในห้อง" className="space-tabs" destinations={[
+   {href: base, label: 'หน้าห้อง'},
+   {href: base + '/stamp-books', label: 'สมุดสะสม', nested: true},
+   ...(space.kind !== 'personal' ? [{href: base + '/members', label: 'สมาชิก'}] : []),
+   {href: base + '/settings', label: 'ตั้งค่า'},
+  ]}/>
   {children}
  </>
 }

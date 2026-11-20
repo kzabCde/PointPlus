@@ -7,7 +7,6 @@ export default async function NotificationsPage() {
   const {notifications}=await loadNotifications()
   return <div className="social-stack">
     <h1 className="page-title">การแจ้งเตือน</h1>
-    <p className="muted">กิจกรรมจากระบบจริง เฉพาะบัญชีของคุณ</p>
     <RefreshControl/>
     <NotificationCenter items={notifications}/>
   </div>
