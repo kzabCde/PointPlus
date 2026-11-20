@@ -57,7 +57,7 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
 }) {
   const motion = useBookMotion()
   const [view, setView] = useState<View>({
-    cycleId: initialCycleId, page: 0, turn: openOnMount ? { step: 0, direction: 'opening' } : undefined,
+    cycleId: initialCycleId, page: 0, turn: openOnMount && layoutMode === 'notebook' ? { step: 0, direction: 'opening' } : undefined,
   })
   const journalId = useId()
   const turn = useRef(0)
@@ -174,7 +174,7 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
         onClick={() => goToPage(page + 1)}><span aria-hidden="true">→</span></button>}
     </nav>
 
-    <div className="journal-spread journal-spread--paper" id={journalId + '-spread'}
+    <div className="journal-spread journal-spread--paper" data-layout={layoutMode} id={journalId + '-spread'}
       ref={slotRef} data-legacy-slots={slots.length} onPointerDown={startSwipe}
       onPointerUp={finishSwipe} onPointerCancel={() => { touch.current = null }}>
       <section className="journal-leaf journal-leaf--paper" aria-label={'แสตมป์ หน้า ' + (page + 1)}>
