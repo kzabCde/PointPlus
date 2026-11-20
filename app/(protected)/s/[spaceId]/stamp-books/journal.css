@@ -310,3 +310,92 @@
 @media (prefers-reduced-motion: no-preference) {
   .stamp-card-slot[data-impact="true"] .stamp-card-slot__stamp { animation: pointplus-stamp-impact var(--motion-stamp) var(--motion-settle) backwards; }
 }
+
+
+/* Each available numbered cell is a first-class accessible stamp action. */
+.stamp-card-slot__pick {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: inherit;
+  color: #ad6f63;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  touch-action: manipulation;
+  transition: background .16s ease, transform .16s ease;
+}
+.stamp-card-slot__pick:hover:not(:disabled) {
+  background: #fae5d6;
+  transform: scale(1.035);
+}
+.stamp-card-slot__pick:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.stamp-card-slot__pick:disabled { opacity: .5; cursor: wait; }
+.stamp-card-slot__action { font-size: 10px; line-height: 1.2; font-weight: 600; color: #9b6d66; }
+.stamp-card-slot[data-waiting="true"] {
+  border-style: dashed;
+  background: #f9f0e9;
+}
+.stamp-card-slot__stamp--waiting { opacity: .45; filter: grayscale(.35); }
+.stamp-collection-card__hint {
+  margin: 0;
+  color: #915b56;
+  font-size: 13px;
+  font-weight: 600;
+}
+.stamp-card-dialog {
+  width: min(540px, calc(100vw - 24px));
+  max-height: min(90dvh, 760px);
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid #e2bfad;
+  border-radius: 18px;
+  background: #fffbf6;
+  box-shadow: 0 20px 60px #432b2655;
+  overflow-y: auto;
+}
+.stamp-card-dialog::backdrop { background: #39201e88; backdrop-filter: blur(3px); }
+.stamp-card-dialog form { display: grid; gap: 17px; }
+.stamp-card-dialog__head { display: grid; gap: 5px; }
+.stamp-card-dialog__head h3 { margin: 0; font-size: clamp(19px, 4vw, 24px); }
+.stamp-card-dialog__head p { margin: 0; font-size: 13px; }
+.stamp-card-dialog__art {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+  gap: 8px;
+  max-height: min(34dvh, 290px);
+  padding: 5px;
+  overflow-y: auto;
+}
+.stamp-card-dialog__choice {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  position: relative;
+  border: 1px solid #e9d0c1;
+  border-radius: 12px;
+  background: #fff7ef;
+  padding: 11px 6px;
+  cursor: pointer;
+  text-align: center;
+  font-size: 11px;
+}
+.stamp-card-dialog__choice[data-selected="true"] { border-color: var(--action); background: var(--coral-soft); }
+.stamp-card-dialog__choice:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.stamp-card-dialog__choice input { accent-color: var(--action); }
+.stamp-card-dialog__choice img { object-fit: contain; }
+.stamp-card-dialog__note { display: grid; gap: 8px; font-size: 13px; font-weight: 650; }
+.stamp-card-dialog__note textarea { width: 100%; resize: vertical; }
+.stamp-card-dialog__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 560px) {
+  .stamp-card-dialog__art { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stamp-card-slot__action { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stamp-card-slot__pick { transition: none; }
+}
