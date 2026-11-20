@@ -18,7 +18,7 @@ export function CreateSpaceForm() {
   const router = useRouter()
   const [state, action, pending] = useActionState(createSpaceAction, initial)
   useEffect(() => {
-    if (state.status === 'success' && state.spaceId) router.push('/s/' + state.spaceId + '/members')
+    if (state.status === 'success' && state.spaceId) router.push('/s/' + state.spaceId)
   }, [state.status, state.spaceId, router])
   return <form action={action} className="card room-create__form">
     <h2>สร้างห้องใหม่</h2>
@@ -32,9 +32,8 @@ export function CreateSpaceForm() {
       </label>)}
     </fieldset>
     <FormField id="room-name" name="name" label="2. ตั้งชื่อห้อง" maxLength={100} required placeholder="เช่น Our Little World" />
-    <p className="form-field__hint">เขตเวลาจะอิงจากโปรไฟล์ของคุณ เปลี่ยนได้ภายหลังในตั้งค่าห้อง</p>
     {state.message && <p role="status" className={state.status === 'error' ? 'form-field__error' : 'status status--success'}>{state.message}</p>}
-    <Button type="submit" disabled={pending}>{pending ? 'กำลังสร้างห้อง…' : 'สร้างห้องและเชิญสมาชิก'}</Button>
+    <Button type="submit" disabled={pending}>{pending ? 'กำลังสร้างห้อง…' : 'สร้างห้อง'}</Button>
   </form>
 }
 
@@ -43,10 +42,6 @@ export function EditSpaceForm({ space }: { space: Space }) {
   return <form action={action} className="card stationery-form">
     <input type="hidden" name="space_id" value={space.id} />
     <FormField id="edit-space-name" name="name" label="ชื่อห้อง" required maxLength={100} defaultValue={space.name} />
-    <div className="form-field"><label className="form-field__label" htmlFor="edit-space-timezone">เขตเวลา</label>
-      <input id="edit-space-timezone" className="input" name="timezone" required maxLength={80} defaultValue={space.timezone} />
-      <span className="form-field__hint">ตัวอย่าง: Asia/Bangkok</span>
-    </div>
     {state.message && <p role="status" className={state.status === 'error' ? 'form-field__error' : 'status status--success'}>{state.message}</p>}
     <Button type="submit" disabled={pending}>{pending ? 'กำลังบันทึก…' : 'บันทึกการเปลี่ยนแปลง'}</Button>
   </form>
