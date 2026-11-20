@@ -16,7 +16,7 @@ export default async function MissionDetailPage({ params, searchParams }: {
   const {mission, selected,space,campaigns,stampCards,manager,submissions,availability,canSubmit} = activity
   const ledger = await loadPointLedger(spaceId,selected!.id)
   const formatDate = (value: string) => new Intl.DateTimeFormat('th-TH',{
-    dateStyle: 'medium', timeStyle: 'short', timeZone: space.timezone,
+    dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Bangkok',
   }).format(new Date(value))
   const timeWindow = windowState(mission)
   return <>

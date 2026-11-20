@@ -20,7 +20,7 @@ export default async function ManageMissionPage({params}:{
     <div className="space-header"><h2>จัดการ: {mission.title}</h2>
       <Link className="button button--secondary" href={'/s/'+spaceId+'/missions/'+missionId}>ดูรายละเอียด</Link></div>
     {mission.status!=='archived' &&
-      <MissionEditor mission={mission} spaceId={spaceId} timezone={space.timezone}
+      <MissionEditor mission={mission} spaceId={spaceId} timezone={'Asia/Bangkok'}
         campaigns={catalog.campaigns} stampCards={catalog.stampCards}/>}
     <div className="feature-rows">
       <AssignmentControls spaceId={spaceId} missionId={missionId}

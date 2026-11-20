@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { randomUUID } from 'node:crypto'
-import { allowedTimezone } from '@/lib/auth/validation'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
 import { loadStampBookDetail } from '@/features/stamp-books/data'
 import { ClaimStampRewardForm, ClaimCoupleMemoryForm, GiveStampDialog, ReviewStampForm, ProcessBookRewardForm } from '@/features/stamp-books/forms'
@@ -25,7 +24,7 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
   const names = new Map(people.map(person => [person.id, person.display_name]))
   const giverNames = new Map(people.filter(person => person.user_id).map(person => [person.user_id, person.display_name]))
   const bookPath = '/s/' + spaceId + '/stamp-books'
-  const timeZone = allowedTimezone(context.space.timezone) ? context.space.timezone : 'Asia/Bangkok'
+  const timeZone = 'Asia/Bangkok'
   const formatter = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short', timeZone })
   const readable = (date: string) => formatter.format(new Date(date))
 

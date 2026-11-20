@@ -10,7 +10,6 @@ export type Space = {
   owner_id: string
   kind: SpaceKind
   name: string
-  timezone: string
 }
 export type Membership = { space_id: string; user_id: string; role: SpaceRole; joined_at: string }
 export type SpaceWithRole = Space & { role: SpaceRole }
@@ -32,7 +31,7 @@ export const listMySpaces = cache(async (): Promise<SpaceWithRole[]> => {
   if (membershipError) throw new Error('Cannot load space memberships')
   if (!memberships?.length) return []
   const { data: spaces, error: spaceError } = await supabase.from('spaces')
-    .select('id,owner_id,kind,name,timezone').in('id', memberships.map((m) => m.space_id))
+    .select('id,owner_id,kind,name').in('id', memberships.map((m) => m.space_id))
   if (spaceError) throw new Error('Cannot load spaces')
   return (spaces ?? []).map((space) => ({
     ...(space as Space),
@@ -48,7 +47,7 @@ export const getSpaceContext = cache(async (id: string) => {
   if (memberError) throw new Error('Cannot verify space membership')
   if (!member) notFound()
   const { data: space, error: spaceError } = await supabase.from('spaces')
-    .select('id,owner_id,kind,name,timezone').eq('id', id).maybeSingle()
+    .select('id,owner_id,kind,name').eq('id', id).maybeSingle()
   if (spaceError) throw new Error('Cannot load space')
   if (!space) notFound()
   return { supabase, user, member: member as Membership, space: space as Space }

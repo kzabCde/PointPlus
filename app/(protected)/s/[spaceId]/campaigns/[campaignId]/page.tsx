@@ -19,6 +19,6 @@ export default async function EditCampaignPage({params}:{
   return <>
     <Link href={'/s/'+spaceId+'/campaigns'} className="text-link">← กลับไปชุดภารกิจ</Link>
     <h2>แก้ไขชุดภารกิจ</h2>
-    <CampaignForm spaceId={spaceId} timezone={space.timezone} campaign={data as CampaignOption}/>
+    <CampaignForm spaceId={spaceId} timezone={'Asia/Bangkok'} campaign={data as CampaignOption}/>
   </>
 }

@@ -68,7 +68,7 @@ export async function loadMissionSubmissions(spaceId: string, missionId: string,
   if (error) throw new Error('Cannot load authorized submission history')
   const submissions = (data ?? []) as Submission[]
   return { ...detail, submissions,
-    availability: missionAvailability(detail.mission, submissions, detail.space.timezone),
+    availability: missionAvailability(detail.mission, submissions, 'Asia/Bangkok'),
     canSubmit: canSubmitFor(detail.selected, user.id, detail.manager) }
 }
 

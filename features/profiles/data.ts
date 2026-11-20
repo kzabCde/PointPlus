@@ -4,7 +4,6 @@ export type Profile = {
   id: string
   display_name: string
   locale: 'th' | 'en'
-  timezone: string
   avatar_path: string | null
 }
 export type PersonalSpace = {
@@ -21,7 +20,7 @@ export async function loadMyProfile() {
   const { user, supabase } = await requireUser()
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id,display_name,locale,timezone,avatar_path')
+    .select('id,display_name,locale,avatar_path')
     .eq('id', user.id).maybeSingle()
   const { data: personalSpace, error: spaceError } = await supabase
     .from('spaces').select('id,kind,name')
