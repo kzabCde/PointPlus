@@ -49,6 +49,7 @@
 }
 .paper-stamp-mark--pending { opacity: .44; filter: grayscale(.25) drop-shadow(1px 2px 1px #b8968d38); }
 .paper-stamp-mark--preview { opacity: .52; }
+.paper-stamp-mark--waiting { opacity: .35; filter: grayscale(.25) drop-shadow(1px 2px 1px #b8968d40); }
 .paper-stamp-tools { display: grid; gap: 4px; }
 .paper-stamp-art-picker { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 7px; padding: 4px; scrollbar-width: thin; }
 .paper-stamp-art-button {
