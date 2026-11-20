@@ -7,7 +7,7 @@ export type BookActivity = {
   id: string
 }
 
-export type JournalMark = Pick<BookMark, 'id' | 'request_id' | 'asset_id' | 'stamped_at' | 'note'> & {
+export type JournalMark = Pick<BookMark, 'id' | 'request_id' | 'asset_id' | 'stamped_at' | 'note' | 'page_index' | 'position_x' | 'position_y' | 'rotation_deg'> & {
   giver: string
   date: string
 }
@@ -36,7 +36,7 @@ export function locateActivity(cycles: readonly JournalCycle[], activity: BookAc
       const slot = cycle.marks.findIndex(mark => mark.request_id === activity.id)
       if (slot >= 0 && slot < cycle.target_snapshot) {
         return {
-          cycleId: cycle.id, page: Math.floor(slot / slotsPerPage),
+          cycleId: cycle.id, page: cycle.marks[slot].page_index ?? Math.floor(slot / 8),
           completedByStamp: !!cycle.completed_at && slot === cycle.target_snapshot - 1,
         }
       }
