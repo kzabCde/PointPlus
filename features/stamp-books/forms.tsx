@@ -8,7 +8,7 @@ import type { Participant, Membership } from '@/features/spaces/data'
 import type { BookReward, StampBook } from './data'
 import {
  createStampBookAction,giveStampAction,reviewStampAction,
- claimStampRewardAction,processStampClaimAction,updateStampBookAction,
+ claimStampRewardAction,claimCoupleMemoryAction,processStampClaimAction,updateStampBookAction,
  addStampRewardAction,type StampBookState,
 } from './actions'
 
@@ -71,13 +71,18 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
     </label>)}
    </div>
   </fieldset>
-  <div className="form-field">
-   <label className="form-field__label" htmlFor="stamp-book-rewards">ตัวเลือกรางวัลเมื่อสะสมครบ</label>
-   <textarea id="stamp-book-rewards" className="input" name="rewards" rows={5}
-    defaultValue={'เลือกหนังดูด้วยกัน\nทำอาหารมื้อพิเศษ\nเลือกกิจกรรมวันหยุด'}
-    required placeholder="หนึ่งบรรทัดต่อหนึ่งรางวัล"/>
-   <span className="form-field__hint">ผู้สะสมเลือกได้ 1 รายการต่อสมุดที่ครบหนึ่งรอบ ไม่หักแต้ม</span>
-  </div>
+  {kind==='couple'
+   ? <div className="form-field">
+      <input type="hidden" name="rewards" value="ข้อความรางวัลที่คนสะสมจะเขียนเมื่อครบเล่ม"/>
+      <p className="form-field__hint">ไม่ต้องเลือกรางวัลล่วงหน้า เมื่อคู่ของคุณสะสมครบ เขาจะพิมพ์ข้อความรางวัลที่ต้องการได้เอง แล้วสมุดเล่มนี้จะถูกปิดและเก็บเป็นความทรงจำ</p>
+     </div>
+   : <div className="form-field">
+      <label className="form-field__label" htmlFor="stamp-book-rewards">ตัวเลือกรางวัลเมื่อสะสมครบ</label>
+      <textarea id="stamp-book-rewards" className="input" name="rewards" rows={5}
+       defaultValue={'เลือกหนังดูด้วยกัน\nทำอาหารมื้อพิเศษ\nเลือกกิจกรรมวันหยุด'}
+       required placeholder="หนึ่งบรรทัดต่อหนึ่งรางวัล"/>
+      <span className="form-field__hint">ผู้สะสมเลือกได้ 1 รายการต่อสมุดที่ครบหนึ่งรอบ ไม่หักแต้ม</span>
+     </div>}
   {kind==='couple'
    ? <input type="hidden" name="approval_policy" value="direct"/>
    : <div className="form-field">
@@ -87,7 +92,9 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
        <option value="approval_required">ต้องให้ผู้ดูแลคนอื่นอนุมัติ (ต้องมีผู้ตรวจที่ไม่ใช่ผู้ให้)</option>
       </select>
      </div>}
-  <label className="stamp-check"><input name="repeatable" type="checkbox" defaultChecked/> เริ่มสะสมรอบใหม่ได้เมื่อครบ</label>
+  {kind==='couple'
+   ? <p className="form-field__hint">เมื่อสมุดเต็ม ผู้รับจะแลกรางวัลและเก็บเล่มนี้เป็นประวัติความทรงจำ หากอยากสะสมอีกครั้งก็สร้างสมุดเล่มใหม่</p>
+   : <label className="stamp-check"><input name="repeatable" type="checkbox" defaultChecked/> เริ่มสะสมรอบใหม่ได้เมื่อครบ</label>}
   {kind==='personal'&&<label className="stamp-check"><input name="allow_self_stamp" type="checkbox"/> ให้แสตมป์ตัวเองได้ (พื้นที่ส่วนตัวเท่านั้น)</label>}
   <Result state={state}/>
   <button disabled={pending} type="submit" className="button button--primary">{pending?'กำลังสร้าง…':'สร้างสมุดสะสม'}</button>
@@ -161,6 +168,30 @@ export function ClaimStampRewardForm({spaceId,bookId,cycleId,rewards,keyId}:{
    {available.map(r=><option key={r.id} value={r.id}>{r.title}</option>)}
   </select>
   <button className="button button--primary" type="submit" disabled={pending||state.status==='success'}>{pending?'กำลังเลือก…':'เลือกรางวัลนี้'}</button>
+  <Result state={state}/>
+ </form>
+}
+
+
+export function ClaimCoupleMemoryForm({spaceId,bookId,cycleId,keyId}:{
+ spaceId:string;bookId:string;cycleId:string;keyId:string
+}){
+ const router=useRouter()
+ const [state,action,pending]=useActionState(claimCoupleMemoryAction,idle)
+ useEffect(()=>{if(state.status==='success')router.refresh()},[router,state.status])
+ return <form action={action} className="stamp-reward-choice">
+  <input type="hidden" name="space_id" value={spaceId}/>
+  <input type="hidden" name="book_id" value={bookId}/>
+  <input type="hidden" name="cycle_id" value={cycleId}/>
+  <input type="hidden" name="idempotency_key" value={keyId}/>
+  <label className="form-field__label" htmlFor={'couple-memory-'+cycleId}>สมุดเต็มแล้ว! อยากแลกเป็นรางวัลอะไร?</label>
+  <textarea id={'couple-memory-'+cycleId} name="reward_message" className="input" rows={3}
+   minLength={1} maxLength={1000} placeholder="เช่น อยากไปดูพระอาทิตย์ตกด้วยกันที่ทะเล"
+   required/>
+  <p className="form-field__hint">เมื่อยืนยัน สมุดนี้จะปิดและเก็บไว้ในความทรงจำ พร้อมแสตมป์และข้อความของคุณ</p>
+  <button type="submit" className="button button--primary" disabled={pending||state.status==='success'}>
+   {pending?'กำลังแลกรางวัล…':'แลกรางวัลและเก็บสมุด'}
+  </button>
   <Result state={state}/>
  </form>
 }
