@@ -8,6 +8,7 @@ import { useBookMotion } from './motion'
 import { StampPaper } from './paper'
 import { paperPageCount } from './paper-model'
 import { BookProgress } from './presentation'
+import type { BookRequest } from './data'
 
 const claimLabels = { requested: 'รอส่งมอบ', fulfilled: 'ส่งมอบแล้ว', canceled: 'ยกเลิก' }
 const stampArt = new Map(pointPlusStamps.map(stamp => [stamp.id, stamp]))
@@ -39,7 +40,7 @@ function StampNotes({ marks }: { marks: JournalMark[] }) {
   </ul>
 }
 
-export function StampBookJournal({ label, status, cycles, initialCycleId, openOnMount, rewardContent, spaceId, bookId, participantId, styleIds, canGive, layoutMode }: {
+export function StampBookJournal({ label, status, cycles, initialCycleId, openOnMount, rewardContent, spaceId, bookId, participantId, styleIds, pendingRequests, canGive, layoutMode }: {
   label: string
   status: string
   cycles: JournalCycle[]
@@ -50,6 +51,7 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
   bookId: string
   participantId: string
   styleIds: string[]
+  pendingRequests: BookRequest[]
   canGive: boolean
   layoutMode: 'single_sheet' | 'notebook'
 }) {
@@ -177,7 +179,7 @@ export function StampBookJournal({ label, status, cycles, initialCycleId, openOn
       onPointerUp={finishSwipe} onPointerCancel={() => { touch.current = null }}>
       <section className="journal-leaf journal-leaf--paper" aria-label={'แสตมป์ หน้า ' + (page + 1)}>
         <StampPaper spaceId={spaceId} bookId={bookId} participantId={participantId}
-          styleIds={styleIds} marks={cycle.marks} page={page} layoutMode={layoutMode}
+          styleIds={styleIds} marks={cycle.marks} pendingRequests={pendingRequests} page={page} layoutMode={layoutMode}
           canGive={canGive && !cycle.completed_at && cycle.progress_count < cycle.target_snapshot}
           impactRequestId={placed}/>
       </section>
