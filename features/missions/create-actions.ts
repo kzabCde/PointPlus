@@ -16,7 +16,7 @@ export async function createMissionAction(
   const spaceId = field(form,'space_id')
   if (!isUuid(spaceId)) return {status:'error',message:'พื้นที่ไม่ถูกต้อง'}
   const { supabase, user, space } = await getManagerContext(spaceId)
-  const parsed = parseMissionForm(form,space.timezone)
+  const parsed = parseMissionForm(form,'Asia/Bangkok')
   if (!parsed.value) return {status:'error',message:parsed.error ?? 'ข้อมูลภารกิจไม่ถูกต้อง'}
   const status = parseCreationStatus(form)
   if (!status.value) return {status:'error',message:status.error ?? 'สถานะไม่ถูกต้อง'}
