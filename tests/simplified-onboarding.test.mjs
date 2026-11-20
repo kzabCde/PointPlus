@@ -41,3 +41,11 @@ test('room creation opens room home and couple books require just basic book det
  assert.match(page,/space\.kind==='couple'/)
  assert.match(page,/CreateCoupleStampBookForm/)
 })
+
+test('timezone is not selected or modeled by the active Room/Profile data loaders',()=>{
+ for(const p of ['features/spaces/data.ts','features/profiles/data.ts']){
+  const src=read(p)
+  assert.doesNotMatch(src,/timezone/)
+ }
+ assert.doesNotMatch(read('lib/auth/validation.ts'),/allowedTimezone/)
+})
