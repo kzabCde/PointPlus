@@ -9,7 +9,8 @@ const code = ts.transpileModule(read('features/stamp-books/paper-model.ts'), {
 }).outputText
 const module = { exports: {} }
 new Function('exports', code)(module.exports)
-const { paperPageCount, legacyPaperPosition, normalizedPaperPosition, deterministicRotation } = module.exports
+const { paperPageCount, legacyPaperPosition, normalizedPaperPosition, deterministicRotation,
+  normalizeStampRotation, clampStampScale, stampGestureTransform } = module.exports
 
 test('a sheet has one page, a notebook preserves six-stamp historical paging', () => {
   assert.equal(paperPageCount(1, 'single_sheet'), 1)
@@ -25,13 +26,56 @@ test('positions are stable, deterministic and within the page', () => {
   assert.ok(legacyPaperPosition(8).x < 1)
   assert.equal(deterministicRotation(.23,.72), deterministicRotation(.23,.72))
 })
-test('normalizes pointer positions across screen sizes, clamping away from page edges', () => {
+test('normalizes pointer positions across screen sizes, allowing placement at paper edges', () => {
   const mobile = normalizedPaperPosition(200,300,{left:100,top:100,width:200,height:400})
   const desktop = normalizedPaperPosition(400,600,{left:200,top:200,width:400,height:800})
   assert.deepEqual(mobile, desktop)
   assert.deepEqual(mobile, {x:.5,y:.5})
-  assert.deepEqual(normalizedPaperPosition(-20,-10,{left:0,top:0,width:300,height:300}),{x:.1,y:.1})
+  assert.deepEqual(normalizedPaperPosition(-20,-10,{left:0,top:0,width:300,height:300}),{x:0,y:0})
   assert.equal(normalizedPaperPosition(5,5,{left:0,top:0,width:0,height:300}),null)
+})
+test('full-circle rotation and per-stamp scale are deterministic and bounded', () => {
+  assert.equal(normalizeStampRotation(180), -180)
+  assert.equal(normalizeStampRotation(-181), 179)
+  assert.equal(normalizeStampRotation(720 + 37), 37)
+  assert.equal(normalizeStampRotation(-760), -40)
+  assert.equal(clampStampScale(.1), .4)
+  assert.equal(clampStampScale(3), 2.5)
+  assert.equal(clampStampScale(1.3), 1.3)
+  const twist=stampGestureTransform({ distance:100, angle:0, scale:1, rotation:170 },
+    {distance:175,angle:Math.PI/2})
+  assert.equal(twist.scale,1.75)
+  assert.equal(twist.rotation,-100)
+  assert.deepEqual(stampGestureTransform({distance:0,angle:0,scale:1,rotation:0},
+    {distance:100,angle:Math.PI}),{scale:1,rotation:0})
+})
+test('new additive SQL supports persisted scale and 360-degree orientation without replacing ledgers', () => {
+  const sql=read('supabase/stamp-book-first/13_free_transform_stamp_sound.sql')
+  assert.match(sql,/pointplus_give_stamp_freely/)
+  assert.match(sql,/scale_factor numeric/)
+  assert.match(sql,/rotation_deg BETWEEN -180 AND 180/)
+  assert.match(sql,/p_rotation NOT BETWEEN -180 AND 180/)
+  assert.match(sql,/p_scale NOT BETWEEN 0\\.4 AND 2\\.5/)
+  assert.match(sql,/v_prior\\.scale_factor IS DISTINCT FROM p_scale/)
+  assert.match(sql,/UPDATE public\\.stamp_book_marks/)
+  assert.match(sql,/REVOKE ALL ON FUNCTION public\\.pointplus_give_stamp_freely/)
+  assert.doesNotMatch(sql,/\\bTRUNCATE\\b|\\bDROP TABLE\\b|\\bDELETE FROM\\b/i)
+})
+test('sound is controlled, generated locally and cannot break stamp writes', () => {
+  const sound=read('features/stamp-books/sound.tsx')
+  assert.match(sound,/AudioContext/)
+  assert.match(sound,/window\\.localStorage/)
+  assert.match(sound,/BookSoundControls/)
+  assert.match(sound,/ctx\\.createOscillator/)
+  assert.match(sound,/ctx\\.createBuffer/)
+  const page=read('app/(protected)/s/[spaceId]/stamp-books/[bookId]/page.tsx')
+  assert.match(page,/BookSoundProvider/)
+  assert.match(page,/BookSoundControls/)
+  const paper=read('features/stamp-books/paper.tsx')
+  assert.match(paper,/stampGestureTransform/)
+  assert.match(paper,/scale_factor/)
+  assert.match(paper,/onPointerCancel=\\{cancelPointer\\}/)
+  assert.match(paper,/playSound\\?\\.\\('stamp'\\)/)
 })
 test('new RPCs preserve old contracts and copy approved request positions', () => {
   const sql=read('supabase/stamp-book-first/12_interactive_paper_stampbook.sql')
@@ -137,4 +181,41 @@ test('paper creation invokes versioned creator without losing recipient and artw
   assert.equal(calls[0].name,'pointplus_create_paper_stamp_book')
   assert.equal(calls[0].args.p_layout,'single_sheet')
   assert.deepEqual(calls[0].args.p_styles,[artworks[0].id])
+})
+
+test('scale and rotation are passed to the server in one authoritative action',async()=>{
+  const calls=[]
+  const supabase={
+    from:()=>({select(){return this},eq(){return this},async maybeSingle(){return {data:{id:sampleId},error:null}}}),
+    rpc:async(name,args)=>{calls.push({name,args});return {data:{status:'approved',request_id:sampleId},error:null}},
+  }
+  const actions=compiledStampActions(supabase)
+  const f=stampForm()
+  f.set('scale_factor','2.25')
+  f.set('rotation_deg','-167')
+  const result=await actions.giveStampAction({status:'idle',message:''},f)
+  assert.equal(result.status,'success')
+  assert.equal(calls.length,1)
+  assert.equal(calls[0].name,'pointplus_give_stamp_freely')
+  assert.equal(calls[0].args.p_scale,2.25)
+  assert.equal(calls[0].args.p_rotation,-167)
+  assert.equal(calls[0].args.p_x,.25)
+  assert.equal(calls[0].args.p_y,.7)
+})
+test('server rejects invalid scale, partial placement or rotation greater than full circle',async()=>{
+  let calls=0
+  const actions=compiledStampActions({rpc:async()=>{calls++}})
+  const forms=[
+    {scale_factor:'0.39'},
+    {scale_factor:'2.51'},
+    {scale_factor:'NaN'},
+    {scale_factor:'1',position_x:'NaN'},
+    {scale_factor:'1',rotation_deg:'181'},
+  ]
+  for(const changes of forms){
+    const f=stampForm()
+    for(const [k,v] of Object.entries(changes))f.set(k,v)
+    assert.equal((await actions.giveStampAction({status:'idle',message:''},f)).status,'error')
+  }
+  assert.equal(calls,0)
 })
