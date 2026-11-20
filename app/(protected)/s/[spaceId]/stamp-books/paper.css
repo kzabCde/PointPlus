@@ -30,7 +30,7 @@
     repeating-linear-gradient(180deg, transparent 0 34px, #c8b7ab12 35px 36px);
   background-size: 19px 19px, auto;
 }
-.paper-stamp-surface[data-placeable="true"] { cursor: crosshair; }
+.paper-stamp-surface[data-placeable="true"] { cursor: crosshair; touch-action: none; }
 .paper-stamp-surface:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .paper-stamp-ruled { position: absolute; inset-block: 0; left: 9%; width: 1px; background: #d6a49a4a; pointer-events: none; }
 .paper-stamp-mark {
@@ -43,10 +43,6 @@
   filter: drop-shadow(1px 3px 1px #79544726);
 }
 .paper-stamp-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.paper-stamp-mark--pending,
-.paper-stamp-mark--preview {
-  transform: translate(-50%, -50%);
-}
 .paper-stamp-mark--pending { opacity: .44; filter: grayscale(.25) drop-shadow(1px 2px 1px #b8968d38); }
 .paper-stamp-mark--preview { opacity: .52; }
 .paper-stamp-mark--waiting { opacity: .35; filter: grayscale(.25) drop-shadow(1px 2px 1px #b8968d40); }
@@ -96,4 +92,62 @@
 .journal-spread--paper[data-layout="single_sheet"] .journal-leaf--notes {
   border-inline-start: 0; border-block-start: 1px solid var(--paper-edge);
   block-size: auto; max-block-size: 220px; overflow: auto;
+}
+
+/* Adjustable stamp transform controls: each stamp retains its own scale and rotation. */
+.paper-stamp-transforms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  background: #fff8ee;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+}
+.paper-stamp-transform-label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.paper-stamp-transform-label strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--action);
+}
+.paper-stamp-transform-label input[type="range"],
+.book-sound-volume input[type="range"] {
+  accent-color: var(--action);
+  width: 100%;
+  cursor: pointer;
+  min-height: 32px;
+}
+.paper-stamp-rotation-shortcuts {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.paper-stamp-rotation-shortcuts button { min-height: 42px; font-size: 13px; padding: 6px 12px; }
+.book-sound-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 4px 0;
+}
+.book-sound-toggle { min-height: 44px; }
+.book-sound-volume {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.book-sound-volume input[type="range"] { width: 110px; }
+.book-sound-volume span { min-width: 3ch; font-variant-numeric: tabular-nums; }
+@media (max-width: 540px) {
+  .paper-stamp-transforms { grid-template-columns: minmax(0, 1fr); }
+  .paper-stamp-rotation-shortcuts { grid-column: 1; }
+  .book-sound-volume input[type="range"] { width: min(35vw, 130px); }
 }
