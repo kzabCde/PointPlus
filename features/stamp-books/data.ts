@@ -51,7 +51,7 @@ export async function loadStampBookDetail(spaceId:string,bookId:string) {
  ])
  const {supabase,user,member}=context
  const manager=canManage(member.role)
- const eligible=readableParticipants(people,user.id,manager)
+ const eligible=readableParticipants(people,user.id,manager,context.space.kind)
  const {data:book,error}=await supabase.from('stamp_books')
  .select('id,space_id,created_by,title,description,cover_asset_id,target_count,repeatable,allow_self_stamp,approval_policy,status,created_at')
  .eq('space_id',spaceId).eq('id',bookId).maybeSingle()
