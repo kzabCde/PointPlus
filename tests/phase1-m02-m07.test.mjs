@@ -70,3 +70,86 @@ test('redirect validator enforces application-only navigation at runtime', async
   assert.equal(safeNextPath('/rooms'), '/rooms')
   assert.equal(safeNextPath('/dashboard'), '/dashboard')
 })
+
+test('invitation and auth site origin uses the configured public domain, not a deployment hostname', async () => {
+  const ts = await import('typescript')
+  const js = ts.transpileModule(read('lib/auth/redirects.ts'), {
+    compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
+  }).outputText
+  const { siteOrigin } = await import('data:text/javascript;base64,' + Buffer.from(js).toString('base64'))
+  const keys = ['NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SITE_URL','VERCEL_PROJECT_PRODUCTION_URL','VERCEL_URL','NODE_ENV']
+  const original = Object.fromEntries(keys.map(key => [key, process.env[key]]))
+  try {
+    for (const key of keys) delete process.env[key]
+    process.env.NODE_ENV = 'production'
+    process.env.NEXT_PUBLIC_APP_URL = 'https://pointpluss.vercel.app/'
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://old.example.com/'
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'pointpluss.vercel.app'
+    process.env.VERCEL_URL = 'pointplus-deployment-id.vercel.app'
+    assert.equal(siteOrigin(), 'https://pointpluss.vercel.app')
+
+    delete process.env.NEXT_PUBLIC_APP_URL
+    assert.equal(siteOrigin(), 'https://old.example.com')
+
+    delete process.env.NEXT_PUBLIC_SITE_URL
+    assert.equal(siteOrigin(), 'https://pointpluss.vercel.app')
+
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL
+    assert.equal(siteOrigin(), 'https://pointplus-deployment-id.vercel.app')
+
+    delete process.env.VERCEL_URL
+    process.env.NODE_ENV = 'development'
+    assert.equal(siteOrigin(), 'http://localhost:3000')
+  } finally {
+    for (const key of keys) {
+      if (original[key] === undefined) delete process.env[key]
+      else process.env[key] = original[key]
+    }
+  }
+})
+
+test('createInviteAction returns a one-time token only in a canonical /join URL fragment', async () => {
+  const ts = await import('typescript')
+  const file = 'features/invitations/actions.ts'
+  const compiled = ts.transpileModule(read(file), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+    fileName: file,
+  })
+  const token = 'a'.repeat(64)
+  const roomId = '11111111-1111-4111-8111-111111111111'
+  const seen = []
+  const stubs = {
+    'next/cache': { revalidatePath() {} },
+    '@/lib/auth/session': { requireUser() { throw Error('Unexpected authentication lookup') } },
+    '@/lib/auth/validation': {
+      field: (form,key) => String(form.get(key) ?? '').trim(),
+      isUuid: input => input === roomId,
+    },
+    '@/lib/auth/redirects': { siteOrigin: () => 'https://pointpluss.vercel.app' },
+    '@/features/spaces/data': {
+      canManage: role => role === 'owner' || role === 'admin',
+      getSpaceContext: async () => ({
+        space: {kind: 'couple'}, member: {role: 'owner'},
+        supabase: {rpc: async (name,args) => {
+          seen.push({name,args})
+          return {data: token,error: null}
+        }},
+      }),
+    },
+  }
+  const mod = {exports: {}}
+  new Function('require','module','exports',compiled.outputText)(
+    id => {if (!(id in stubs)) throw Error('Unexpected import: '+id);return stubs[id]},
+    mod,mod.exports,
+  )
+  const form = new FormData()
+  form.set('space_id',roomId)
+  form.set('role','member')
+  form.set('days','7')
+  const result = await mod.exports.createInviteAction({status:'idle',message:''},form)
+  assert.equal(result.status,'success')
+  assert.equal(result.link,'https://pointpluss.vercel.app/join#token='+token)
+  assert.deepEqual(seen,[{name:'pointplus_create_invite',args:{
+    p_space:roomId,p_role:'member',p_days:7,
+  }}])
+})
