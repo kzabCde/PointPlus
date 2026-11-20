@@ -34,7 +34,7 @@ export async function createStampBookAction(_prev:StampBookState, form:FormData)
   const rewards=text(form,'rewards').split('\n').map(s=>s.trim()).filter(Boolean)
   const approval=text(form,'approval_policy')
   const layout=text(form,'layout_mode')
-  if (layout && !['single_sheet','notebook'].includes(layout)) return fail('รูปแบบกระดาษไม่ถูกต้อง')
+  if (layout && !['single_sheet','notebook','stamp_card'].includes(layout)) return fail('รูปแบบกระดาษไม่ถูกต้อง')
   if(!isUuid(spaceId)||title.length<1||title.length>160||description.length>2000||
      !Number.isInteger(target)||target<1||target>100||
      !['direct','approval_required'].includes(approval)||
