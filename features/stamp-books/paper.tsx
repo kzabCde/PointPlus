@@ -32,6 +32,7 @@ export function StampPaper({
   const [state, action, pending] = useBookAction(giveStampAction)
   const styles = pointPlusStamps.filter(stamp => styleIds.includes(stamp.id))
   const [selected, setSelected] = useState<string | null>(null)
+  const [note, setNote] = useState('')
   const artId = selected && styles.some(stamp => stamp.id === selected) ? selected : styles[0]?.id
   const [preview, setPreview] = useState<{ x: number; y: number } | null>(null)
   const [placed, setPlaced] = useState<{ x: number; y: number; art: string } | null>(null)
@@ -55,6 +56,7 @@ export function StampPaper({
     inFlight.current = false
     if (state.status === 'success') {
       setPlaced(null)
+      setNote('')
       router.refresh()
     }
     if (state.status === 'error') setPlaced(null)
@@ -71,7 +73,7 @@ export function StampPaper({
     form.set('book_id', bookId)
     form.set('recipient_id', participantId)
     form.set('asset_id', artId)
-    form.set('note', '')
+    form.set('note', note.trim())
     form.set('idempotency_key', crypto.randomUUID())
     form.set('page_index', String(page))
     form.set('position_x', String(safeX))
@@ -107,6 +109,16 @@ export function StampPaper({
 
   function onKeys(event: KeyboardEvent<HTMLDivElement>) {
     if (!canGive || pending || event.altKey || event.ctrlKey || event.metaKey) return
+    const offset: Record<string, [number, number]> = {
+      ArrowLeft: [-.04, 0], ArrowRight: [.04, 0], ArrowUp: [0, -.04], ArrowDown: [0, .04],
+    }
+    if (Object.hasOwn(offset, event.key)) {
+      event.preventDefault()
+      const [dx, dy] = offset[event.key]
+      setPreview(previous => ({ x: Math.max(.10, Math.min(.90, (previous?.x ?? .5) + dx)),
+        y: Math.max(.10, Math.min(.90, (previous?.y ?? .5) + dy)) }))
+      return
+    }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       place(preview?.x ?? .5, preview?.y ?? .5)
@@ -116,7 +128,7 @@ export function StampPaper({
   return <div className="paper-stamp-root">
     <div className="paper-stamp-surface" role={canGive ? 'button' : undefined}
       tabIndex={canGive ? 0 : undefined}
-      aria-label={canGive ? 'หน้ากระดาษสำหรับแปะแสตมป์ คลิก แตะ หรือกด Enter เพื่อแปะ' : 'หน้ากระดาษสะสมแสตมป์'}
+      aria-label={canGive ? 'หน้ากระดาษสำหรับแปะแสตมป์ คลิกหรือแตะเพื่อแปะ ใช้ปุ่มลูกศรเลื่อนตำแหน่งแล้วกด Enter' : 'หน้ากระดาษสะสมแสตมป์'}
       aria-disabled={canGive ? pending : undefined}
       data-placeable={canGive && !pending && !!artId}
       onPointerDown={pointerDown} onPointerUp={pointerUp}
@@ -165,6 +177,12 @@ export function StampPaper({
         </button>)}
       </div>
       <p className="paper-stamp-hint">เลือกดวงแสตมป์ แล้วแตะตำแหน่งบนกระดาษ</p>
+      <details className="paper-stamp-note">
+        <summary>เพิ่มข้อความสั้น ๆ (ไม่บังคับ)</summary>
+        <textarea className="input" aria-label="ข้อความแนบแสตมป์"
+          maxLength={1000} rows={2} disabled={pending} value={note}
+          onChange={event => setNote(event.target.value)}/>
+      </details>
     </div>}
     {state.status === 'error' && <p role="alert" className="status status--error">{state.message}</p>}
     {state.status === 'success' && state.outcome === 'pending' &&
