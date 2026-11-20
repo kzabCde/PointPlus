@@ -88,3 +88,12 @@
   from { opacity: 0; scale: 1.16; }
   to { opacity: .44; scale: 1; }
 }
+
+.paper-stamp-note { font-size: 13px; color: var(--muted); }
+.paper-stamp-note summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; }
+.paper-stamp-note textarea { width: 100%; resize: vertical; margin-block-start: 3px; }
+.journal-spread--paper[data-layout="single_sheet"] { grid-template-columns: minmax(0, 1fr); }
+.journal-spread--paper[data-layout="single_sheet"] .journal-leaf--notes {
+  border-inline-start: 0; border-block-start: 1px solid var(--paper-edge);
+  block-size: auto; max-block-size: 220px; overflow: auto;
+}
