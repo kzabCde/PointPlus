@@ -37,15 +37,20 @@ export async function signInAction(_state: AuthState, form: FormData): Promise<A
 export async function signUpAction(_state: AuthState, form: FormData): Promise<AuthState> {
   const email = value(form, 'email').toLowerCase()
   const password = rawValue(form, 'password')
+  const displayName = value(form, 'display_name')
+  if (displayName.length < 1 || displayName.length > 80) return invalid('กรุณาตั้งชื่อที่แสดง 1–80 ตัวอักษร')
   if (!validEmail(email)) return invalid('กรุณากรอกอีเมลที่ถูกต้อง')
   if (password.length < 8 || password.length > 128) return invalid('รหัสผ่านต้องมี 8–128 ตัวอักษร')
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp({
     email, password,
-    options: { emailRedirectTo: siteOrigin() + '/auth/callback?next=/onboarding' },
+    options: { emailRedirectTo: siteOrigin() + '/auth/callback?next=/rooms', data: { display_name: displayName } },
   })
   if (error) return invalid('ไม่สามารถสร้างบัญชีได้ในขณะนี้ โปรดลองอีกครั้ง')
-  if (data.session) redirect('/onboarding')
+  if (data.session && data.user) {
+    await supabase.from('profiles').update({ display_name: displayName }).eq('id', data.user.id)
+    redirect('/rooms')
+  }
   return { status: 'success', message: 'หากอีเมลนี้สมัครได้ ระบบจะส่งลิงก์ยืนยันให้ กรุณาตรวจกล่องจดหมาย' }
 }
 

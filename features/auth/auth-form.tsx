@@ -26,6 +26,9 @@ export function AuthForm({ mode, next = '/rooms' }: { mode: Mode; next?: string 
       <h1 className="page-title">{heading[mode]}</h1>
       <p className="muted">พื้นที่เล็ก ๆ สำหรับเป้าหมายและความสัมพันธ์ที่สำคัญ</p>
       <form action={action}>
+        {mode === 'register' && (
+          <FormField id="display_name" name="display_name" label="ชื่อที่แสดง" required maxLength={80} autoComplete="nickname" />
+        )}
         {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
           <FormField id="email" name="email" type="email" label="อีเมล" autoComplete="email" required maxLength={254} />
         )}

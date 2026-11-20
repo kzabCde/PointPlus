@@ -387,3 +387,42 @@ export function AddStampRewardForm({spaceId,bookId}:{
   <button className="button button--primary" type="submit" disabled={pending}>เพิ่มรางวัล</button><Result state={state}/>
  </form>
 }
+
+/** Minimal couple-specific creation: the creator always stamps the other partner. */
+export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
+ spaceId:string;userId:string;participants:Participant[]
+}){
+ const router=useRouter()
+ const [state,action,pending]=useActionState(createStampBookAction,idle)
+ const [cover,setCover]=useState(pointPlusStamps[0].id)
+ const partner=participants.find(p=>p.kind==='adult'&&p.user_id&&p.user_id!==userId&&!p.archived_at)
+ useEffect(()=>{if(state.status==='success'&&state.bookId)router.push('/s/'+spaceId+'/stamp-books/'+state.bookId)},[state.status,state.bookId,router,spaceId])
+ if(!partner)return <div className="card empty-state">
+  <h3>เชิญคนสำคัญมาเริ่มสะสมด้วยกัน</h3>
+  <p>สร้างห้องสำเร็จแล้ว เมื่ออีกคนเข้าร่วมห้องก็สร้างสมุดให้กันได้ทันที</p>
+  <a className="button button--primary" href={'/s/'+spaceId+'/members'}>เชิญเข้าห้อง</a>
+ </div>
+ return <form action={action} className="card stamp-book-form">
+  <input type="hidden" name="space_id" value={spaceId}/>
+  <input type="hidden" name="recipient_id" value={partner.id}/>
+  <input type="hidden" name="giver_id" value={userId}/>
+  <input type="hidden" name="approval_policy" value="direct"/>
+  <input type="hidden" name="asset_id" value={cover}/>
+  <input type="hidden" name="rewards" value="ข้อความรางวัลเมื่อสะสมครบเล่ม"/>
+  <h3>สมุดเล่มใหม่สำหรับ {partner.display_name}</h3>
+  <label htmlFor="couple-book-title">ชื่อสมุด</label>
+  <input className="input" id="couple-book-title" name="title" maxLength={160} required placeholder="เช่น เรื่องเล็ก ๆ ของเรา"/>
+  <label htmlFor="couple-book-target">จำนวนแสตมป์</label>
+  <select className="input" id="couple-book-target" name="target_count" defaultValue="6">
+   {[4,6,8,10,12,20].map(n=><option key={n} value={n}>{n} ดวง</option>)}
+  </select>
+  <label htmlFor="couple-book-cover">ลายสมุด</label>
+  <select className="input" id="couple-book-cover" value={cover} onChange={event=>setCover(event.target.value)}>
+   {pointPlusStamps.map(stamp=><option value={stamp.id} key={stamp.id}>{stamp.nameTh}</option>)}
+  </select>
+  <BookCover assetId={cover}/>
+  <p className="muted">คุณให้แสตมป์ {partner.display_name} ได้ทันที เมื่อครบเล่มอีกคนจะเขียนรางวัลและเก็บสมุดเป็นความทรงจำ</p>
+  {state.message&&<p role="status" className={state.status==='error'?'form-field__error':'status status--success'}>{state.message}</p>}
+  <button type="submit" className="button button--primary" disabled={pending}>{pending?'กำลังสร้างสมุด…':'สร้างสมุด'}</button>
+ </form>
+}

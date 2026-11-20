@@ -52,21 +52,16 @@ test('R01 live RLS: Room creation avoids INSERT RETURNING before membership trig
  const s=read('features/spaces/actions.ts')
  assert.match(s,/import \{ randomUUID \} from 'node:crypto'/)
  assert.match(s,/const spaceId = randomUUID\(\)/)
- assert.match(s,/\.insert\(\{ id: spaceId, kind, name, timezone, owner_id: user\.id \}\)/)
- assert.doesNotMatch(s,/\.insert\(\{ kind, name, timezone, owner_id: user\.id \}\)\s*\.select\('id'\)/)
+ assert.match(s,/\.insert\(\{ id: spaceId, kind, name, owner_id: user\.id \}\)/)
+ assert.doesNotMatch(s,/\.insert\(\{ kind, name, owner_id: user\.id \}\)\s*\.select\('id'\)/)
  assert.match(s,/spaceId \}/)
 })
 
 test('R01: createSpaceAction uses committed trigger model without INSERT RETURNING', async()=>{
  const spaceId = '33333333-3333-4333-8333-333333333333'
  const seen = []
- const profileQuery = {
-   select(){ return this },eq(){ return this },
-   async maybeSingle(){ return {data:{timezone:'Asia/Bangkok'},error:null} },
- }
  const supabase = {
    from(table){
-     if(table === 'profiles') return profileQuery
      if(table !== 'spaces') throw new Error('Unexpected table '+table)
      return {
        async insert(row){ seen.push(row);return {error:null} },
@@ -84,7 +79,6 @@ test('R01: createSpaceAction uses committed trigger model without INSERT RETURNI
    'next/cache':{revalidatePath:()=>{}},
    '@/lib/auth/validation':{
      field:(form,key)=>String(form.get(key)||'').trim(),
-     allowedTimezone:tz=>tz==='Asia/Bangkok',
      isUuid:()=>true,
    },
    '@/lib/auth/session':{requireUser:async()=>({user:{id:'owner-id'},supabase})},
@@ -102,6 +96,6 @@ test('R01: createSpaceAction uses committed trigger model without INSERT RETURNI
  assert.equal(result.status,'success')
  assert.equal(result.spaceId,spaceId)
  assert.deepEqual(seen,[{
-   id:spaceId,kind:'group',name:'Friends',timezone:'Asia/Bangkok',owner_id:'owner-id',
+   id:spaceId,kind:'group',name:'Friends',owner_id:'owner-id',
  }])
 })

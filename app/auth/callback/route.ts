@@ -13,12 +13,21 @@ export async function GET(request: NextRequest) {
   const otpType = url.searchParams.get('type')
   const supabase = await createClient()
 
+  // Complete the display name set during registration after email verification.
+  async function finishSignIn() {
+    const { data: { user } } = await supabase.auth.getUser()
+    const name = user?.user_metadata?.display_name
+    if (user && typeof name === 'string' && name.trim().length >= 1 && name.trim().length <= 80) {
+      await supabase.from('profiles').update({ display_name: name.trim() }).eq('id', user.id).eq('display_name', 'Member')
+    }
+    return NextResponse.redirect(new URL(next, url.origin))
+  }
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) return NextResponse.redirect(new URL(next, url.origin))
+    if (!error) return finishSignIn()
   } else if (tokenHash && otpType && otpTypes.includes(otpType as EmailOtpType)) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType as EmailOtpType })
-    if (!error) return NextResponse.redirect(new URL(next, url.origin))
+    if (!error) return finishSignIn()
   }
   return NextResponse.redirect(new URL('/login?error=confirmation', url.origin))
 }
