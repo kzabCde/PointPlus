@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { canManage, getSpaceContext, getSpaceMembers, getSpaceParticipants } from '@/features/spaces/data'
-import { CreateStampBookForm } from '@/features/stamp-books/forms'
+import { CreateStampBookForm, CreateCoupleStampBookForm } from '@/features/stamp-books/forms'
 
 export const metadata:Metadata={title:'สร้างสมุดสะสม'}
 export default async function NewStampBookPage({params}:{params:Promise<{spaceId:string}>}){
@@ -14,6 +14,8 @@ export default async function NewStampBookPage({params}:{params:Promise<{spaceId
  return <section className="stamp-book-page">
   <Link href={'/s/'+spaceId+'/stamp-books'} className="text-link">← กลับไปสมุดสะสม</Link>
   <header><h2 className="page-title">สร้างสมุดเล่มใหม่</h2></header>
-  <CreateStampBookForm spaceId={spaceId} userId={user.id} kind={space.kind} participants={participants} members={members}/>
+  {space.kind==='couple'
+    ? <CreateCoupleStampBookForm spaceId={spaceId} userId={user.id} participants={participants}/>
+    : <CreateStampBookForm spaceId={spaceId} userId={user.id} kind={space.kind} participants={participants} members={members}/>}
  </section>
 }
