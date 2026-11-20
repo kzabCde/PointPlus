@@ -7,6 +7,7 @@ import { pointPlusStamps } from '@/lib/point-plus/assets'
 import { giveStampAction } from './actions'
 import { useBookAction } from './motion'
 import type { JournalMark } from './journal-model'
+import type { BookRequest } from './data'
 import { legacyPaperPosition, normalizedPaperPosition, deterministicRotation } from './paper-model'
 
 type PaperProps = {
@@ -15,6 +16,7 @@ type PaperProps = {
   participantId: string
   styleIds: string[]
   marks: JournalMark[]
+  pendingRequests: BookRequest[]
   page: number
   layoutMode: 'single_sheet' | 'notebook'
   canGive: boolean
@@ -24,7 +26,7 @@ type PaperProps = {
 type PointerStart = { id: number; x: number; y: number }
 
 export function StampPaper({
-  spaceId, bookId, participantId, styleIds, marks, page, layoutMode, canGive, impactRequestId,
+  spaceId, bookId, participantId, styleIds, marks, pendingRequests, page, layoutMode, canGive, impactRequestId,
 }: PaperProps) {
   const router = useRouter()
   const [state, action, pending] = useBookAction(giveStampAction)
@@ -45,6 +47,9 @@ export function StampPaper({
       rotation: mark.rotation_deg ?? fallback.rotation,
     }
   }).filter(item => item.pageIndex === page)
+
+  const visiblePending = pendingRequests.filter(request => request.page_index === page &&
+    request.position_x !== null && request.position_y !== null)
 
   useEffect(() => {
     inFlight.current = false
@@ -126,6 +131,16 @@ export function StampPaper({
           style={{ left: (x * 100) + '%', top: (y * 100) + '%', transform: 'translate(-50%, -50%) rotate(' + rotation + 'deg)' }}
           aria-label={(art?.nameTh ?? 'แสตมป์') + ' จาก ' + mark.giver}>
           {art && <Image src={art.png} width={92} height={92} alt="" draggable={false}/>}
+        </span>
+      })}
+      {visiblePending.map(request => {
+        const art = pointPlusStamps.find(stamp => stamp.id === request.asset_id)
+        return <span key={'request-' + request.id}
+          className="paper-stamp-mark paper-stamp-mark--waiting" aria-label="แสตมป์รออนุมัติ"
+          style={{ left: (Number(request.position_x) * 100) + '%',
+            top: (Number(request.position_y) * 100) + '%',
+            transform: 'translate(-50%, -50%) rotate(' + (request.rotation_deg ?? 0) + 'deg)' }}>
+          {art && <Image src={art.png} width={92} height={92} alt=""/>}
         </span>
       })}
       {placed && !visibleMarks.some(item => item.mark.request_id === impactRequestId) &&
