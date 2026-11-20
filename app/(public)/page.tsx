@@ -27,24 +27,40 @@ export default function HomePage() {
     </header>
 
     <main id="main-content" tabIndex={-1}>
+      <div className="editorial-issue container" aria-hidden="true">
+        <span>POINT+ / THE LITTLE ARCHIVE</span>
+        <span>COLLECTION NO. 001</span>
+      </div>
       <section className="living-hero container" aria-labelledby="hero-heading">
         <div className="living-hero__copy">
-          <p className="living-hero__eyebrow" lang="en">POINT+ · OUR LITTLE MOMENTS</p>
-          <h1 id="hero-heading">เก็บทุกเรื่องราวดี ๆ <span>ไว้ในสมุดของเรา</span></h1>
+          <p className="living-hero__eyebrow" lang="en">A COLLECTION OF LITTLE MOMENTS</p>
+          <h1 id="hero-heading">เรื่องเล็ก ๆ <span>ที่อยากเก็บไว้ตลอดไป</span></h1>
           <p className="living-hero__description">สร้างสมุดสะสมแสตมป์ให้คนสำคัญ มอบความสุขเล็ก ๆ ให้กัน และเก็บทุกความทรงจำไว้ในแบบของเรา</p>
           <div className="living-actions">
             <ButtonLink href="/register" prefetch={false}>เริ่มสร้างสมุด <span aria-hidden="true">→</span></ButtonLink>
             <ButtonLink href="/login" prefetch={false} variant="secondary">เข้าสู่ระบบ</ButtonLink>
           </div>
           <p className="living-hero__message">ทุกแสตมป์ คือหนึ่งเรื่องราวที่มีความหมาย</p>
+          <p className="editorial-handwritten" lang="en" aria-hidden="true">little moments, lovingly kept.</p>
         </div>
-        <InteractiveStampBook/>
+        <div className="editorial-hero__stage">
+          <div className="editorial-hero__specimen" aria-hidden="true">
+            <span>SPECIMEN / 01</span>
+            <Image src={letterStamp} width={76} height={76} alt=""/>
+          </div>
+          <InteractiveStampBook/>
+          <div className="editorial-hero__seal" aria-hidden="true">
+            <span>POINT+</span>
+            <span>MADE WITH HEART</span>
+          </div>
+        </div>
       </section>
 
       <div className="living-stories" id="how-it-works">
         <section className="living-story" id="spaces" aria-labelledby="create-book-heading">
           <div className="container living-story__grid" data-living-reveal>
             <div className="living-story__copy">
+              <p className="editorial-chapter">01 <span aria-hidden="true">/</span> CREATE YOUR BOOK</p>
               <h2 id="create-book-heading">เริ่มจากสมุดหนึ่งเล่ม</h2>
               <p>ตั้งชื่อสมุด เลือกลายบนปก และกำหนดจำนวนแสตมป์ที่อยากสะสม สมุดเล่มนี้มีไว้ให้คนสำคัญของคุณโดยเฉพาะ</p>
             </div>
@@ -53,7 +69,7 @@ export default function HomePage() {
                 <Image src={flowersStamp} width={96} height={96} alt=""/>
               </div>
               <figcaption>
-                <span className="sample-label__caption">สมุดตัวอย่าง</span>
+                <span className="sample-label__caption">COLLECTION 001 · สมุดตัวอย่าง</span>
                 <strong>วันดี ๆ ของเรา</strong>
                 <dl>
                   <div><dt>ผู้สะสม</dt><dd>คนสำคัญ</dd></div>
@@ -67,6 +83,7 @@ export default function HomePage() {
         <section className="living-story living-story--stamp" aria-labelledby="give-stamp-heading">
           <div className="container living-story__grid" data-living-reveal>
             <div className="living-story__copy">
+              <p className="editorial-chapter">02 <span aria-hidden="true">/</span> GIVE A STAMP</p>
               <h2 id="give-stamp-heading">ให้แสตมป์แทนคำขอบคุณ</h2>
               <p>แต่ละคนสร้างสมุดเพื่อมอบแสตมป์ให้คนสำคัญได้ และอีกคนก็สร้างสมุดอีกเล่มเพื่อมอบแสตมป์กลับมาได้เช่นกัน ต่างคนต่างสะสมเรื่องราวของตัวเอง</p>
               <div className="reciprocal-example" role="group" aria-label="ตัวอย่างการให้แสตมป์ทั้งสองทาง">
@@ -81,6 +98,7 @@ export default function HomePage() {
         <section className="living-story" aria-labelledby="memories-heading">
           <div className="container living-story__grid" data-living-reveal>
             <div className="living-story__copy">
+              <p className="editorial-chapter">03 <span aria-hidden="true">/</span> KEEP THE MEMORY</p>
               <h2 id="memories-heading">ครบเล่มแล้ว เก็บไว้เป็นความทรงจำ</h2>
               <p>เมื่อสมุดคู่รักสะสมครบ ผู้สะสมแลกรางวัลและเขียนข้อความถึงอีกคนได้ สมุดจะปิดและเก็บไว้ให้ทั้งคู่กลับมาเปิดอ่าน</p>
             </div>
@@ -98,6 +116,7 @@ export default function HomePage() {
 
       <section className="living-finale" aria-labelledby="start-heading">
         <div className="container">
+          <p className="editorial-finale__eyebrow" lang="en">KEEP THE MOMENTS THAT MATTER</p>
           <h2 id="start-heading">เรื่องราวของเราควรมีที่เก็บพิเศษ</h2>
           <ButtonLink href="/register" prefetch={false}>เริ่มสร้างสมุด <span aria-hidden="true">→</span></ButtonLink>
         </div>
