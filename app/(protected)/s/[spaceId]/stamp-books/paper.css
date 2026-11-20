@@ -1,0 +1,99 @@
+/* Point+ free-placement paper. Reuses existing Journal, motion tokens and brand. */
+.journal-spread--paper .journal-leaf--paper {
+  min-inline-size: 0;
+  padding: clamp(8px, 2.2vw, 20px);
+  border-inline-start: 5px solid #d3b198;
+  background: #f9eddf;
+}
+.paper-stamp-root { display: grid; min-inline-size: 0; gap: 12px; }
+.paper-stamp-surface {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  min-height: 300px;
+  aspect-ratio: 4 / 5;
+  border: 1px solid #e6d3b9;
+  border-radius: 3px 11px 11px 3px;
+  background: #fffbf1;
+  box-shadow: inset 4px 0 11px #bca18e2c, 1px 3px 8px #6b493a21;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.paper-stamp-surface::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+  background-image: radial-gradient(#a3816e23 .55px, transparent .65px),
+    repeating-linear-gradient(180deg, transparent 0 34px, #c8b7ab12 35px 36px);
+  background-size: 19px 19px, auto;
+}
+.paper-stamp-surface[data-placeable="true"] { cursor: crosshair; }
+.paper-stamp-surface:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.paper-stamp-ruled { position: absolute; inset-block: 0; left: 9%; width: 1px; background: #d6a49a4a; pointer-events: none; }
+.paper-stamp-mark {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  width: clamp(42px, 19%, 92px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  filter: drop-shadow(1px 3px 1px #79544726);
+}
+.paper-stamp-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.paper-stamp-mark--pending,
+.paper-stamp-mark--preview {
+  transform: translate(-50%, -50%);
+}
+.paper-stamp-mark--pending { opacity: .44; filter: grayscale(.25) drop-shadow(1px 2px 1px #b8968d38); }
+.paper-stamp-mark--preview { opacity: .52; }
+.paper-stamp-mark--waiting { opacity: .35; filter: grayscale(.25) drop-shadow(1px 2px 1px #b8968d40); }
+.paper-stamp-tools { display: grid; gap: 4px; }
+.paper-stamp-art-picker { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 7px; padding: 4px; scrollbar-width: thin; }
+.paper-stamp-art-button {
+  display: grid; place-items: center; flex: 0 0 58px;
+  height: 58px; border: 1px solid var(--line);
+  border-radius: 12px; background: #fff8f0; cursor: pointer;
+}
+.paper-stamp-art-button[data-selected="true"] {
+  border: 2px solid var(--action); background: var(--coral-soft);
+}
+.paper-stamp-art-button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.paper-stamp-art-button:disabled { opacity: .5; }
+.paper-stamp-art-button img { width: 44px; height: 44px; object-fit: contain; }
+.paper-stamp-hint { font-size: 13px; color: var(--muted); margin: 0; }
+@media (min-width: 960px) {
+  .journal-spread--paper { grid-template-columns: minmax(0, 1fr) minmax(0, .80fr); }
+}
+@media (max-width: 959px) {
+  .paper-stamp-surface { aspect-ratio: 4 / 4.5; min-height: 260px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .paper-stamp-mark[data-impact="true"] img {
+    animation: pointplus-stamp-impact var(--motion-stamp) var(--motion-settle) backwards;
+  }
+  .paper-stamp-mark[data-impact="true"]::after {
+    content: "";
+    position: absolute;
+    inset: -5%;
+    border: 2px solid #be796c;
+    border-radius: 50%;
+    animation: pointplus-contact var(--motion-stamp) var(--motion-out) both;
+  }
+  .paper-stamp-mark--pending { animation: pointplus-paper-await 320ms var(--motion-out) backwards; }
+}
+@keyframes pointplus-paper-await {
+  from { opacity: 0; scale: 1.16; }
+  to { opacity: .44; scale: 1; }
+}
+
+.paper-stamp-note { font-size: 13px; color: var(--muted); }
+.paper-stamp-note summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; }
+.paper-stamp-note textarea { width: 100%; resize: vertical; margin-block-start: 3px; }
+.journal-spread--paper[data-layout="single_sheet"] { grid-template-columns: minmax(0, 1fr); }
+.journal-spread--paper[data-layout="single_sheet"] .journal-leaf--notes {
+  border-inline-start: 0; border-block-start: 1px solid var(--paper-edge);
+  block-size: auto; max-block-size: 220px; overflow: auto;
+}

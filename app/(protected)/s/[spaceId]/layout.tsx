@@ -1,3 +1,6 @@
+import './stamp-books/stamp-books.css'
+import './stamp-books/journal.css'
+import './stamp-books/paper.css'
 import type { ReactNode } from 'react'
 import './stamp-books/stamp-books.css'
 import './stamp-books/journal.css'

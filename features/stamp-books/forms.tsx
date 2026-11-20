@@ -123,6 +123,11 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
    </div>
    <label htmlFor="stamp-book-target">จำนวนแสตมป์ต่อรอบ</label>
    <input className="input" id="stamp-book-target" type="number" name="target_count" min={1} max={100} required value={target} onChange={e => setTarget(e.target.value)}/>
+   <label htmlFor="stamp-book-layout">รูปแบบกระดาษ</label>
+   <select className="input" id="stamp-book-layout" name="layout_mode" defaultValue="notebook">
+    <option value="notebook">สมุดหลายหน้า</option>
+    <option value="single_sheet">กระดาษแผ่นเดียว</option>
+   </select>
    {kind !== 'couple' && <SegmentedField label="จำนวนรอบ" name="repeatable" defaultValue="on" options={[
     { value: 'off', label: 'รอบเดียว' },
     { value: 'on', label: 'สะสมซ้ำได้' },
@@ -408,6 +413,8 @@ export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
   <input type="hidden" name="giver_id" value={userId}/>
   <input type="hidden" name="approval_policy" value="direct"/>
   <input type="hidden" name="asset_id" value={cover}/>
+  {pointPlusStamps.filter(stamp => stamp.id !== cover).map(stamp =>
+   <input type="hidden" key={stamp.id} name="asset_id" value={stamp.id}/>)}
   <input type="hidden" name="rewards" value="ข้อความรางวัลเมื่อสะสมครบเล่ม"/>
   <h3>สมุดเล่มใหม่สำหรับ {partner.display_name}</h3>
   <label htmlFor="couple-book-title">ชื่อสมุด</label>
@@ -415,6 +422,11 @@ export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
   <label htmlFor="couple-book-target">จำนวนแสตมป์</label>
   <select className="input" id="couple-book-target" name="target_count" defaultValue="6">
    {[4,6,8,10,12,20].map(n=><option key={n} value={n}>{n} ดวง</option>)}
+  </select>
+  <label htmlFor="couple-book-layout">รูปแบบกระดาษ</label>
+  <select className="input" id="couple-book-layout" name="layout_mode" defaultValue="notebook">
+   <option value="notebook">สมุดหลายหน้า</option>
+   <option value="single_sheet">กระดาษแผ่นเดียว</option>
   </select>
   <label htmlFor="couple-book-cover">ลายสมุด</label>
   <select className="input" id="couple-book-cover" value={cover} onChange={event=>setCover(event.target.value)}>

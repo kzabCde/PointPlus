@@ -33,6 +33,8 @@ export async function createStampBookAction(_prev:StampBookState, form:FormData)
   const styles=list(form,'asset_id')
   const rewards=text(form,'rewards').split('\n').map(s=>s.trim()).filter(Boolean)
   const approval=text(form,'approval_policy')
+  const layout=text(form,'layout_mode')
+  if (layout && !['single_sheet','notebook'].includes(layout)) return fail('รูปแบบกระดาษไม่ถูกต้อง')
   if(!isUuid(spaceId)||title.length<1||title.length>160||description.length>2000||
      !Number.isInteger(target)||target<1||target>100||
      !['direct','approval_required'].includes(approval)||
@@ -43,11 +45,12 @@ export async function createStampBookAction(_prev:StampBookState, form:FormData)
      rewards.some(s=>s.length>160)) return fail('กรุณาตรวจชื่อ จำนวนช่อง สมาชิก ผู้ให้แสตมป์ ลาย และรายการรางวัล')
   const {supabase,member,space}=await getSpaceContext(spaceId)
   if(space.kind!=='couple'&&!canManage(member.role)) return fail('เฉพาะผู้ดูแลห้องที่สร้างสมุดได้')
-  const {data,error}=await supabase.rpc('pointplus_create_stamp_book',{
+  const {data,error}=await supabase.rpc(layout ? 'pointplus_create_paper_stamp_book' : 'pointplus_create_stamp_book',{
     p_space:spaceId,p_title:title,p_description:description||null,p_target:target,
     p_repeatable:form.get('repeatable')==='on',
     p_allow_self:form.get('allow_self_stamp')==='on',
     p_approval:approval,p_recipients:recipients,p_givers:givers,p_styles:styles,p_rewards:rewards,
+    ...(layout ? {p_layout:layout} : {}),
   })
   if(error||!data||!isUuid(String(data))) return fail('สร้างสมุดไม่สำเร็จ ตรวจสอบการเชื่อมต่อและสิทธิ์ในห้องแล้วลองอีกครั้ง')
   refresh(spaceId,String(data))
@@ -56,14 +59,24 @@ export async function createStampBookAction(_prev:StampBookState, form:FormData)
 export async function giveStampAction(_prev:StampBookState,form:FormData):Promise<StampBookState> {
   const spaceId=text(form,'space_id'),bookId=text(form,'book_id'),person=text(form,'recipient_id')
   const art=text(form,'asset_id'),note=text(form,'note'),key=text(form,'idempotency_key')
+  const positionFields=['page_index','position_x','position_y','rotation_deg']
+  const hasPosition=positionFields.every(name=>form.has(name))
+  if(positionFields.some(name=>form.has(name))&&!hasPosition)
+    return fail('ข้อมูลตำแหน่งแสตมป์ไม่ครบ')
+  const page=Number(text(form,'page_index')),x=Number(text(form,'position_x'))
+  const y=Number(text(form,'position_y')),rotation=Number(text(form,'rotation_deg'))
+  if(hasPosition&&(!Number.isInteger(page)||page<0||page>99||
+     ![x,y,rotation].every(Number.isFinite)||x<0||x>1||y<0||y>1||rotation< -15||rotation>15))
+    return fail('ตำแหน่งแสตมป์ไม่ถูกต้อง')
   if(![spaceId,bookId,person,key].every(isKey)||!pointPlusStamps.some(s=>s.id===art)||note.length>1000)
     return fail('ข้อมูลการให้แสตมป์ไม่ถูกต้อง')
   const {supabase}=await getSpaceContext(spaceId)
   const {data:book,error:bookError}=await supabase.from('stamp_books')
     .select('id').eq('space_id',spaceId).eq('id',bookId).maybeSingle()
   if(bookError||!book) return fail('ไม่พบสมุดนี้ในห้อง')
-  const {data,error}=await supabase.rpc('pointplus_give_stamp',{
+  const {data,error}=await supabase.rpc(hasPosition ? 'pointplus_give_stamp_at' : 'pointplus_give_stamp',{
     p_book:bookId,p_recipient:person,p_art:art,p_note:note||null,p_key:key,
+    ...(hasPosition ? {p_page:page,p_x:x,p_y:y,p_rotation:rotation} : {}),
   })
   if (error) {
     const permissionError = error.code === '42501' ||
