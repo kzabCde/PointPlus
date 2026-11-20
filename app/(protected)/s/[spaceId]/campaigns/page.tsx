@@ -15,6 +15,6 @@ export default async function CampaignsPage({params}:{params:Promise<{spaceId:st
           <Link className="button button--secondary" href={'/s/'+spaceId+'/campaigns/'+c.id}>แก้ไขชุดภารกิจ</Link>
         </article>)}</div>
       : <div className="card" role="status">ยังไม่มีชุดภารกิจ คุณสามารถสร้างใหม่ได้ด้านล่าง</div>}
-    <div className="feature-rows"><CampaignForm spaceId={spaceId} timezone={space.timezone}/></div>
+    <div className="feature-rows"><CampaignForm spaceId={spaceId} timezone={'Asia/Bangkok'}/></div>
   </>
 }
