@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { randomUUID } from 'node:crypto'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
 import { loadStampBookDetail } from '@/features/stamp-books/data'
-import { ClaimStampRewardForm, ClaimCoupleMemoryForm, ReviewStampForm, ProcessBookRewardForm } from '@/features/stamp-books/forms'
+import { ClaimStampRewardForm, ClaimCoupleMemoryForm, ReviewStampForm, ProcessBookRewardForm, GiveStampDialog } from '@/features/stamp-books/forms'
 import { StampBookJournal } from '@/features/stamp-books/journal'
 import { activityKey, type JournalCycle } from '@/features/stamp-books/journal-model'
 import { BookMotionProvider } from '@/features/stamp-books/motion'
@@ -88,12 +88,17 @@ export default async function StampBookDetailPage({ params }: { params: Promise<
         <BookCover assetId={book.cover_asset_id} eager/>
         <div className="stamp-book-detail-head__text">
           <span className="book-status" data-status={book.status}>{bookStatus[book.status]}</span>
+          <span className="stamp-collection-type">{book.layout_mode === 'stamp_card' ? 'การ์ดสะสม' : 'สมุดแสตมป์'}</span>
           <h2 className="page-title">{book.title}</h2>
           {book.description && <p>{book.description}</p>}
           <p className="muted">{book.target_count} ดวงต่อรอบ · {book.repeatable ? 'สะสมได้หลายรอบ' : 'สะสมรอบเดียว'}</p>
         </div>
         <div className="hero__actions">
           <BookSoundControls/>
+          {book.layout_mode === 'stamp_card' && <GiveStampDialog
+            spaceId={spaceId} bookId={bookId} recipients={giverRecipients}
+            styleIds={styles} canGive={isGiver} stampKey={randomUUID()}
+            requiresApproval={book.approval_policy === 'approval_required'}/>}
           {book.status === 'archived' && <Link href={bookPath + '?view=archive'}
             className="button button--secondary">กลับไปสมุดเก็บถาวร</Link>}
           

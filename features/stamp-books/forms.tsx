@@ -14,6 +14,7 @@ import {
 } from './actions'
 import { idle, useBookAction } from './motion'
 import { BookCover } from './presentation'
+import { useBookSound } from './sound'
 function Result({ state }: { state: StampBookState }) {
  const [dismissed, setDismissed] = useState<StampBookState | null>(null)
  useEffect(() => {
@@ -38,6 +39,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
  const [cover, setCover] = useState(pointPlusStamps[0].id)
  const [title, setTitle] = useState('')
  const [target, setTarget] = useState('6')
+ const [layoutMode, setLayoutMode] = useState<'stamp_card' | 'notebook' | 'single_sheet'>('notebook')
  const [review, setReview] = useState<FormData | null>(null)
  const heading = useRef<HTMLHeadingElement>(null)
  const submitting = useRef(false)
@@ -123,11 +125,29 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
    </div>
    <label htmlFor="stamp-book-target">จำนวนแสตมป์ต่อรอบ</label>
    <input className="input" id="stamp-book-target" type="number" name="target_count" min={1} max={100} required value={target} onChange={e => setTarget(e.target.value)}/>
-   <label htmlFor="stamp-book-layout">รูปแบบกระดาษ</label>
-   <select className="input" id="stamp-book-layout" name="layout_mode" defaultValue="notebook">
-    <option value="notebook">สมุดหลายหน้า</option>
-    <option value="single_sheet">กระดาษแผ่นเดียว</option>
-   </select>
+   <fieldset className="stamp-format-picker">
+    <legend>รูปแบบการสะสม</legend>
+    <div className="stamp-format-options">
+     <label className="stamp-format-option" data-selected={layoutMode === 'stamp_card'}>
+      <input type="radio" name="collection_type" value="card"
+       checked={layoutMode === 'stamp_card'} onChange={() => setLayoutMode('stamp_card')}/>
+      <strong>การ์ดสะสม</strong><span>การ์ดช่องเรียงลำดับ เติมทีละดวงเมื่อได้รับแสตมป์</span>
+     </label>
+     <label className="stamp-format-option" data-selected={layoutMode !== 'stamp_card'}>
+      <input type="radio" name="collection_type" value="book"
+       checked={layoutMode !== 'stamp_card'} onChange={() => setLayoutMode('notebook')}/>
+      <strong>สมุดแสตมป์</strong><span>เลือกตำแหน่ง ขนาด และหมุนแสตมป์บนกระดาษเอง</span>
+     </label>
+    </div>
+   </fieldset>
+   <input type="hidden" name="layout_mode" value={layoutMode}/>
+   {layoutMode !== 'stamp_card' && <label htmlFor="stamp-book-layout">รูปแบบหน้าสมุด
+    <select className="input" id="stamp-book-layout" value={layoutMode}
+      onChange={event => setLayoutMode(event.target.value as 'notebook' | 'single_sheet')}>
+     <option value="notebook">สมุดหลายหน้า</option>
+     <option value="single_sheet">กระดาษแผ่นเดียว</option>
+    </select>
+   </label>}
    {kind !== 'couple' && <SegmentedField label="จำนวนรอบ" name="repeatable" defaultValue="on" options={[
     { value: 'off', label: 'รอบเดียว' },
     { value: 'on', label: 'สะสมซ้ำได้' },
@@ -180,6 +200,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
     <div><strong>{title}</strong><div>{target} ดวงต่อรอบ · {review?.get('repeatable') === 'on' ? 'สะสมได้หลายรอบ' : 'สะสมรอบเดียว'}</div>
      <div>ผู้สะสม: {recipients.filter(person => review?.getAll('recipient_id').includes(person.id)).map(person => person.display_name).join(' · ')}</div>
      <div>ผู้ให้แสตมป์: {kind === 'couple' ? 'คุณ' : members.filter(member => review?.getAll('giver_id').includes(member.user_id)).map(member => participants.find(person => person.user_id === member.user_id)?.display_name ?? 'สมาชิก').join(' · ')}</div>
+     <div>{review?.get('layout_mode') === 'stamp_card' ? 'การ์ดสะสมแบบช่อง' : 'สมุดแสตมป์แบบกระดาษ'}</div>
      <div>{review?.get('approval_policy') === 'approval_required' ? 'ต้องอนุมัติแสตมป์' : 'ให้แสตมป์ได้ทันที'}</div>
     </div>
    </div>
@@ -202,7 +223,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
   <div className="wizard-actions">
    {step > 0 && <button disabled={pending || state.status === 'success'} type="button" className="button button--secondary" onClick={() => move(step - 1)}>ย้อนกลับ</button>}
    <button disabled={pending || state.status === 'success'} type="submit" className="button button--primary">
-    {step < 2 ? 'ถัดไป' : pending ? 'กำลังสร้าง…' : 'ยืนยันสร้างสมุด'}
+    {step < 2 ? 'ถัดไป' : pending ? 'กำลังสร้าง…' : 'ยืนยันสร้าง' + (layoutMode === 'stamp_card' ? 'การ์ด' : 'สมุด')}
    </button>
   </div>
  </form>
@@ -212,6 +233,10 @@ export function GiveStampDialog({spaceId,bookId,recipients,styleIds,canGive,stam
  spaceId:string;bookId:string;recipients:Participant[];styleIds:string[];canGive:boolean;stampKey:string;requiresApproval:boolean
 }){
  const router=useRouter()
+ const sound=useBookSound()
+ const playSound=sound?.play
+ const unlockSound=sound?.unlock
+ const lastPlayed=useRef<string | null>(null)
  const dialog=useRef<HTMLDialogElement>(null)
  const [state,action,pending]=useBookAction(giveStampAction)
  const styles=pointPlusStamps.filter(s=>styleIds.includes(s.id))
@@ -222,16 +247,20 @@ export function GiveStampDialog({spaceId,bookId,recipients,styleIds,canGive,stam
  const [recipient, setRecipient] = useState(recipients[0]?.id ?? '')
  useEffect(()=>{
   if (state.status === 'success') {
+   if (state.outcome === 'granted' && state.receipt?.id && lastPlayed.current !== state.receipt.id) {
+    lastPlayed.current = state.receipt.id
+    playSound?.('stamp')
+   }
    dialog.current?.close()
    setNote('')
    router.refresh()
   }
- }, [state, router])
+ }, [state, router, playSound])
  if (!canGive || !recipients.length || !styles.length) {
   return state.status === 'success' ? <Result state={state}/> : null
  }
  return <div>
-  <button type="button" className="button button--primary" onClick={()=>dialog.current?.showModal()}>+ ให้แสตมป์</button>
+  <button type="button" className="button button--primary" onClick={()=>{ unlockSound?.(); dialog.current?.showModal() }}>+ ให้แสตมป์</button>
   <dialog className="dialog stamp-dialog" ref={dialog} aria-labelledby="give-stamp-title"
    aria-describedby={requiresApproval ? "give-stamp-approval" : undefined}
    onCancel={event => { if (pending) event.preventDefault() }}>
@@ -400,6 +429,7 @@ export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
  const router=useRouter()
  const [state,action,pending]=useActionState(createStampBookAction,idle)
  const [cover,setCover]=useState(pointPlusStamps[0].id)
+ const [layoutMode,setLayoutMode]=useState<'stamp_card'|'notebook'|'single_sheet'>('notebook')
  const partner=participants.find(p=>p.kind==='adult'&&p.user_id&&p.user_id!==userId&&!p.archived_at)
  useEffect(()=>{if(state.status==='success'&&state.bookId)router.push('/s/'+spaceId+'/stamp-books/'+state.bookId)},[state.status,state.bookId,router,spaceId])
  if(!partner)return <div className="card empty-state">
@@ -416,25 +446,43 @@ export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
   {pointPlusStamps.filter(stamp => stamp.id !== cover).map(stamp =>
    <input type="hidden" key={stamp.id} name="asset_id" value={stamp.id}/>)}
   <input type="hidden" name="rewards" value="ข้อความรางวัลเมื่อสะสมครบเล่ม"/>
-  <h3>สมุดเล่มใหม่สำหรับ {partner.display_name}</h3>
+  <h3>สร้างการสะสมใหม่สำหรับ {partner.display_name}</h3>
   <label htmlFor="couple-book-title">ชื่อสมุด</label>
   <input className="input" id="couple-book-title" name="title" maxLength={160} required placeholder="เช่น เรื่องเล็ก ๆ ของเรา"/>
   <label htmlFor="couple-book-target">จำนวนแสตมป์</label>
   <select className="input" id="couple-book-target" name="target_count" defaultValue="6">
    {[4,6,8,10,12,20].map(n=><option key={n} value={n}>{n} ดวง</option>)}
   </select>
-  <label htmlFor="couple-book-layout">รูปแบบกระดาษ</label>
-  <select className="input" id="couple-book-layout" name="layout_mode" defaultValue="notebook">
-   <option value="notebook">สมุดหลายหน้า</option>
-   <option value="single_sheet">กระดาษแผ่นเดียว</option>
-  </select>
+  <fieldset className="stamp-format-picker">
+   <legend>เลือกประเภทการสะสม</legend>
+   <div className="stamp-format-options">
+    <label className="stamp-format-option" data-selected={layoutMode === 'stamp_card'}>
+     <input type="radio" name="collection_type" value="card"
+      checked={layoutMode === 'stamp_card'} onChange={() => setLayoutMode('stamp_card')}/>
+     <strong>การ์ดสะสม</strong><span>การ์ดช่องสะสม เติมทีละดวง</span>
+    </label>
+    <label className="stamp-format-option" data-selected={layoutMode !== 'stamp_card'}>
+     <input type="radio" name="collection_type" value="book"
+      checked={layoutMode !== 'stamp_card'} onChange={() => setLayoutMode('notebook')}/>
+     <strong>สมุดแสตมป์</strong><span>แปะดวงบนกระดาษอย่างอิสระ</span>
+    </label>
+   </div>
+  </fieldset>
+  <input type="hidden" name="layout_mode" value={layoutMode}/>
+  {layoutMode !== 'stamp_card' && <label htmlFor="couple-book-layout">หน้าสมุด
+   <select className="input" id="couple-book-layout" value={layoutMode}
+    onChange={event => setLayoutMode(event.target.value as 'notebook'|'single_sheet')}>
+    <option value="notebook">สมุดหลายหน้า</option>
+    <option value="single_sheet">กระดาษแผ่นเดียว</option>
+   </select>
+  </label>}
   <label htmlFor="couple-book-cover">ลายสมุด</label>
   <select className="input" id="couple-book-cover" value={cover} onChange={event=>setCover(event.target.value)}>
    {pointPlusStamps.map(stamp=><option value={stamp.id} key={stamp.id}>{stamp.nameTh}</option>)}
   </select>
   <BookCover assetId={cover}/>
-  <p className="muted">คุณให้แสตมป์ {partner.display_name} ได้ทันที เมื่อครบเล่มอีกคนจะเขียนรางวัลและเก็บสมุดเป็นความทรงจำ</p>
+  <p className="muted">คุณให้แสตมป์ {partner.display_name} ได้ทันที เมื่อสะสมครบอีกคนจะเขียนข้อความรางวัลและเก็บไว้เป็นความทรงจำ ไม่ว่าคุณจะเลือกการ์ดหรือสมุด</p>
   {state.message&&<p role="status" className={state.status==='error'?'form-field__error':'status status--success'}>{state.message}</p>}
-  <button type="submit" className="button button--primary" disabled={pending}>{pending?'กำลังสร้างสมุด…':'สร้างสมุด'}</button>
+  <button type="submit" className="button button--primary" disabled={pending}>{pending ? 'กำลังสร้าง…' : 'สร้าง' + (layoutMode === 'stamp_card' ? 'การ์ด' : 'สมุด')}</button>
  </form>
 }

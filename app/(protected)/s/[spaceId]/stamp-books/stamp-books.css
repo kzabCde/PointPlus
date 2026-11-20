@@ -154,3 +154,60 @@
   from { opacity: .45; transform: translateY(16px); }
   to { opacity: 1; transform: none; }
 }
+
+/* Two equal first-class experiences: original slot card and free-placement journal. */
+.stamp-collection-type {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-inline-start: 6px;
+  border: 1px solid #e7c6b7;
+  background: #fff0df;
+  color: #92514e;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.stamp-format-picker {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-inline-size: 0;
+}
+.stamp-format-picker legend {
+  font-weight: 700;
+  margin-block-end: 9px;
+}
+.stamp-format-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.stamp-format-option {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 4px 10px;
+  min-block-size: 94px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffcf7;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease;
+}
+.stamp-format-option[data-selected="true"] { border-color: var(--action); background: var(--coral-soft); }
+.stamp-format-option input { grid-row: 1 / 3; align-self: center; accent-color: var(--action); inline-size: 18px; block-size: 18px; }
+.stamp-format-option strong { font-size: 16px; }
+.stamp-format-option span { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.stamp-format-option:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.book-card__visual[data-collection-type="stamp_card"] .book-cover-art {
+  aspect-ratio: 1.25;
+  border-inline-start-width: 1px;
+  border-radius: 7px;
+  background: #fff4e1;
+  box-shadow: 2px 3px 0 #e9c9bb, 4px 6px 0 #e2bbaf;
+}
+@media (max-width: 560px) {
+ .stamp-format-options { grid-template-columns: minmax(0,1fr); }
+ .stamp-format-option { min-block-size: 72px; }
+}
+@media (prefers-reduced-motion: reduce) { .stamp-format-option { transition: none; } }

@@ -4,7 +4,7 @@ import { canManage, getSpaceContext, getSpaceParticipants, type Participant } fr
 export type StampBook = {
  id:string; space_id:string; created_by:string; title:string; description:string|null;
  cover_asset_id:string|null; target_count:number; repeatable:boolean; allow_self_stamp:boolean;
- layout_mode:'single_sheet'|'notebook';
+ layout_mode:'single_sheet'|'notebook'|'stamp_card';
  approval_policy:'direct'|'approval_required';status:'active'|'paused'|'archived';created_at:string
 }
 export type StampCycle = {

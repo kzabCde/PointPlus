@@ -56,9 +56,10 @@ export function BookShelf({ books, cycles, people, base }: {
       const latest = latestByBook.get(book.id)
       const creator = latest?.size ? undefined : people.find(person => person.user_id === book.created_by)
       return <article className="stamp-book-cover" key={book.id}>
-        <div className="book-card__visual"><BookCover assetId={book.cover_asset_id} eager={index === 0}/></div>
+        <div className="book-card__visual" data-collection-type={book.layout_mode}><BookCover assetId={book.cover_asset_id} eager={index === 0}/></div>
         <div className="book-card__content">
           <span className="book-status" data-status={book.status}>{bookStatus[book.status]}</span>
+          <span className="stamp-collection-type">{book.layout_mode === 'stamp_card' ? 'การ์ดสะสม' : 'สมุดแสตมป์'}</span>
           <h3>{book.title}</h3>
           {book.description && <p>{book.description}</p>}
           {creator && <p>สร้างโดย {creator.display_name}</p>}
@@ -66,8 +67,8 @@ export function BookShelf({ books, cycles, people, base }: {
             const cycle = latest.get(person.id)
             return cycle ? [<BookProgress label={person.display_name} cycle={cycle} key={person.id}/>] : []
           })}</div>}
-          <Link className="button button--secondary" aria-label={'เปิดสมุด ' + book.title} href={base + '/' + book.id}>
-            เปิดสมุด <span aria-hidden="true">→</span>
+          <Link className="button button--secondary" aria-label={'เปิด' + (book.layout_mode === 'stamp_card' ? 'การ์ด ' : 'สมุด ') + book.title} href={base + '/' + book.id}>
+            {book.layout_mode === 'stamp_card' ? 'เปิดการ์ด' : 'เปิดสมุด'} <span aria-hidden="true">→</span>
           </Link>
         </div>
       </article>
