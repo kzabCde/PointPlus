@@ -19,7 +19,7 @@ export function StampPressPreview() {
         </StampPress>
       </span>
       <div className="stamp-preview__note">
-        <strong>จากนที ถึงเตย</strong>
+        <strong>จากคนสร้างสมุด ถึงคนสำคัญ</strong>
         <p>ขอบคุณที่ทำให้วันนี้เป็นวันที่ดี</p>
       </div>
       <span className="stamp-preview__cheer">{pressed && <HeartMascot/>}</span>

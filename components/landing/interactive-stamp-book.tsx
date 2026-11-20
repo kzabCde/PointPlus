@@ -47,7 +47,7 @@ export function InteractiveStampBook() {
             {open && <div className="living-book__entry">
               <strong>{current.title}</strong>
               <p>{current.note}</p>
-              <span>ถึง เตย</span>
+              <span>ถึงคนสำคัญ</span>
             </div>}
           </PaperLeaf>
           <PaperLeaf>
