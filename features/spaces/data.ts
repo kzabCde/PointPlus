@@ -25,7 +25,7 @@ export type Participant = {
 }
 export const canManage = (role: SpaceRole) => role === 'owner' || role === 'admin'
 
-export async function listMySpaces(): Promise<SpaceWithRole[]> {
+export const listMySpaces = cache(async (): Promise<SpaceWithRole[]> => {
   const { user, supabase } = await requireUser()
   const { data: memberships, error: membershipError } = await supabase
     .from('space_members').select('space_id,role').eq('user_id', user.id)
@@ -38,7 +38,7 @@ export async function listMySpaces(): Promise<SpaceWithRole[]> {
     ...(space as Space),
     role: memberships.find((m) => m.space_id === space.id)?.role as SpaceRole,
   })).sort((a,b) => (a.kind === 'personal' ? -1 : 0) - (b.kind === 'personal' ? -1 : 0))
-}
+})
 
 export const getSpaceContext = cache(async (id: string) => {
   if (!isUuid(id)) notFound()
@@ -62,16 +62,16 @@ export async function getSpaceMembers(spaceId: string): Promise<Membership[]> {
   return (data ?? []) as Membership[]
 }
 
-export async function getSpaceParticipants(spaceId: string): Promise<Participant[]> {
+export async function getSpaceParticipants(spaceId: string, { includeArchived = false } = {}): Promise<Participant[]> {
   const { supabase } = await getSpaceContext(spaceId)
-  const { data, error } = await supabase.from('participants')
+  const query = supabase.from('participants')
     .select('id,space_id,kind,user_id,guardian_user_id,display_name,archived_at')
-    .eq('space_id', spaceId).is('archived_at', null)
-    .order('created_at')
+    .eq('space_id', spaceId)
+  if (!includeArchived) query.is('archived_at', null)
+  const { data, error } = await query.order('created_at')
   if (error) throw new Error('Cannot load participants')
   return (data ?? []) as Participant[]
 }
-
 
 /** Shared Rooms only; legacy personal data stays accessible but off the room launcher. */
 export async function listMyRooms(): Promise<SpaceWithRole[]> {

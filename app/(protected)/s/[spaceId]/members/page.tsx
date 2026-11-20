@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getSpaceContext, getSpaceMembers, getSpaceParticipants, canManage } from '@/features/spaces/data'
+import { roomRoleLabels } from '@/features/rooms/presentation'
 import { InviteForm } from '@/features/invitations/invite-form'
 
 export const metadata: Metadata = { title: 'สมาชิกพื้นที่' }
@@ -12,11 +13,15 @@ export default async function MembersPage({ params }: { params: Promise<{ spaceI
   return (
     <>
       <h2>สมาชิกของพื้นที่</h2>
-      <div className="card">
-        {members.map((person) => <p key={person.user_id}>
-          <strong>{names.get(person.user_id) ?? 'สมาชิก'}</strong> · {person.role}
-        </p>)}
-      </div>
+      <ul className="card member-list">
+        {members.map(person => {
+          const name = names.get(person.user_id) ?? 'สมาชิก'
+          return <li className="member-row" key={person.user_id}>
+            <span className="member-avatar" aria-hidden="true"><strong>{Array.from(name)[0]}</strong></span>
+            <div><strong>{name}</strong><div className="room-meta">{roomRoleLabels[person.role]}</div></div>
+          </li>
+        })}
+      </ul>
       {space.kind !== 'personal' && canManage(member.role) && <div style={{ marginTop: 20 }}>
         <InviteForm spaceId={space.id} isOwner={member.role === 'owner'} />
       </div>}

@@ -13,8 +13,7 @@ export default async function NewStampBookPage({params}:{params:Promise<{spaceId
  if(space.kind!=='couple'&&!canManage(member.role))notFound()
  return <section className="stamp-book-page">
   <Link href={'/s/'+spaceId+'/stamp-books'} className="text-link">← กลับไปสมุดสะสม</Link>
-  <header><span className="eyebrow">CREATE STAMP BOOK</span><h2 className="page-title">สร้างสมุดเล่มใหม่</h2>
-  <p className="muted">{space.kind==='couple'?'สร้างสมุดให้คู่ของคุณ คุณจะเป็นผู้ให้แสตมป์ของสมุดนี้เสมอ และคู่ของคุณเลือกรางวัลเมื่อครบเล่ม':'เลือกคนสะสม ตั้งจำนวนดวง เลือกลายที่ชอบ และตั้งตัวเลือกรางวัลที่มอบให้กัน'}</p></header>
+  <header><h2 className="page-title">สร้างสมุดเล่มใหม่</h2></header>
   <CreateStampBookForm spaceId={spaceId} userId={user.id} kind={space.kind} participants={participants} members={members}/>
  </section>
 }

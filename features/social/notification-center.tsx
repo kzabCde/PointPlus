@@ -16,24 +16,26 @@ export function NotificationCenter({items}: {items:NotificationItem[]}) {
       const result=await markNotificationReadAction(id)
       if(result.status==='success') router.refresh()
       else setError(result.message)
-    } catch {setError('ไม่สามารถบันทึกการอ่านได้')}
+    } catch {setError('บันทึกการอ่านไม่ได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง')}
     finally {setBusy(null)}
   }
   if(!items.length) return <div className="card empty-state" role="status">ยังไม่มีการแจ้งเตือน</div>
-  return <div className="social-stack">
-    {error && <p role="alert">{error}</p>}
-    {items.map(n=><article key={n.id} className="card">
+  return <>
+    {error && <p role="alert" className="form-field__error">{error}</p>}
+    <ul className="social-stack notification-list">
+    {items.map(n=><li key={n.id} className="card notification-entry" data-unread={!n.read_at}>
       <div className="space-header">
-        <h3>{n.title}</h3>
-        <small className="muted">{new Date(n.created_at).toLocaleString('th-TH')}</small>
+        <h2>{n.title}</h2>
+        <time className="room-meta" dateTime={n.created_at}>{new Date(n.created_at).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}</time>
       </div>
       {n.body && <p>{n.body}</p>}
       <p className="muted">{n.read_at?'อ่านแล้ว':'ยังไม่ได้อ่าน'}</p>
       <div className="hero__actions">
         <Link className="button button--secondary" href={notificationDestination(n)}>ดูที่เกี่ยวข้อง</Link>
-        {!n.read_at && <button className="button button--primary" disabled={busy===n.id}
+        {!n.read_at && <button className="button button--primary" disabled={busy !== null}
           onClick={()=>void mark(n.id)}>{busy===n.id?'กำลังบันทึก…':'ทำเครื่องหมายว่าอ่านแล้ว'}</button>}
       </div>
-    </article>)}
-  </div>
+    </li>)}
+    </ul>
+  </>
 }
