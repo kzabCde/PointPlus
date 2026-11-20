@@ -56,3 +56,85 @@ test('new UI uses pointer placement and original approval and claim actions', ()
   assert.match(actions,/pointplus_give_stamp_at/)
   assert.match(actions,/pointplus_claim_couple_memory/)
 })
+
+const sampleId='11111111-1111-4111-8111-111111111111'
+const personId='22222222-2222-4222-8222-222222222222'
+const spaceId='33333333-3333-4333-8333-333333333333'
+const artworks=JSON.parse(read('assets/point-plus/manifest/stamps.json'))
+function compiledStampActions(supabase) {
+  const compiled=ts.transpileModule(read('features/stamp-books/actions.ts'), {
+    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop:true},
+  })
+  const refs={
+    'next/cache':{ revalidatePath(){} },
+    '@/lib/auth/validation':{
+      field:(f,n)=>String(f.get(n)??'').trim(),
+      isUuid:value=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value),
+    },
+    '@/features/spaces/data':{
+      getSpaceContext:async()=>({supabase,member:{role:'owner'},space:{kind:'couple'}}),
+      canManage:role=>role==='owner'||role==='admin',
+    },
+    '@/lib/point-plus/assets':{ pointPlusStamps: artworks },
+  }
+  const module={exports:{}}
+  new Function('require','module','exports',compiled.outputText)(
+    name=>{ if (!(name in refs)) throw Error('Unexpected import '+name); return refs[name] },
+    module,module.exports,
+  )
+  return module.exports
+}
+function stampForm() {
+  const f=new FormData()
+  for(const [key,value] of Object.entries({
+    space_id:spaceId,book_id:sampleId,recipient_id:personId,
+    asset_id:artworks[0].id,idempotency_key:sampleId,note:'',page_index:'1',
+    position_x:'0.25',position_y:'0.7',rotation_deg:'-2',
+  })) f.set(key,value)
+  return f
+}
+test('valid paper tap calls only the versioned placement RPC with exact coordinates',async()=>{
+  const calls=[]
+  const supabase={
+    from:()=>({select(){return this},eq(){return this},async maybeSingle(){return {data:{id:sampleId},error:null}}}),
+    rpc:async(name,args)=>{calls.push({name,args});return {data:{status:'approved',request_id:sampleId},error:null}},
+  }
+  const result=await compiledStampActions(supabase).giveStampAction({status:'idle',message:''},stampForm())
+  assert.equal(result.status,'success')
+  assert.equal(calls.length,1)
+  assert.equal(calls[0].name,'pointplus_give_stamp_at')
+  assert.equal(calls[0].args.p_page,1)
+  assert.equal(calls[0].args.p_x,.25)
+  assert.equal(calls[0].args.p_y,.7)
+  assert.equal(calls[0].args.p_rotation,-2)
+})
+test('incomplete, NaN, or out-of-bounds positions are blocked before any RPC',async()=>{
+  let calls=0
+  const actions=compiledStampActions({rpc:async()=>{calls++}})
+  for(const field of ['missing','nan','beyond']) {
+    const f=stampForm()
+    if(field==='missing')f.delete('position_y')
+    if(field==='nan')f.set('position_y','NaN')
+    if(field==='beyond')f.set('position_x','1.5')
+    assert.equal((await actions.giveStampAction({status:'idle',message:''},f)).status,'error')
+  }
+  assert.equal(calls,0)
+})
+test('paper creation invokes versioned creator without losing recipient and artwork choices',async()=>{
+  const calls=[]
+  const supabase={rpc:async(name,args)=>{calls.push({name,args});return {data:sampleId,error:null}}}
+  const f=new FormData()
+  for(const [key,value] of Object.entries({
+    space_id:spaceId,title:'สมุดของเรา',description:'',target_count:'6',
+    approval_policy:'direct',rewards:'ข้อความความทรงจำ',layout_mode:'single_sheet',
+  }))f.set(key,value)
+  f.append('recipient_id',personId)
+  f.append('giver_id',sampleId)
+  f.append('asset_id',artworks[0].id)
+  const result=await compiledStampActions(supabase).createStampBookAction({status:'idle',message:''},f)
+  assert.equal(result.status,'success')
+  assert.equal(calls.length,1)
+  assert.equal(calls[0].name,'pointplus_create_paper_stamp_book')
+  assert.equal(calls[0].args.p_layout,'single_sheet')
+  assert.deepEqual(calls[0].args.p_styles,[artworks[0].id])
+})
