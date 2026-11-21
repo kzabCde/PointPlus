@@ -10,7 +10,7 @@
 ## Milestone status
 
 - [x] **UX01 — Paper First Layout** — implemented in this PR; the recorded CI outcome determines whether it can be considered verified
-- [ ] UX02 — Contextual Editing & Direct Manipulation (**not started**)
+- [x] **UX02 — Contextual Editing & Direct Manipulation** — implemented and covered by regression/geometry tests (CI status on final head)
 - [ ] UX03 — Stamp & Page Gestures (**not started**)
 - [ ] UX04 — Rewards, Animation, Accessibility & Hosted E2E (**not started**)
 
@@ -66,8 +66,39 @@ This stage does **not** add new direct resize/rotation handles, edge-swiping pag
 - `.github/workflows/ci.yml` runs the new tests, existing M01–M05/regression suites, TypeScript, Next.js build, plus ephemeral PostgreSQL 16 migrations/RLS tests for this PR.
 - **Browser screenshots and interactive touch E2E were not captured** without a running isolated application; they remain a QA gate. Source-level tests and a production build are not substitutes for real mobile interaction testing.
 
-## Next explicitly authorized milestone: UX02
+## UX02: contextual selection & direct manipulation
 
-Add inline object editing, contextual toolbars, direct resize/rotation handles and touch alternatives, without touching stamp spending or the database.
+Implementation remains in the same stacked feature branch and Draft PR. **No new SQL migration or Production data manipulation.**
 
-**STOP after UX01. Keep PR #31 Draft.**
+### Selection, resize, rotation and touch
+
+- Selecting text, drawing or a private photo on paper produces an unobtrusive selection frame, four corner handles and a rotation handle. Dragging any selected object moves it without an inspector.
+- Rotated corners are resized in the object's own coordinate axes using `features/living-books/direct-manipulation.ts`, anchoring the opposite corner. Images preserve aspect ratio; text and vector drawings may stretch. Normalized coordinates are kept within the page.
+- A two-finger gesture starting **on the same decoration** scales that object around its center. A two-finger gesture started on other parts of the canvas continues to zoom the page, preserving M05. Cancellation reverts the temporary preview.
+- The editor commits one authenticated version-checked write after a completed move/resize/rotate/pinch gesture. Intermediates are local previews only; no stamp-mint or reward mutation, no per-move RPC flooding.
+- Selected decorations still support keyboard selection and arrows for movement. Shift+arrow rotates by five degrees, Alt+arrow adjusts width/height; precise range controls remain accessible through the More panel.
+- The mobile drag targets have 44px hit areas; reduced-motion and visible keyboard focus rules still apply.
+
+### Text, images, ink and contextual controls
+
+- Double-click/double-tap an existing text object, or choose **Edit text** from the selected-object toolbar, to edit it inline in the exact paper position. New text opens inline editing after the first authorized save. Multiline text, 5000-character limit and existing font/style validation persist.
+- Floating object-specific toolbar appears **only for the selected object**. Quick actions include text font size/weight/italic/color, drawing ink color, photo crop entry and layer ordering.
+- Detailed crop, positioning, font/align, dimensions, opacity, rotation and accessible fallback controls remain fully functional but **closed until More**; changes continue through the existing debounced autosave.
+- Pen/eraser tools show a small ink strip (color, stroke thickness, eraser, Done), avoiding full-time editing menus. Selecting Done exits drawing mode.
+- The original Add > Photo input remains, while authenticated owners can also drag a JPEG/PNG/WebP file over the paper. The same `preparePhotoForUpload` and `uploadLivingPhoto` path handles conversion, file size, private Storage and permissions; a denied/unsupported/drop-during-save cannot navigate the browser away from the current page.
+- Autosave queues later text edits if they arrive while an earlier write is still in flight. Failed writes retain the draft and visible retry instead of silently clearing it.
+
+### Engineering and verification
+
+- `features/living-books/direct-manipulation.ts`: pure, data-independent normalized transform geometry, with predictable image aspect ratio behavior.
+- `tests/living-v3-ux02-contextual.test.mjs`: execute actual transform helpers through TypeScript transpilation; assert movement bounds, rotated resizing, rotation normalization, pinch scale, and source contracts for inline editing, keyboard alternatives, photo upload, contextual inspector, pointer-cancel and autosave.
+- `tests/living-stampbook-m02.test.mjs`: update the Pointer Cancel contract to check that touch identity is released and temporary movement is rolled back.
+- `.github/workflows/ci.yml`: runs the new UX02 suite *in addition to* UX01, existing M01–M05 suites, TypeScript, production build, and ephemeral PostgreSQL integration.
+
+**Unverified before Release:** Full interaction E2E in a browser with real iOS/Android pointer/touch hardware, real signed URL photo uploading, and assistive-technology walkthrough. CI geometry and source tests do not substitute for device/browser E2E. UX03 and UX04 remain untouched.
+
+## Next explicitly authorized milestone: UX03
+
+Add contextual stamp placement and peeling, page-edge gestures, and compact page overview interactions without altering stamp spending or the database.
+
+**STOP after UX02. Keep PR #31 Draft.**
