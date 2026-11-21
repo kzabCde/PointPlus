@@ -60,7 +60,7 @@ test('image elements cannot mint spendable stamps',()=>{
   assert.match(source.sql,/p_element::text\|\|'.'\|\|v_extension/)
   assert.match(source.sql,/pointplus_create_living_book_image/)
   assert.match(source.sql,/pointplus_transform_living_book_image/)
-  assert.match(source.editor,/element\.element_type==='image'/)
+  assert.match(source.editor,/item\.element_type==='image'/)
   assert.match(source.page,/loadLivingPageMedia/)
   assert.match(source.media,/createSignedUrl/)
   assert.match(source.media,/photoBucket/)
