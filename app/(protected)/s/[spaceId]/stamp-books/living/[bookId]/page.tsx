@@ -57,7 +57,7 @@ export default async function LivingBookPage({params,searchParams}:{
       <LivingReaderRewards spaceId={spaceId} bookId={bookId}
         availableStamps={balance.available} pendingRewards={pendingCount}
         canRequest={isRecipient} canFulfill={owner}
-        isActive={book.status==='active'} card={book.card}/>
+        isActive={book.status==='active'} card={book.card??null}/>
       <LivingReadOnlyPage spaceId={spaceId} bookId={bookId}
         page={page} elements={elements} marks={marks} requests={requests}
         imageUrls={imageUrls} card={book.card??null} previous={previous}
