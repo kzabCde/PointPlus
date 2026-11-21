@@ -67,6 +67,10 @@ export async function fulfillLivingRedemption(input:Context&{
   if(!isUuid(input.redemptionId))return deny('คำขอแลกรางวัลไม่ถูกต้อง')
   const context=await validContext(input)
   if(!context)return deny('ไม่พบสมุดหรือไม่มีสิทธิ์ในห้องนี้')
+  const {data:record,error:recordError}=await context.supabase
+    .from('living_stamp_redemptions').select('id')
+    .eq('id',input.redemptionId).eq('book_id',input.bookId).maybeSingle()
+  if(recordError||!record)return deny('รายการแลกรางวัลนี้ไม่อยู่ในสมุดปัจจุบัน')
   const {data,error}=await context.supabase.rpc('pointplus_fulfill_living_stamp_redemption',{
     p_redemption:input.redemptionId,
   })
@@ -81,6 +85,10 @@ export async function cancelLivingRedemption(input:Context&{
   if(!isUuid(input.redemptionId))return deny('คำขอแลกรางวัลไม่ถูกต้อง')
   const context=await validContext(input)
   if(!context)return deny('ไม่พบสมุดหรือไม่มีสิทธิ์ในห้องนี้')
+  const {data:record,error:recordError}=await context.supabase
+    .from('living_stamp_redemptions').select('id')
+    .eq('id',input.redemptionId).eq('book_id',input.bookId).maybeSingle()
+  if(recordError||!record)return deny('รายการแลกรางวัลนี้ไม่อยู่ในสมุดปัจจุบัน')
   const {data,error}=await context.supabase.rpc('pointplus_cancel_living_stamp_redemption',{
     p_redemption:input.redemptionId,
   })
