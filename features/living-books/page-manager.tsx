@@ -204,7 +204,14 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
     </div>
     {editable&&current===pages.length-1&&<button type="button"
       className="living-reader-page-corner" aria-label="เพิ่มหน้ากระดาษใหม่"
-      onClick={()=>setOverviewOpen(true)}>＋ เพิ่มหน้า</button>}
+      disabled={busy}
+      onClick={()=>{
+        if(!canNavigate())return
+        const form=document.querySelector<HTMLFormElement>(
+          '#living-page-overview form.living-add-page')
+        if(form)form.requestSubmit()
+        else setMessage('ไม่พบแบบฟอร์มเพิ่มหน้า กรุณาเปิดภาพรวมหน้าสมุด')
+      }}>＋ เพิ่มหน้า</button>}
     <div id="living-page-overview" className="living-reader-page-overview"
       hidden={!overviewOpen} aria-label="ภาพย่อและการจัดการหน้าสมุด">
       <div className="living-reader-overview-heading">
