@@ -98,7 +98,7 @@ test('Staging script uses two authenticated accounts, audit SQL and real browser
     /assert\.equal\(results\.filter\(item=>!item\.error\)\.length,1\)/,
     /summarizeSamples\(output\)/,
   ])assert.match(script,match)
-  assert.doesNotMatch(script,/process\\.env\\.[A-Z_]*SERVICE_ROLE|\\.delete\\(|\\.remove\\(/)
+  assert.doesNotMatch(script,/process\.env\.[A-Z_]*SERVICE_ROLE|\.delete\(|\.remove\(/)
   assert.match(cardE2e,/const deep=.*'\?mode=edit'/)
   assert.match(rewardsE2e,/const deep=.*'\?mode=edit'/)
   assert.match(full,/tests\/fast-stamp-m01\.test\.mjs/)
