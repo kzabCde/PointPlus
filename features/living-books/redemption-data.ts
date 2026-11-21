@@ -18,6 +18,24 @@ export type RedemptionAssociation={redemption_id:string;mark_id:string}
 const balanceZero:StampBalance={total:0,available:0,reserved:0,redeemed:0,peeled:0}
 
 /**
+ * Fast header payload: do not fetch the entire reward history until the
+ * user actually opens the reward sheet. Pending count is HEAD-only.
+ */
+export async function loadLivingRedemptionOverview(spaceId:string,bookId:string){
+  const {supabase}=await getSpaceContext(spaceId)
+  const [balanceResult,pendingResult]=await Promise.all([
+    supabase.rpc('pointplus_get_living_stamp_balance',{p_book:bookId}),
+    supabase.from('living_stamp_redemptions')
+      .select('id',{count:'exact',head:true})
+      .eq('book_id',bookId).eq('space_id',spaceId).eq('status','requested'),
+  ])
+  if(balanceResult.error||pendingResult.error)
+    throw new Error('Cannot load Living Book redemption summary')
+  return {balance:(balanceResult.data??balanceZero) as StampBalance,
+    pendingCount:pendingResult.count??0}
+}
+
+/**
  * Reads are scoped through RLS to current room membership and one book.
  * Only the latest 40 historical requests are shown; stamps remain unlimited.
  */
