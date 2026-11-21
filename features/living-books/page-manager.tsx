@@ -36,6 +36,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
   const draggedPage=useRef<string|null>(null)
   const pageTurnPending=useRef(false)
   const base='/s/'+spaceId+'/stamp-books/living/'+bookId
+  const pageHref=(id:string)=>base+'?mode=edit&page='+id
   const unsaved=title!==savedRef.current.title||background!==savedRef.current.background
 
   useEffect(()=>{
@@ -122,7 +123,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
     if(pageTurnPending.current||!Number.isSafeInteger(index)||index<0||
       index>=pages.length||index===current||!canNavigate())return
     pageTurnPending.current=true
-    router.push(base+'?page='+pages[index].id)
+    router.push(pageHref(pages[index].id))
   }
   useEffect(()=>{
     const turn=(event:Event)=>{
@@ -181,7 +182,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
       <Link aria-disabled={current===0} tabIndex={current===0?-1:0}
         className={'button button--secondary'+(current===0?' is-disabled':'')}
         onClick={handleLink}
-        href={current>0?base+'?page='+pages[current-1].id:base+'?page='+page.id}>
+        href={pageHref(current>0?pages[current-1].id:page.id)}>
         ← ก่อนหน้า
       </Link>
       <button type="button" className="living-reader-page-trigger"
@@ -194,7 +195,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
         tabIndex={current===pages.length-1?-1:0}
         className={'button button--secondary'+(current===pages.length-1?' is-disabled':'')}
         onClick={handleLink}
-        href={current<pages.length-1?base+'?page='+pages[current+1].id:base+'?page='+page.id}>
+        href={pageHref(current<pages.length-1?pages[current+1].id:page.id)}>
         ถัดไป →
       </Link>
     </div>
@@ -236,7 +237,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
       </button>
     </div>
     <nav aria-label="ภาพย่อหน้าสมุด" className="living-page-thumbnails">
-      {windowed.map((p,i)=><Link href={base+'?page='+p.id} key={p.id}
+      {windowed.map((p,i)=><Link href={pageHref(p.id)} key={p.id}
         onClick={handleLink} draggable={editable&&!busy&&!unsaved}
         onDragStart={event=>{
           if(!editable||busy||unsaved){event.preventDefault();return}
