@@ -4,6 +4,8 @@ import {useActionState,useEffect,useRef,useState,useTransition,type FormEvent} f
 import {useRouter} from 'next/navigation'
 import {pointPlusStamps} from '@/lib/point-plus/assets'
 import type {CreationRecipient} from './creation-data'
+import {captureCreationIntent,restoreCreationIntent,intentFormData,creationIntentVersion,
+  type CreationFormat,type CreationIntent} from './creation-intent'
 import {
   createLivingBookAction,createLivingCardAction,addLivingBookPageAction,type LivingActionState,
 } from './actions'
@@ -13,21 +15,8 @@ const livingIdle: LivingActionState={status:'idle',message:''}
 type CreationProps={
   spaceId:string;userId:string;kind:string;participants:CreationRecipient[]
 }
-type CollectionFormat='living'|'card'
-type CreationIntent={
-  key:string;format:CollectionFormat;fields:Record<string,string>
-}
-const intentVersion=1
-
-/** Submissions are immutable across ambiguous retries, including page refresh. */
-function intentFormData(intent:CreationIntent){
-  const form=new FormData()
-  for(const [name,value] of Object.entries(intent.fields))form.set(name,value)
-  return form
-}
-
 export function CollectionCreationChoice(props:CreationProps){
-  const [format,setFormat]=useState<CollectionFormat>('living')
+  const [format,setFormat]=useState<CreationFormat>('living')
   return <div className="living-creator living-fast-creator">
     <fieldset className="stamp-format-picker">
       <legend>เลือกรูปแบบ</legend>
@@ -51,7 +40,7 @@ export function CollectionCreationChoice(props:CreationProps){
 }
 
 export function CreateLivingBookForm({spaceId,userId,kind,participants,format='living'}:
-  CreationProps&{format?:CollectionFormat}){
+  CreationProps&{format?:CreationFormat}){
   const router=useRouter()
   const [state,action,pending]=useActionState(format==='card'?createLivingCardAction:createLivingBookAction,livingIdle)
   const [,startTransition]=useTransition()
@@ -70,14 +59,8 @@ export function CreateLivingBookForm({spaceId,userId,kind,participants,format='l
     try{
       const saved=sessionStorage.getItem(storageKey)
       if(saved){
-        const candidate=JSON.parse(saved) as CreationIntent
-        if(candidate?.format===format&&candidate.fields?.space_id===spaceId&&
-          candidate.fields?.idempotency_key===candidate.key&&
-          candidate.fields?.recipient_id&&candidate.fields?.title&&
-          /^[0-9a-f-]{36}$/i.test(candidate.key)){
-          setIntent(candidate);setKey(candidate.key)
-          return
-        }
+        const candidate=restoreCreationIntent(saved,format,spaceId)
+        if(candidate){setIntent(candidate);setKey(candidate.key);return}
       }
     }catch{/* Private mode: keep in-memory request identity. */}
     setKey(crypto.randomUUID())
@@ -105,9 +88,7 @@ export function CreateLivingBookForm({spaceId,userId,kind,participants,format='l
     let command=intent
     if(!command){
       payload.set('idempotency_key',key)
-      const fields=Object.fromEntries(Array.from(payload.entries(),([name,value])=>
-        [name,String(value)]))
-      command={key,format,fields}
+      command=captureCreationIntent(format,key,payload)
       try{sessionStorage.setItem(storageKey,JSON.stringify(command))}catch{}
       setIntent(command)
     }
