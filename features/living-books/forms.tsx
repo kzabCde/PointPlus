@@ -53,8 +53,7 @@ export function CollectionCreationChoice(props:CreationProps){
 export function CreateLivingBookForm({spaceId,userId,kind,participants,format='living'}:
   CreationProps&{format?:CollectionFormat}){
   const router=useRouter()
-  const [state,action,pending]=useActionState(
-    format==='card'?createLivingCardAction:createLivingBookAction,livingIdle)
+  const [state,action,pending]=useActionState(format==='card'?createLivingCardAction:createLivingBookAction,livingIdle)
   const [,startTransition]=useTransition()
   const [key,setKey]=useState('')
   const [intent,setIntent]=useState<CreationIntent|null>(null)
