@@ -61,6 +61,14 @@ jobs:
         run: node --check tests/e2e/living-v3-hosted.test.mjs
       - name: Verify Server Action exports at runtime boundary
         run: node --test tests/server-action-export-boundary.test.mjs
+      - name: Verify UX01 Paper First layout and preserved interactions
+        run: node --test tests/living-v3-ux01-paper-first.test.mjs
+      - name: Verify UX02 Contextual Editing and normalized transform geometry
+        run: node --test tests/living-v3-ux02-contextual.test.mjs
+      - name: Verify UX03 stamp previews, guarded page turns and ledger invariants
+        run: node --test tests/living-v3-ux03-stamp-page.test.mjs
+      - name: Verify UX04 real React reward rendering, owner/recipient controls and accessible modal
+        run: node --test tests/living-v3-ux04-rewards.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
@@ -68,7 +76,7 @@ jobs:
 
   verify-living-migrations:
     name: Living M01–M05 PostgreSQL migrations and RLS tests
-    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'feat/living-only-retirement' || github.ref_name == 'feat/living-only-retirement'
+    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'feat/living-only-retirement' || github.ref_name == 'feat/living-only-retirement' || github.head_ref == 'feat/living-v3-buttonless-ux' || github.ref_name == 'feat/living-v3-buttonless-ux'
     runs-on: ubuntu-latest
     services:
       postgres:
