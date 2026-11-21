@@ -41,7 +41,7 @@ export async function loadLivingReadPage(spaceId:string,bookId:string,requestedP
   for(let offset=0;;offset+=200){
     const {data,error}=await supabase.from('living_book_elements')
       .select('id,book_id,page_id,element_type,payload,position_x,position_y,width,height,rotation_deg,opacity,z_index,version')
-      .eq('book_id',bookId).eq('page_id',page.id).eq('space_id',spaceId)
+      .eq('book_id',bookId).eq('page_id',page.id)
       .is('deleted_at',null).order('z_index',{ascending:true})
       .order('id',{ascending:true}).range(offset,offset+199)
     if(error)throw new Error('Cannot load Living Book reader decorations')
