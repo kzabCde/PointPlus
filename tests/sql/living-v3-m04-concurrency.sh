@@ -2,7 +2,7 @@
 set -euo pipefail
 # Real two-connection PostgreSQL race, following completed M04 SQL assertions.
 # A->B book has 7 available marks. Both requests try to reserve 5.
-book="$(psql -At -v ON_ERROR_STOP=1 -c "SELECT id FROM public.living_books WHERE owner_user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' LIMIT 1")"
+book="$(psql -At -v ON_ERROR_STOP=1 -c "SELECT id FROM public.living_books WHERE owner_user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' AND space_id='dddddddd-dddd-4ddd-8ddd-dddddddddddd' LIMIT 1")"
 if [[ -z "$book" ]]; then echo "Missing A->B book"; exit 1; fi
 one="$(mktemp)"
 two="$(mktemp)"
