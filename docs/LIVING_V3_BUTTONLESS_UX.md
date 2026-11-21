@@ -3,8 +3,8 @@
 ## Branch and release policy
 
 - **Feature branch:** `feat/living-v3-buttonless-ux`
-- **Single Draft PR:** [#31 — Paper First & Buttonless UX](https://github.com/kzabCde/PointPlus/pull/31)
-- **Stacked base:** `feat/living-only-retirement` (PR #29, still Draft when work started). The Living V3 Server Action crash hotfix from PR #30 is included in the base; PR #30 is already merged into `main`.
+- **Original single PR:** [#31 — Paper First & Buttonless UX](https://github.com/kzabCde/PointPlus/pull/31). **EXTERNAL CHANGE:** PR #31 was merged into `feat/living-only-retirement` at 2026-11-21 07:12:30 UTC while UX04 was in progress (merge commit `62b3c0ff85082b8af62f57789d6e14247871490c`). It is no longer possible to keep this same PR Draft. UX04 commits remain on the same feature branch **after** that merge; they were not part of merged PR #31. No new PR was created.
+- **Stacked base:** `feat/living-only-retirement` (PR #29, still Draft when work started). PR #29 was subsequently closed without merging according to the GitHub API. PR #30 Server Action hotfix was already merged into `main`. This external PR dependency change is a **release blocker** until the branch integration strategy is reviewed.
 - **Execution policy:** one UX milestone per explicit request, one PR for UX01–UX04, no merge, no Preview/Production deployment, no database migrations or Production data mutations.
 
 ## Milestone status
@@ -12,7 +12,7 @@
 - [x] **UX01 — Paper First Layout** — implemented in this PR; the recorded CI outcome determines whether it can be considered verified
 - [x] **UX02 — Contextual Editing & Direct Manipulation** — implemented and covered by regression/geometry tests (CI status on final head)
 - [x] **UX03 — Stamp & Page Gestures** — implemented; final CI and release gates below
-- [ ] UX04 — Rewards, Animation, Accessibility & Hosted E2E (**not started**)
+- [x] **UX04 — Rewards, Animation, Accessibility & E2E** — UI implemented with real React SSR integration tests and a staging-only two-account Playwright browser E2E gate; actual hosted browser run remains blocked without isolated staging deployment/credentials.
 
 ## UX01: implementation
 
@@ -137,8 +137,53 @@ Implemented on the original `feat/living-v3-buttonless-ux` branch in Draft PR #3
 
 **Outstanding before Production release:** true browser/device testing (iOS/Android, mobile drag, long-press, auth with two members, signed photos), and staged hosted Supabase Auth/RLS/Storage E2E. Source tests and CI are not evidence those manual interactions were performed. Follow-up UX04 must address final Rewards/Animation/Accessibility/E2E polish; it is **not started here**.
 
-## Next explicitly authorized milestone: UX04
+## UX04: reward redemption, accessible modal sheet and release testing
 
-Finish the bottom-sheet reward workflow, animations/accessibility and comprehensive hosted/browser verification as defined in the master prompt. Do not begin without a new user instruction.
+### Focused reward workflow
 
-**STOP after UX03. Keep PR #31 Draft.**
+- The stamp balance button opens a **true modal** mobile bottom sheet, with backdrop, labelled dialog, keyboard focus entry/trap, Escape and overlay dismissal, trigger-focus restoration and background scroll lock.
+- Three concise counters are visible: available, reserved, redeemed. Lifetime total and peeled marks are behind a small disclosure.
+- The recipient chooses an integer quantity with number input and accessible slider, enters a free-form reward message and can inspect the real mark artwork preview before explicitly sending.
+- An in-flight ref blocks duplicate clicks; when a network response is ambiguous the form freezes its original \`quantity\`, \`rewardMessage\` and \`idempotencyKey\` and can safely retry the *same* request. Starting a separate request requires a deliberate, warning-confirmed reset after inspecting history.
+- The owner sees a compact pending-reward notification in the top balance control. Pending requests are fetched **separately** from the latest-40 event history, so old pending items do not vanish. The exact count comes from the database; a maximum of 100 pending items are rendered at once with an explicit truncation notice. Completing/canceling each request requires a **second, explicit confirmation**.
+- Previous fulfilled/canceled requests remain permanently visible behind a collapsed history disclosure, with linked stamp preview and permanent used/canceled indicators. The book remains active after fulfillment.
+- All ledger mutations still run through pre-existing **authorized server actions and PostgreSQL M04 RPCs**, with atomic mark UUID associations and RLS. No custom client-side spend or reverse-redemption functionality was introduced.
+
+### Animation and accessibility
+
+- Existing paper opening, stamp impact, peeling trace and used-stamp ink effects remain. Adds subtle, contextual sheet/backdrop/history motions; respects \`prefers-reduced-motion\`.
+- Sound remains user-controlled, **muted by default**, optional WebAudio only, within the book overflow menu; no copyrighted samples or external URLs.
+- UX04's modal uses real \`role=dialog\`, \`aria-modal\`, labelled heading, trap on Tab and Shift+Tab, Escape, visible focus indicators and focus return on close. Buttons and mobile controls meet ~44px touch target intentions. Readonly recipients cannot access owner actions.
+- Owner and recipient actions display server feedback, keep version/conflict/ledger semantics, and avoid changing any pending status on the client before server success.
+
+### Added/updated source
+
+- \`features/living-books/editor-studio.tsx\` — managed modal and owner notification count.
+- \`features/living-books/redemption-panel.tsx\` — focused quantity/reward UI, owner pending confirmations, collapsed history and immutable idempotent retry.
+- \`features/living-books/redemption-data.ts\` — independent pending query, exact count and efficient artwork lookup.
+- \`app/(protected)/s/[spaceId]/stamp-books/living/[bookId]/page.tsx\` — scoped pending-count props.
+- \`app/(protected)/s/[spaceId]/stamp-books/stamp-books.css\` — bottom-sheet and reduced-motion polish.
+- \`tests/living-v3-ux04-rewards.test.mjs\` — **real React server-rendering** of owner, recipient and read-only components plus accessibility/authorization source assertions, run automatically in CI.
+- \`tests/e2e/living-v3-ux04-browser.mjs\` — **staging-only guarded Playwright E2E harness** for two real users, mobile viewport, reduced-motion, modal focus and a real one-stamp redemption/fulfillment. This test is syntax-checked in CI but **NOT EXECUTED** without an isolated hosted staging web app and two staging accounts.
+- \`.github/workflows/ci.yml\` — UX01–UX04 and existing M01–M05 application/PostgreSQL tests and TypeScript/Next.js build on the feature branch (push trigger added because PR #31 was externally merged).
+
+### Verification matrix and remaining release blockers
+
+| Gate | Method | Status |
+|---|---|---|
+| UX01–UX03 contracts/geometry | GitHub Actions | Verified in previous CI and re-run on feature branch |
+| UX04 actual React rendered owner/recipient UI | \`node --test tests/living-v3-ux04-rewards.test.mjs\` | Automated in CI |
+| Existing M01–M05 contracts and SQL | Node + ephemeral PostgreSQL 16 + RLS/concurrency | Automated in CI |
+| TypeScript and Next.js production build | \`npm run typecheck\` and \`npm run build\` | Automated in CI |
+| Hosted Supabase Auth/RLS/Storage two-account E2E | \`npm run test:e2e:living\` | **BLOCKED: no verified isolated staging URL and credentials** |
+| Real Playwright browser two-account redemption E2E | \`node tests/e2e/living-v3-ux04-browser.mjs\` | **BLOCKED: no isolated staging deployment, account credentials, or browser runtime configured** |
+| Real iOS/Android multitouch, long press, responsive visual QA, screen readers | Device/browser QA | **NOT EXECUTED** |
+| Original PR #31 remains Draft | GitHub API | **IMPOSSIBLE: external merge on 2026-11-21** |
+| PR #29 stacked integration | GitHub API | **BLOCKED: closed without merging** |
+| Production mutation by this UX work | None | **No Production data/schema changes, no merge/deploy performed by this execution** |
+
+**Important:** These blockers MUST be resolved before presenting UX01–UX04 as Production-ready. CI tests and server-rendered React are NOT substitutes for real hosted/browser/device E2E. The staging E2E script explicitly refuses the live Supabase project and several Production aliases and must be run ONLY on a separately provisioned isolated environment.
+
+## Stop policy
+
+**All four UX milestones have implementation, CI suites and documentation. UX04 is the final milestone. Do not merge, deploy or apply SQL migrations automatically.** Preserve feature branch and all commits until the PR #31/#29 integration conflict has been reviewed by the user.
