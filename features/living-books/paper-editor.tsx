@@ -45,7 +45,7 @@ function PaperObject({item,selected,editable}:{
       aria-label={editable?'เลือกข้อความเพื่อแก้ไข: '+p.text.slice(0,60):undefined}>
       <div className="living-paper-object__text" style={{
         color:p.color,fontSize:p.fontSize,fontFamily,textAlign:p.align,
-        fontWeight:p.bold?'bold':'normal',fontStyle:p.italic?'italic',
+        fontWeight:p.bold?'bold':'normal',fontStyle:p.italic?'italic':'normal',
       }}>{p.text}</div>
     </div>
   }
