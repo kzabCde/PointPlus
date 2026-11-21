@@ -1045,16 +1045,6 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
               <input type="color" aria-label="สีข้อความ" value={selectedText.color}
                 disabled={busy} onChange={event=>patchText({color:event.target.value})}/>
             </label>
-            <button type="button" aria-label="ลดขนาดข้อความ" disabled={busy||selectedText.fontSize<=12}
-              onClick={()=>patchText({fontSize:clamp(selectedText.fontSize-2,12,120)})}>A−</button>
-            <button type="button" aria-label="เพิ่มขนาดข้อความ" disabled={busy||selectedText.fontSize>=120}
-              onClick={()=>patchText({fontSize:clamp(selectedText.fontSize+2,12,120)})}>A+</button>
-            <button type="button" aria-pressed={selectedText.bold}
-              disabled={busy} aria-label="ตัวหนา"
-              onClick={()=>patchText({bold:!selectedText.bold})}><strong>B</strong></button>
-            <button type="button" aria-pressed={selectedText.italic}
-              disabled={busy} aria-label="ตัวเอียง"
-              onClick={()=>patchText({italic:!selectedText.italic})}><em>I</em></button>
           </>}
           {selected.element_type==='drawing'&&<label className="living-selection-color"
             title="สีเส้นวาด">
@@ -1067,12 +1057,6 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           </label>}
           {selectedPhoto&&<button type="button" disabled={busy}
             onClick={()=>setAdvancedOpen(true)}>ครอป</button>}
-          <button type="button" aria-label="นำวัตถุมาด้านหน้า"
-            title="นำมาด้านหน้า" disabled={busy||top>=1000000}
-            onClick={()=>patchSelected({z_index:top+1})}>↑</button>
-          <button type="button" aria-label="ส่งวัตถุไปด้านหลัง"
-            title="ส่งไปด้านหลัง" disabled={busy||bottom<=-1000000}
-            onClick={()=>patchSelected({z_index:bottom-1})}>↓</button>
           <button type="button" aria-expanded={advancedOpen}
             aria-controls="living-selection-advanced" title="การตั้งค่าเพิ่มเติม"
             onClick={()=>setAdvancedOpen(value=>!value)}>···</button>
@@ -1218,7 +1202,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       </label>
       <div className="living-editor-layer-actions">
         <button type="button" className="button button--secondary" disabled={busy||top>=1000000}
-          onClick={()=>patchSelected({z_index:top+1})}>นำมาด้านหน้า</button>
+          aria-label="นำวัตถุมาด้านหน้า" onClick={()=>patchSelected({z_index:top+1})}>นำมาด้านหน้า</button>
         <button type="button" className="button button--secondary" disabled={busy||bottom<=-1000000}
           onClick={()=>patchSelected({z_index:bottom-1})}>ส่งไปด้านหลัง</button>
         <button type="button" className="button button--secondary" disabled={busy}
