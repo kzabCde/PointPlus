@@ -26,6 +26,7 @@ CREATE TABLE public.participants (
   space_id uuid NOT NULL REFERENCES public.spaces(id),
   kind text NOT NULL,
   user_id uuid REFERENCES auth.users(id),
+  guardian_user_id uuid REFERENCES auth.users(id),
   archived_at timestamptz,
   UNIQUE(space_id,id)
 );
