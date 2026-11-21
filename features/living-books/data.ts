@@ -113,21 +113,28 @@ export async function loadLivingPageMedia(spaceId:string,bookId:string,pageId:st
     requests.push(...(data??[]) as LivingStampRequest[])
     if((data??[]).length<300)break
   }
-  const [giverResult,elementResult]=await Promise.all([
-    supabase.from('living_book_givers').select('user_id')
-      .eq('book_id',bookId).eq('user_id',user.id).maybeSingle(),
-    supabase.from('living_book_elements').select('id,payload')
-      .eq('book_id',bookId).eq('page_id',pageId)
-      .eq('element_type','image').is('deleted_at',null),
-  ])
-  if(giverResult.error||elementResult.error)
-    throw new Error('Cannot load Living Book private page media')
+  const giverResult=await supabase.from('living_book_givers').select('user_id')
+    .eq('book_id',bookId).eq('user_id',user.id).maybeSingle()
+  if(giverResult.error)throw new Error('Cannot verify Living Book stamp giver')
+  const privatePhotos:{id:string;payload:{storagePath?:string}}[]=[]
+  for(let offset=0;;offset+=200){
+    const {data,error}=await supabase.from('living_book_elements')
+      .select('id,payload').eq('book_id',bookId).eq('page_id',pageId)
+      .eq('element_type','image').is('deleted_at',null)
+      .order('id').range(offset,offset+199)
+    if(error)throw new Error('Cannot load private page photos')
+    privatePhotos.push(...(data??[]))
+    if((data??[]).length<200)break
+  }
+  // Restrict Storage requests in-flight to avoid 429s on image-heavy pages.
   const imageUrls:Record<string,string>={}
-  await Promise.all((elementResult.data??[]).map(async element=>{
-    const storagePath=element.payload?.storagePath
-    if(typeof storagePath!=='string')return
-    const signed=await supabase.storage.from(photoBucket).createSignedUrl(storagePath,20*60)
-    if(!signed.error&&signed.data?.signedUrl)imageUrls[element.id]=signed.data.signedUrl
-  }))
+  for(let index=0;index<privatePhotos.length;index+=8){
+    await Promise.all(privatePhotos.slice(index,index+8).map(async element=>{
+      const storagePath=element.payload?.storagePath
+      if(typeof storagePath!=='string')return
+      const signed=await supabase.storage.from(photoBucket).createSignedUrl(storagePath,20*60)
+      if(!signed.error&&signed.data?.signedUrl)imageUrls[element.id]=signed.data.signedUrl
+    }))
+  }
   return {marks,requests,imageUrls,canGive:!!giverResult.data}
 }
