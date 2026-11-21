@@ -61,6 +61,8 @@ jobs:
         run: node --test tests/living-stampbook-m03.test.mjs
       - name: Verify Living Stampbook V3 M04 flexible redemption
         run: node --test tests/living-stampbook-m04.test.mjs
+      - name: Verify Living Stampbook V3 M05 sound, autosave, undo and mobile
+        run: node --test tests/living-stampbook-m05.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
