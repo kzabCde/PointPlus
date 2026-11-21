@@ -89,6 +89,8 @@ jobs:
         run: node --test tests/fast-stamp-m01.test.mjs
       - name: Verify M02 page-only Reader, card SSR, lazy Editor and rewards
         run: node --test tests/fast-stamp-m02-reader.test.mjs
+      - name: Verify M03 Fast Creation, immutable retries and atomic RPC contracts
+        run: node --test tests/fast-stamp-m03-creation.test.mjs
       - name: Verify Server Action runtime exports (prevents client form 500)
         run: node --test tests/server-action-export-boundary.test.mjs
       - name: Typecheck
