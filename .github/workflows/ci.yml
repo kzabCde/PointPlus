@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2, feat/restore-stamp-cards-choice, feat/tap-stamp-card-slots, feat/living-stampbook-v3]
+    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2, feat/restore-stamp-cards-choice, feat/tap-stamp-card-slots, feat/living-stampbook-v3, feat/living-only-retirement]
   pull_request:
 
 permissions:
@@ -66,7 +66,7 @@ jobs:
 
   verify-living-migrations:
     name: Living M01–M05 PostgreSQL migrations and RLS tests
-    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3'
+    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'feat/living-only-retirement' || github.ref_name == 'feat/living-only-retirement'
     runs-on: ubuntu-latest
     services:
       postgres:
