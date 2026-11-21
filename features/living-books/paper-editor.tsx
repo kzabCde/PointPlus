@@ -101,10 +101,14 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const canvas=useRef<HTMLDivElement>(null)
   const viewport=useRef<HTMLDivElement>(null)
   const gesture=useRef<Gesture|null>(null)
+  const activeFingers=useRef(new Map<number,{x:number;y:number}>())
+  const pinch=useRef<{startDistance:number;initialZoom:number}|null>(null)
   const locked=useRef(false)
   const [items,setItems]=useState<EditorElement[]>(initialElements)
   const [photos,setPhotos]=useState(imageUrls)
   const [marks,setMarks]=useState(initialMarks)
+  const knownMarks=useRef(new Set(initialMarks.map(mark=>mark.id)))
+  const [freshMarkId,setFreshMarkId]=useState<string|null>(null)
   const [requests,setRequests]=useState(initialRequests)
   const [stampPoint,setStampPoint]=useState<Point|null>(null)
   const [selectedStampId,setSelectedStampId]=useState<string|null>(null)
@@ -115,8 +119,16 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       setPhotos(imageUrls)
     }
   },[initialElements,imageUrls])
-  useEffect(()=>{setMarks(initialMarks);setRequests(initialRequests)},
-    [initialMarks,initialRequests])
+  useEffect(()=>{
+    setMarks(initialMarks);setRequests(initialRequests)
+    const added=initialMarks.find(mark=>!knownMarks.current.has(mark.id))
+    knownMarks.current=new Set(initialMarks.map(mark=>mark.id))
+    if(added){
+      setFreshMarkId(added.id)
+      const timer=window.setTimeout(()=>setFreshMarkId(null),550)
+      return ()=>window.clearTimeout(timer)
+    }
+  },[initialMarks,initialRequests])
   const [selectedId,setSelectedId]=useState<string|null>(null)
   const [tool,setTool]=useState<EditorTool>('select')
   const [zoom,setZoom]=useState(1)
@@ -134,6 +146,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   useEffect(()=>{
     studio?.setPaperUnsaved(dirty||busy)
   },[dirty,busy,studio?.setPaperUnsaved])
+  useEffect(()=>()=>studio?.setPaperUnsaved(false),[studio?.setPaperUnsaved])
   useEffect(()=>{
     if(!dirty&&!busy)return
     const beforeUnload=(event:BeforeUnloadEvent)=>{
@@ -332,6 +345,17 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
 
   function begin(event:PointerEvent<HTMLDivElement>){
+    if(event.pointerType==='touch'){
+      activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY})
+      if(activeFingers.current.size>=2){
+        const [a,b]=[...activeFingers.current.values()]
+        pinch.current={startDistance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
+          initialZoom:zoom}
+        cancel()
+        try{event.currentTarget.setPointerCapture(event.pointerId)}catch{}
+        return
+      }
+    }
     if(!editable||locked.current||event.button>0||!canvas.current)return
     if(draftEdits.current.size>0){
       setNotice('กำลังบันทึกการแก้ไขก่อนใช้เครื่องมือใหม่')
@@ -382,6 +406,15 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     try{event.currentTarget.setPointerCapture(event.pointerId)}catch{/* browser fallback */}
   }
   function move(event:PointerEvent<HTMLDivElement>){
+    if(activeFingers.current.has(event.pointerId)){
+      activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY})
+      if(pinch.current&&activeFingers.current.size>=2){
+        const [a,b]=[...activeFingers.current.values()]
+        const distance=Math.hypot(a.x-b.x,a.y-b.y)
+        setZoom(clamp(pinch.current.initialZoom*distance/pinch.current.startDistance,.6,2.2))
+        return
+      }
+    }
     const g=gesture.current
     if(!g||g.id!==event.pointerId||!canvas.current)return
     if(g.mode==='hand'){
@@ -420,6 +453,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     }
   }
   function finish(event:PointerEvent<HTMLDivElement>){
+    activeFingers.current.delete(event.pointerId)
+    if(activeFingers.current.size<2)pinch.current=null
     const g=gesture.current
     if(!g||g.id!==event.pointerId)return
     gesture.current=null
@@ -470,6 +505,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
   function cancel(){
     const g=gesture.current;gesture.current=null;setDraft([])
+    // Multi-touch gesture takes over only after the current stroke/move is reverted.
+    if(activeFingers.current.size<2)pinch.current=null
     if(g?.mode==='move'&&g.original)
       setItems(prev=>prev.map(item=>item.id===g.original?.id?g.original:item) as EditorElement[])
     if(g?.mode==='stamp-move'&&g.originalStamp)
@@ -568,9 +605,9 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       </div>}
       <div className="living-editor-zoom" role="group" aria-label="ขยายและเลื่อนหน้ากระดาษ">
         <button type="button" className="button button--secondary" disabled={zoom<=.6}
-          onClick={()=>setZoom(prev=>clamp(Math.round((prev-.1)*10)/10,.6,1.8))}>−</button>
+          onClick={()=>setZoom(prev=>clamp(Math.round((prev-.1)*10)/10,.6,2.2))}>−</button>
         <span>{Math.round(zoom*100)}%</span>
-        <button type="button" className="button button--secondary" disabled={zoom>=1.8}
+        <button type="button" className="button button--secondary" disabled={zoom>=2.2}
           onClick={()=>setZoom(prev=>clamp(Math.round((prev+.1)*10)/10,.6,1.8))}>+</button>
       </div>
       {editable&&(tool==='pen'||tool==='text')&&<div className="living-editor-pen-settings">
@@ -596,7 +633,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           selected={selectedId===item.id} editable={editable}
           photoSrc={photos[item.id]}/>)}
         <LivingStampOverlay marks={marks} pending={requests}
-          selectedId={selectedStampId} selectable={tool==='select'}
+          freshMarkId={freshMarkId} selectedId={selectedStampId} selectable={tool==='select'}
           onSelect={id=>{setSelectedStampId(id);setSelectedId(null)}}/>
         {stampPoint&&<span className="living-stamp-placement-preview"
           style={{left:stampPoint.x*100+'%',top:stampPoint.y*100+'%'}}
