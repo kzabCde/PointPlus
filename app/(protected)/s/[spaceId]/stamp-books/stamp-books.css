@@ -1548,3 +1548,37 @@
   .living-page-edge,
   .living-stamp-art-choice {transition:none!important;animation:none!important;}
 }
+
+/* Closeable stamp tray and a persistent route back to explicit confirmation. */
+.living-stamp-sheet-head{
+  position:sticky;top:0;z-index:6;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding:9px 14px 7px;
+  background:#fff9f1;border-bottom:1px solid #e4c7b8;
+}
+.living-stamp-sheet-head strong {
+  font-family:Georgia,'Noto Serif Thai',serif;
+  color:#81534d;
+  font-size:16px;
+}
+.living-stamp-preview-confirm-entry {
+  position:absolute;
+  z-index:2000006;
+  transform:translate(-50%,-50%);
+  min-height:44px;
+  padding:5px 11px;
+  border:1px solid #b66e6c;
+  border-radius:999px;
+  background:#fff8f1;
+  color:#a65f62;
+  font:inherit;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgb(84 45 37 / 17%);
+}
+.living-stamp-preview-confirm-entry:focus-visible {
+  outline:3px solid #93505a;
+  outline-offset:3px;
+}
