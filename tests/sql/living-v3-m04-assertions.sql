@@ -15,6 +15,9 @@ DECLARE
   v_mark uuid; v_stale boolean; v_recipient_mark uuid;
   v_keys uuid[]; v_mark_ids jsonb; v_balance jsonb;
   v_before bigint;
+  v_child_book uuid;
+  v_child_page uuid;
+  v_child_redemption uuid;
 BEGIN
   SELECT id INTO v_book FROM public.living_books WHERE owner_user_id=v_a LIMIT 1;
   SELECT id INTO v_book_b FROM public.living_books WHERE owner_user_id=v_b LIMIT 1;
@@ -210,6 +213,48 @@ BEGIN
   PERFORM public.pointplus_fulfill_living_stamp_redemption(v_reverse);
   IF (SELECT count(*) FROM public.living_stamp_marks WHERE book_id=v_book_b AND state='redeemed')<>1
   THEN RAISE EXCEPTION 'Reverse couple fulfillment failed'; END IF;
+
+  -- A Group room's unlinked child recipient cannot be spent by another ordinary
+  -- member; only the explicitly assigned guardian may request redemption.
+  PERFORM set_config('request.jwt.claim.sub',v_a::text,false);
+  INSERT INTO public.spaces(id,kind,owner_id,name)
+  VALUES('abababab-abab-4bab-8bab-abababababab','group',v_a,'Guardian test');
+  INSERT INTO public.space_members(space_id,user_id,role)
+  VALUES('abababab-abab-4bab-8bab-abababababab',v_a,'owner'),
+        ('abababab-abab-4bab-8bab-abababababab',v_b,'member');
+  INSERT INTO public.participants(id,space_id,kind,user_id,guardian_user_id)
+  VALUES('cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd',
+    'abababab-abab-4bab-8bab-abababababab','child',null,null);
+  v_child_book:=public.pointplus_create_living_book(
+    'abababab-abab-4bab-8bab-abababababab',
+    'cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd',
+    'Child scrapbook','', 'heart','direct',gen_random_uuid());
+  SELECT id INTO v_child_page FROM public.living_book_pages WHERE book_id=v_child_book;
+  PERFORM public.pointplus_give_living_stamp(
+    v_child_book,v_child_page,'heart','Child stamp',gen_random_uuid(),.3,.3,0,1);
+  PERFORM set_config('request.jwt.claim.sub',v_b::text,false);
+  v_stale:=false;
+  BEGIN
+    PERFORM public.pointplus_request_living_stamp_redemption(
+      v_child_book,1,'unauthorized child reward',gen_random_uuid());
+  EXCEPTION WHEN insufficient_privilege THEN v_stale:=true;
+  END;
+  IF NOT v_stale THEN RAISE EXCEPTION
+    'Unlinked child with NULL guardian must reject unrelated member'; END IF;
+  PERFORM set_config('request.jwt.claim.sub',v_a::text,false);
+  UPDATE public.participants SET guardian_user_id=v_b
+    WHERE id='cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd';
+  PERFORM set_config('request.jwt.claim.sub',v_b::text,false);
+  v_receipt:=public.pointplus_request_living_stamp_redemption(
+    v_child_book,1,'Guardian reward',gen_random_uuid());
+  v_child_redemption:=(v_receipt->>'id')::uuid;
+  IF (v_receipt->>'quantity')::integer<>1 THEN RAISE EXCEPTION
+    'Assigned guardian must be able to request one child stamp'; END IF;
+  PERFORM set_config('request.jwt.claim.sub',v_a::text,false);
+  PERFORM public.pointplus_fulfill_living_stamp_redemption(v_child_redemption);
+  IF (SELECT count(*) FROM public.living_stamp_marks
+      WHERE book_id=v_child_book AND state='redeemed')<>1
+  THEN RAISE EXCEPTION 'Guardian redemption fulfillment failed'; END IF;
 
   -- Outsider can never redeem, fulfill or cancel another room.
   PERFORM set_config('request.jwt.claim.sub',v_out::text,false);
