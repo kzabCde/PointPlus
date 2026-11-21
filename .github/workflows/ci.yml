@@ -67,7 +67,7 @@ jobs:
         run: npm run build
 
   verify-living-migrations:
-    name: Living M01–M04 PostgreSQL migrations and RLS tests
+    name: Living M01–M05 PostgreSQL migrations and RLS tests
     if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3'
     runs-on: ubuntu-latest
     services:
@@ -113,3 +113,7 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m04-assertions.sql
       - name: Verify concurrent redemption cannot double-spend
         run: bash tests/sql/living-v3-m04-concurrency.sh
+      - name: Apply M05 reversible paper editor migration on isolated database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/20_living_stampbook_v3_m05_reversible_editor.sql
+      - name: Verify owner-only reversible paper edits and immutable stamp ledger
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m05-assertions.sql
