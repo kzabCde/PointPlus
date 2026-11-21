@@ -48,3 +48,43 @@ export async function loadLivingBookDetail(spaceId:string,bookId:string) {
     summary:summary.data as LivingSummary,lastPage:last.data as LivingPage|null,
   }
 }
+
+import type { EditorElement,LivingEditorPage } from './editor-model'
+
+/**
+ * Fetch page metadata in batches instead of trusting the default PostgREST 1000-row
+ * cap. M05 will virtualize thumbnails; M02 does not impose a lifetime page limit.
+ */
+export async function loadLivingEditorData(spaceId:string,bookId:string,
+  requestedPageId?:string) {
+  const {supabase}=await getSpaceContext(spaceId)
+  const pages:LivingEditorPage[]=[]
+  let offset=0
+  for(;;) {
+    const {data,error}=await supabase.from('living_book_pages')
+      .select('id,book_id,space_id,page_order,title,background_style,version')
+      .eq('book_id',bookId).eq('space_id',spaceId)
+      .order('page_order',{ascending:true}).range(offset,offset+299)
+    if(error)throw new Error('Cannot list Living Book pages')
+    const batch=(data??[]) as LivingEditorPage[]
+    pages.push(...batch)
+    if(batch.length<300)break
+    offset+=batch.length
+  }
+  const page=pages.find(p=>p.id===requestedPageId)??pages[0]
+  if(!page)notFound()
+  const elements:EditorElement[]=[]
+  offset=0
+  for(;;){
+    const {data,error}=await supabase.from('living_book_elements')
+      .select('id,book_id,page_id,element_type,payload,position_x,position_y,width,height,rotation_deg,opacity,z_index,version')
+      .eq('book_id',bookId).eq('page_id',page.id)
+      .is('deleted_at',null).order('z_index',{ascending:true}).range(offset,offset+299)
+    if(error)throw new Error('Cannot load Living Book page decorations')
+    const batch=(data??[]) as EditorElement[]
+    elements.push(...batch)
+    if(batch.length<300)break
+    offset+=batch.length
+  }
+  return {pages,page,elements}
+}
