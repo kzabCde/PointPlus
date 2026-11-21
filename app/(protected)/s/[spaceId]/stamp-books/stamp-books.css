@@ -2193,3 +2193,39 @@
 @media(prefers-reduced-motion:reduce) {
   .living-reading-page * {scroll-behavior:auto!important;animation:none!important;}
 }
+
+
+/* M03 — Fast Creation: the essential form has no wizard or preview images. */
+.living-fast-creator {max-width:620px;gap:12px;}
+.living-fast-creator .stamp-format-option {min-block-size:66px;padding:10px 12px;gap:2px 9px;}
+.living-fast-creator .stamp-format-option strong {font-size:15px;}
+.living-fast-creator .stamp-format-option span {font-size:12px;}
+.living-fast-creation-form {max-width:620px;padding:clamp(14px,3vw,22px);gap:13px;}
+.living-fast-creation-form h3 {margin:0;font-size:18px;}
+.living-fast-creation-form > label {display:grid;gap:6px;font-size:14px;font-weight:650;}
+.living-fast-creation-form .input {width:100%;}
+.living-fast-creation-form > button[type="submit"] {min-height:46px;justify-self:start;}
+.living-fast-recipient {margin:0;color:var(--muted);font-size:13px;}
+.living-fast-creation-advanced {border-top:1px solid var(--line);padding-top:8px;}
+.living-fast-creation-advanced > summary {padding:8px 0;min-height:42px;cursor:pointer;
+  color:var(--action);font-size:13px;font-weight:650;}
+.living-fast-creation-advanced > summary:focus-visible {outline:2px solid var(--focus);outline-offset:2px;}
+.living-fast-creation-advanced-content {display:grid;gap:11px;padding-top:7px;}
+.living-fast-creation-advanced-content label {display:grid;gap:6px;font-size:13px;font-weight:650;}
+.living-fast-creation-pending {display:grid;gap:8px;border:1px solid var(--line);
+  border-radius:10px;padding:14px;background:var(--surface-soft);}
+.living-fast-creation-pending p {margin:0;font-size:13px;color:var(--muted);}
+.living-fast-creation-pending dl {display:grid;grid-template-columns:minmax(72px,1fr) 2fr;
+  gap:6px 12px;margin:0;font-size:13px;}
+.living-fast-creation-pending dt {color:var(--muted);}
+.living-fast-creation-pending dd {margin:0;overflow-wrap:anywhere;}
+@media (max-width:560px) {
+  .living-fast-creator .stamp-format-options {grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+  .living-fast-creator .stamp-format-option {display:grid;grid-template-columns:1fr;gap:3px;
+    min-block-size:86px;padding:9px;}
+  .living-fast-creator .stamp-format-option input {grid-row:auto;}
+  .living-fast-creation-form > button[type="submit"] {width:100%;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .living-fast-creator .stamp-format-option {transition:none;}
+}
