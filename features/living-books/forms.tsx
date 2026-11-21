@@ -47,7 +47,7 @@ export function CreateLivingBookForm({spaceId,userId,kind,participants,format='l
   const [key,setKey]=useState('')
   const [intent,setIntent]=useState<CreationIntent|null>(null)
   const submitLock=useRef(false)
-  const storageKey='pointplus:create:v'+intentVersion+':'+userId+':'+spaceId+':'+format
+  const storageKey='pointplus:create:v'+creationIntentVersion+':'+userId+':'+spaceId+':'+format
   const available=participants.filter(p=>kind!=='couple'||
     (p.kind==='adult'&&p.user_id&&p.user_id!==userId))
   const suggestedCover=pointPlusStamps.find(stamp=>stamp.mode===kind)?.id??
