@@ -186,20 +186,20 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         setDirty(draftEdits.current.size>0)
         setSaveFailed(false)
         setNotice('บันทึกลงสมุดแล้ว')
-        emitPaperCue(item.element_type==='drawing'?'write':'write')
+        emitPaperCue('write')
         return true
       }
-      if(revert)setItems(prev=>prev.map(existing=>
-        existing.id===revert.id?revert:existing))
-      setSaveFailed(true)
+      draftEdits.current.set(item.id,item)
+      setItems(prev=>[...prev.filter(existing=>existing.id!==item.id),item])
+      setDirty(true);setSaveFailed(true)
       setNotice('message' in result?result.message:
         result.error??'ไม่สามารถบันทึกวัตถุ')
       // Never silently overwrite a newer remote version or discard local drafts.
       return false
     }catch{
-      if(revert)setItems(prev=>prev.map(existing=>
-        existing.id===revert.id?revert:existing))
-      setSaveFailed(true)
+      draftEdits.current.set(item.id,item)
+      setItems(prev=>[...prev.filter(existing=>existing.id!==item.id),item])
+      setDirty(true);setSaveFailed(true)
       setNotice('เครือข่ายขัดข้อง ฉบับที่ยังไม่บันทึกยังอยู่บนหน้านี้ กดลองอีกครั้ง')
       return false
     }finally{
@@ -223,7 +223,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     if(autosaveTimer.current)clearTimeout(autosaveTimer.current)
     autosaveTimer.current=setTimeout(()=>{
       autosaveTimer.current=null
-      if(!locked.current&&!saveFailed)void flushDrafts()
+      if(!locked.current)void flushDrafts()
     },850)
   }
 
@@ -298,11 +298,9 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         emitPaperCue('undo')
       }else{
         setNotice('ไม่สามารถย้อนการแก้ไขได้ ข้อมูลอาจเปลี่ยนจากอุปกรณ์อื่น กรุณาโหลดข้อมูลล่าสุด')
-        setSaveFailed(true)
       }
     }catch{
       setNotice('เชื่อมต่อไม่ได้ ไม่ได้เปลี่ยนข้อมูลที่บันทึกไว้')
-      setSaveFailed(true)
     }finally{locked.current=false;setBusy(false)}
   }
 
