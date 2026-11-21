@@ -18,7 +18,7 @@ export function LivingBookShelf({books,people,base}:{
           {book.description && <p>{book.description}</p>}
           {recipient && <p>สำหรับ {recipient.display_name}</p>}
           {book.card&&<p>{book.card.target_count} ช่อง · {book.card.reward_title}</p>}
-          <Link className="button button--secondary"
+          <Link className="button button--secondary" prefetch={false}
             href={base+'/living/'+book.id}>{book.card?'เปิดการ์ด':'เปิดสมุด'} <span aria-hidden="true">→</span></Link>
         </div>
       </article>
