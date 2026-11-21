@@ -164,7 +164,7 @@ export function LivingBookStudio({children,title,backHref,description,recipientN
             <button className="living-reader-close" type="button"
               onClick={()=>setRewardsOpen(false)} aria-label="ปิดแผงแลกรางวัล">✕</button>
           </div>
-          {rewardPanel}
+          {rewardsOpen&&rewardPanel}
         </section>
       </div>
       {status!=='active'&&<p className="living-reader-status" role="status">
