@@ -1582,3 +1582,277 @@
   outline:3px solid #93505a;
   outline-offset:3px;
 }
+
+
+/* UX04 — accessible bottom-sheet rewards and warm, restrained scrapbook motion. */
+.living-reader-reward-overlay[hidden]{display:none!important;}
+.living-reader-reward-overlay{
+  position:fixed;
+  inset:0;
+  z-index:5000;
+  isolation:isolate;
+  display:block;
+}
+.living-reader-reward-backdrop{
+  position:absolute;
+  inset:0;
+  width:100%;height:100%;
+  padding:0;margin:0;
+  background:rgb(45 30 27 / 48%);
+  border:0;border-radius:0;
+  cursor:default;
+  animation:living-reward-backdrop-in .18s ease-out both;
+}
+.living-reader-reward-overlay .living-reader-reward-sheet{
+  position:absolute;
+  top:auto;right:clamp(14px,3vw,48px);bottom:clamp(14px,3vw,36px);
+  z-index:1;
+  width:min(540px,calc(100vw - 28px));
+  max-height:min(84dvh,850px);
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  padding:clamp(12px,2vw,20px);
+  border-radius:21px;
+  border:1px solid #dfc3b5;
+  background:#fff9f1;
+  box-shadow:0 25px 70px rgb(29 17 16 / 29%);
+  animation:living-reward-sheet-in .23s cubic-bezier(.2,.86,.3,1) both;
+}
+.living-reader-reward-sheet:focus{outline:none;}
+.living-reader-reward-sheet:focus-visible{
+  outline:3px solid #a65a61;outline-offset:3px;
+}
+.living-reader-reward-overlay .living-reader-sheet-title {
+  position:sticky;top:0;z-index:5;
+  padding:3px 0 12px;
+  border-bottom:1px solid #ead6c7;
+  background:#fff9f1;
+}
+.living-reader-pending-count{
+  position:absolute;
+  top:-6px;right:-6px;
+  display:grid;place-items:center;
+  min-width:19px;min-height:19px;
+  padding:1px 4px;
+  border-radius:999px;
+  background:#ab5c63;
+  color:#fff;
+  font-size:10px;
+  font-weight:800;
+  border:2px solid #fff9f1;
+}
+.living-reader .living-reader-balance{position:relative;}
+.living-redemption-panel--focused{
+  display:grid;
+  gap:14px;
+  padding:12px 0 4px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+.living-redemption-panel--focused .living-redemption-heading h3{
+  font-family:Georgia,'Noto Serif Thai',serif;
+  font-size:clamp(18px,2vw,22px);
+  line-height:1.4;
+  margin:3px 0 0;
+}
+.living-redemption-panel--focused .living-redemption-balances{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.living-redemption-panel--focused .living-redemption-balance{
+  padding:10px 5px;
+  border:1px solid #ead2c2;
+  background:#fffdf8;
+  border-radius:11px;
+}
+.living-redemption-panel--focused .living-redemption-balance strong{
+  font-size:clamp(18px,3vw,26px);
+  color:#824c49;
+}
+.living-redemption-more-balances>summary,
+.living-redemption-preview>summary,
+.living-redemption-history>summary{
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  padding:9px 0;
+  color:#815c52;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.living-redemption-more-balances p{
+  margin:0 0 6px;
+  color:#866a62;
+  font-size:12px;
+}
+.living-redemption-panel--focused .living-redemption-request{
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+  border-top:1px solid #e5cebf;
+  padding-top:12px;
+  max-width:100%;
+}
+.living-redemption-panel--focused .living-redemption-request>*{
+  grid-column:1/-1;
+}
+.living-redemption-quantity{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;
+  gap:9px 12px;
+}
+.living-redemption-quantity label{
+  grid-column:1;
+  font-weight:650;
+}
+.living-redemption-quantity input[type="number"]{
+  min-width:88px;
+  max-width:130px;
+}
+.living-redemption-quantity-slider{
+  width:100%;
+  min-height:44px;
+  grid-column:1;
+  accent-color:#b56d6f;
+  cursor:pointer;
+}
+.living-redemption-quantity-summary{
+  grid-column:2;
+  align-self:center;
+  font-size:12px;
+  white-space:nowrap;
+  color:#9a6664;
+  font-weight:700;
+}
+.living-redemption-panel--focused .living-redemption-preview{
+  display:block;
+  background:#fff9f1;
+  border:1px dashed #e0c5b7;
+  padding:0 12px 8px;
+}
+.living-redemption-preview[open] .living-redemption-preview-art{
+  padding:4px 0 7px;
+}
+.living-redemption-panel--focused .living-redemption-submit{
+  justify-self:stretch;
+  width:100%;
+  min-height:48px;
+}
+.living-redemption-panel--focused :is(button,summary,input,textarea):focus-visible{
+  outline:3px solid #ad5c66;
+  outline-offset:2px;
+}
+.living-redemption-retry{
+  padding:10px;
+  border:1px solid #d4ad91;
+  background:#fff2e4;
+  border-radius:10px;
+  font-size:12px;
+  line-height:1.6;
+}
+.living-redemption-pending{
+  display:grid;
+  gap:9px;
+  padding-top:13px;
+  border-top:1px solid #e4cab9;
+}
+.living-redemption-pending-heading{
+  display:flex;justify-content:space-between;
+  align-items:center;gap:9px;
+}
+.living-redemption-pending-heading h4{
+  margin:0;
+  font-family:Georgia,'Noto Serif Thai',serif;
+  font-size:17px;
+}
+.living-redemption-pending-count{
+  padding:6px 8px;
+  font-size:11px;
+  color:#8c4c4c;
+  background:#f6ded4;
+  border-radius:99px;
+  white-space:nowrap;
+}
+.living-redemption-pending-entry{
+  display:grid;
+  align-content:start;
+  gap:9px;
+  padding:13px;
+  border:1px solid #e8c4b3;
+  border-radius:12px;
+  background:#fff8f0;
+}
+.living-redemption-pending-entry time{font-size:11px;color:#876d65;}
+.living-redemption-confirm{
+  display:grid;
+  gap:9px;
+  padding:12px;
+  border:1px solid #d5a6a3;
+  background:#fff0ed;
+  border-radius:10px;
+}
+.living-redemption-confirm p{
+  font-size:12px;line-height:1.65;margin:0;
+  color:#7d4b4b;
+}
+.living-redemption-panel--focused .living-redemption-history{
+  display:block;
+  border-top:1px solid #dfc7b8;
+  padding-top:7px;
+}
+.living-redemption-history[open]>.living-redemption-history-list{
+  margin-top:7px;
+  animation:living-reward-history-in .2s ease-out both;
+}
+.living-redemption-panel--focused .living-redemption-history-list{
+  grid-template-columns:minmax(0,1fr);
+}
+.living-redemption-panel--focused .living-redemption-history-entry{
+  padding:13px;
+}
+.living-redemption-panel--focused .living-redemption-history-actions button{
+  min-height:44px;
+}
+@keyframes living-reward-backdrop-in{
+  from{opacity:0}to{opacity:1}
+}
+@keyframes living-reward-sheet-in{
+  from{opacity:.78;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes living-reward-history-in{
+  from{opacity:.5;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:680px){
+  .living-reader-reward-overlay .living-reader-reward-sheet{
+    position:absolute;
+    left:0;right:0;bottom:0;top:auto;
+    width:100%;max-width:100%;
+    max-height:87dvh;
+    padding:15px 16px max(16px,env(safe-area-inset-bottom));
+    border-radius:21px 21px 0 0;
+    border-bottom:0;
+  }
+  .living-redemption-panel--focused .living-redemption-balances{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .living-redemption-panel--focused .living-redemption-balance{
+    min-width:0;
+  }
+  .living-reader-reward-overlay .living-redemption-quantity{gap:8px;}
+  .living-redemption-panel--focused .living-redemption-history-actions button{
+    flex:1 1 46%;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .living-reader-reward-backdrop,
+  .living-reader-reward-overlay .living-reader-reward-sheet,
+  .living-redemption-history[open]>.living-redemption-history-list{
+    animation:none!important;transition:none!important;
+  }
+}
