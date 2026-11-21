@@ -156,13 +156,14 @@ export function LivingRedemptionPanel({
                 })}
               </time>
               {usedArt.length>0&&<div className="living-redemption-history-stamps"
-                aria-label={'รายการแสตมป์ที่ผูกกับคำขอ '+assoc.length+' ดวง'}>
+                aria-label={'แสดงตัวอย่างรายการแสตมป์ที่ผูกกับคำขอ '+item.requested_quantity+' ดวง'}>
                 {usedArt.map(mark=>{
                   const art=stampArtwork.get(mark.asset_id)
                   return art?<Image key={mark.id} src={art.png} alt={art.nameTh}
                     width={32} height={32}/>:<span key={mark.id}>✿</span>
                 })}
-                {assoc.length>9&&<small>+{assoc.length-9}</small>}
+                {item.requested_quantity>usedArt.length&&
+                  <small>+{item.requested_quantity-usedArt.length} ดวง</small>}
               </div>}
               {item.status==='fulfilled'&&
                 <p className="living-redemption-history-stamp-used">✓ แสตมป์ที่ใช้แล้วมีรอยตำหนิถาวรในสมุด</p>}
