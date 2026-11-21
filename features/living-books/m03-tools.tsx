@@ -77,7 +77,8 @@ export function LivingStampTools({
     }
     else if(placement){setX(placement.x);setY(placement.y);setTargetPage(pageId)}
     setMessage('')
-  },[mark?.id,placement?.x,placement?.y,pageId])
+  },[mark?.id,mark?.version,mark?.position_x,mark?.position_y,
+    mark?.rotation_deg,mark?.scale_factor,placement?.x,placement?.y,pageId])
   async function give(event:FormEvent<HTMLFormElement>){
     event.preventDefault()
     if(busy||!canGive||!placement||!key)return
@@ -237,13 +238,13 @@ export function LivingStampTools({
 export async function preparePhotoForUpload(file:File):Promise<File>{
   if(!['image/png','image/jpeg','image/webp'].includes(file.type))
     throw new Error('รองรับเฉพาะรูป JPEG, PNG และ WebP')
-  if(file.size>6*1024*1024)
-    throw new Error('รูปภาพมีขนาดเกิน 6 MB')
+  if(file.size>30*1024*1024)
+    throw new Error('ไฟล์รูปภาพต้นฉบับใหญ่เกิน 30 MB')
   try{
     const bitmap=await createImageBitmap(file)
     const maxSide=Math.max(bitmap.width,bitmap.height)
-    if(maxSide<=2048){bitmap.close();return file}
-    const ratio=2048/maxSide
+    if(maxSide<=2048&&file.size<=6*1024*1024){bitmap.close();return file}
+    const ratio=Math.min(1,2048/maxSide)
     const canvas=document.createElement('canvas')
     canvas.width=Math.max(1,Math.round(bitmap.width*ratio))
     canvas.height=Math.max(1,Math.round(bitmap.height*ratio))
@@ -255,6 +256,8 @@ export async function preparePhotoForUpload(file:File):Promise<File>{
     if(blob&&blob.size<=6*1024*1024)
       return new File([blob],'memory.webp',{type:'image/webp'})
   }catch{/* Original image remains subject to server-side binary validation. */}
+  if(file.size>6*1024*1024)
+    throw new Error('รูปภาพเกิน 6 MB หลังปรับขนาด')
   return file
 }
 export function LivingPhotoUpload({spaceId,bookId,pageId,onDone,disabled}:Context&{
