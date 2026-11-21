@@ -113,6 +113,9 @@ BEGIN
    p_target NOT BETWEEN 1 AND 100 OR p_reward IS NULL OR
    length(btrim(p_reward)) NOT BETWEEN 1 AND 160
  THEN RAISE EXCEPTION 'Invalid card parameters' USING ERRCODE='22023'; END IF;
+ -- Serialize same-room creations before checking the idempotency key, including
+ -- concurrent retries of this wrapper and the base Living Book creator.
+ PERFORM 1 FROM public.spaces WHERE id=p_space FOR UPDATE;
  SELECT id INTO v_existing FROM public.living_books
   WHERE owner_user_id=auth.uid() AND creation_key=p_key;
  IF v_existing IS NOT NULL THEN
