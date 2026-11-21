@@ -35,7 +35,12 @@ export function LivingStampOverlay({marks,pending,selectedId,onSelect,selectable
         style={{left:mark.position_x*100+'%',top:mark.position_y*100+'%',
           width:stampSize(mark.scale_factor)+'%',
           transform:'translate(-50%,-50%) rotate('+mark.rotation_deg+'deg)'}}
-        onClick={()=>onSelect(mark.id)}>
+        onClick={()=>onSelect(mark.id)}
+        onContextMenu={event=>{
+          if(!selectable)return
+          event.preventDefault()
+          onSelect(mark.id)
+        }}>
         {artwork&&<Image src={artwork.png} alt="" width={128} height={128}
           className="living-real-stamp__image" draggable={false}/>}
         {peeled&&<span className="living-real-stamp__trace">ลอกแล้ว</span>}
