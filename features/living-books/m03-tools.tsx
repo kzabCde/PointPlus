@@ -7,6 +7,7 @@ import {pointPlusStamps} from '@/lib/point-plus/assets'
 import {giveLivingStamp,reviewLivingStamp,cancelLivingStampRequest,
   transformLivingStamp,peelLivingStamp,uploadLivingPhoto} from './m03-actions'
 import {stampArtwork,type LivingStampMark,type LivingStampRequest} from './stamp-model'
+import {emitPaperCue} from './paper-sound'
 import type {Point,LivingEditorPage} from './editor-model'
 
 type Context={spaceId:string;bookId:string;pageId:string}
@@ -95,7 +96,7 @@ export function LivingStampTools({
         rotation:angle,scale,
       })
       setMessage(result.message)
-      if(result.ok){setKey(crypto.randomUUID());onCancelPlacement();onComplete();router.refresh()}
+      if(result.ok){emitPaperCue('stamp');setKey(crypto.randomUUID());onCancelPlacement();onComplete();router.refresh()}
     }catch{setMessage('เชื่อมต่อไม่ได้ กรุณาลองอีกครั้งโดยไม่เปลี่ยนข้อมูลคำขอ')}
     finally{setBusy(false)}
   }
@@ -120,7 +121,7 @@ export function LivingStampTools({
         spaceId,bookId,markId:mark.id,expectedVersion:mark.version,
       })
       setMessage(result.message)
-      if(result.ok){setConfirmPeel(false);onComplete();router.refresh()}
+      if(result.ok){emitPaperCue('peel');setConfirmPeel(false);onComplete();router.refresh()}
     }catch{setMessage('เชื่อมต่อไม่ได้ ไม่สามารถลอกแสตมป์ได้')}
     finally{setBusy(false)}
   }
@@ -130,7 +131,7 @@ export function LivingStampTools({
     try{
       const result=await reviewLivingStamp({spaceId,bookId,requestId,approve})
       setMessage(result.message)
-      if(result.ok){onComplete();router.refresh()}
+      if(result.ok){if(approve)emitPaperCue('stamp');onComplete();router.refresh()}
     }catch{setMessage('เชื่อมต่อไม่ได้ กรุณาลองอนุมัติอีกครั้ง')}
     finally{setBusy(false)}
   }
