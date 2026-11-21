@@ -13,9 +13,9 @@ test('R02: lightweight room launcher replaces old all-space dashboard',()=>{
  assert.match(read('app/(protected)/rooms/page.tsx'),/listMyRooms\(\)/)
  assert.doesNotMatch(read('app/(protected)/rooms/page.tsx'),/loadDashboard|loadMissionBoard/)
 })
-test('R03: Room Home prioritizes only room-local Stamp Books and protects membership',()=>{
+test('R03: Room Home prioritizes only room-local Living Books and protects membership',()=>{
  const page=read('app/(protected)/s/[spaceId]/page.tsx')
- assert.match(page,/loadStampBookBoard\(spaceId\)/)
+ assert.match(page,/loadLivingBookShelf\(spaceId\)/)
  assert.match(page,/stamp-books/)
  assert.ok(existsSync(new URL('../app/(protected)/s/[spaceId]/stamp-books/page.tsx',import.meta.url)))
 })
@@ -24,7 +24,7 @@ test('R06: 18 original Stamp assets remain, but the gallery is replaced by user-
  assert.equal((lib.match(/"id": "(?:couple|family|personal)-/g)||[]).length,30)
  const col=read('app/(protected)/s/[spaceId]/collection/page.tsx')
  assert.match(col,/redirect\('\/s\/'.*stamp-books/)
- assert.match(read('app/(protected)/s/[spaceId]/stamp-books/page.tsx'),/loadStampBookBoard/)
+ assert.match(read('app/(protected)/s/[spaceId]/stamp-books/page.tsx'),/loadLivingBookShelf/)
 })
 
 test('R08: Room Home uses bounded per-Room queries and authorized Room resume',()=>{
