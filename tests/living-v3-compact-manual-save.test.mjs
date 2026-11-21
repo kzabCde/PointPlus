@@ -60,7 +60,8 @@ test('photos do not write to Storage until explicit Save is clicked',()=>{
 })
 test('real stamp confirmation still writes immediately with permissions and idempotency',()=>{
  assert.match(stampActions,/giveLivingStamp\(\{/)
- assert.match(stampActions,/idempotencyKey|key:/)
+ assert.match(stampActions,/assetId:preview\.artId,note,key/)
+ assert.match(stampActions,/inFlight\.current=true/)
  assert.match(card,/giveLivingStamp\(\{/)
  assert.match(card,/submitLock\.current=true/)
  assert.match(editor,/onPlacementAttempt=\{\(\)=>setStampAttempted\(true\)\}/)
