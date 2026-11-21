@@ -83,6 +83,7 @@ export function LivingStampTools({
   const [busy,setBusy]=useState(false)
   const [message,setMessage]=useState('')
   const [confirmPeel,setConfirmPeel]=useState(false)
+  const [peelPromptOpen,setPeelPromptOpen]=useState(false)
   const [advancedOpen,setAdvancedOpen]=useState(false)
   useEffect(()=>{
     if(preview&&!previouslyPlacing.current){
@@ -94,7 +95,8 @@ export function LivingStampTools({
     if(mark){
       setX(mark.position_x);setY(mark.position_y)
       setAngle(mark.rotation_deg);setScale(mark.scale_factor)
-      setTargetPage(mark.page_id);setConfirmPeel(false);setAdvancedOpen(false)
+      setTargetPage(mark.page_id);setConfirmPeel(false)
+      setPeelPromptOpen(false);setAdvancedOpen(false)
     }else if(placement){setTargetPage(pageId)}
     setMessage('')
   },[mark?.id,mark?.version,mark?.position_x,mark?.position_y,
@@ -135,7 +137,7 @@ export function LivingStampTools({
     finally{inFlight.current=false;setBusy(false)}
   }
   async function peel(){
-    if(!canEdit||!mark||mark.state!=='available'||inFlight.current||!confirmPeel)return
+    if(!canEdit||!mark||mark.state!=='available'||inFlight.current||!peelPromptOpen||!confirmPeel)return
     inFlight.current=true;setBusy(true);setMessage('')
     try{
       const result=await peelLivingStamp({
@@ -143,7 +145,7 @@ export function LivingStampTools({
       })
       setMessage(result.message)
       if(result.ok){
-        emitPaperCue('peel');setConfirmPeel(false)
+        emitPaperCue('peel');setConfirmPeel(false);setPeelPromptOpen(false)
         onComplete();router.refresh()
       }
     }catch{setMessage('เชื่อมต่อไม่ได้ ไม่สามารถลอกแสตมป์ได้')}
@@ -242,8 +244,10 @@ export function LivingStampTools({
             aria-expanded={advancedOpen} disabled={busy}
             onClick={()=>setAdvancedOpen(value=>!value)}>จัดตำแหน่ง / ย้ายหน้า</button>
           <button type="button" className="button button--secondary"
-            aria-expanded={confirmPeel} disabled={busy}
-            onClick={()=>setConfirmPeel(value=>!value)}>ลอกแสตมป์</button>
+            aria-expanded={peelPromptOpen} disabled={busy}
+            onClick={()=>{setPeelPromptOpen(value=>!value);setConfirmPeel(false)}}>
+            ลอกแสตมป์
+          </button>
         </div>
         {advancedOpen&&<div className="living-stamp-precision">
           <label>หน้า
@@ -273,7 +277,7 @@ export function LivingStampTools({
           <button type="button" className="button button--primary"
             disabled={busy} onClick={()=>void update()}>บันทึกการจัดวาง</button>
         </div>}
-        {confirmPeel&&<div className="living-stamp-peel-confirm" role="group"
+        {peelPromptOpen&&<div className="living-stamp-peel-confirm" role="group"
           aria-label="ยืนยันการลอกแสตมป์">
           <strong>ต้องการลอกแสตมป์ดวงนี้ใช่ไหม?</strong>
           <p>แสตมป์จะใช้แลกรางวัลไม่ได้อีก ร่องรอยและประวัติการลอกจะคงอยู่ตลอด</p>
@@ -284,7 +288,9 @@ export function LivingStampTools({
           </label>
           <div className="living-m03-actions">
             <button type="button" className="button button--secondary"
-              disabled={busy} onClick={()=>setConfirmPeel(false)}>ไม่ลอก</button>
+              disabled={busy} onClick={()=>{
+                setPeelPromptOpen(false);setConfirmPeel(false)
+              }}>ไม่ลอก</button>
             <button type="button" className="button button--primary"
               disabled={busy||!confirmPeel} onClick={()=>void peel()}>
               ยืนยันลอกแสตมป์
