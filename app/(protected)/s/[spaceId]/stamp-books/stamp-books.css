@@ -1071,3 +1071,233 @@
   box-shadow:0 6px 20px rgb(90 55 40 / 14%);
 }
 .living-reader-mode-chip span {font-size:18px;font-weight:400;}
+
+
+/* UX02 — direct object manipulation. Handles are cosmetic hit targets;
+ * original M02/M03 server actions persist only after the gesture completes.
+ */
+.living-reader .living-paper-object[data-selected="true"] {
+  overflow:visible;
+  outline:1px solid #b96a6d;
+  outline-offset:3px;
+}
+.living-reader .living-paper-object[data-selected="true"] .living-paper-object__photo-frame {
+  overflow:hidden;
+}
+.living-selection-handles {
+  position:absolute;
+  inset:0;
+  z-index:4;
+  pointer-events:none;
+  border:1px dashed rgb(186 100 104 / 70%);
+}
+.living-selection-handle,
+.living-selection-rotate {
+  display:block;
+  position:absolute;
+  z-index:5;
+  width:26px;
+  height:26px;
+  border:2px solid #a9555d;
+  background:#fff8ef;
+  border-radius:50%;
+  pointer-events:auto;
+  touch-action:none;
+  box-shadow:0 2px 6px rgb(92 52 38 / 24%);
+}
+.living-selection-handle--nw {top:0;left:0;transform:translate(-50%,-50%);cursor:nwse-resize;}
+.living-selection-handle--ne {top:0;right:0;transform:translate(50%,-50%);cursor:nesw-resize;}
+.living-selection-handle--sw {bottom:0;left:0;transform:translate(-50%,50%);cursor:nesw-resize;}
+.living-selection-handle--se {bottom:0;right:0;transform:translate(50%,50%);cursor:nwse-resize;}
+.living-selection-rotate {
+  top:-33px;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:#b66e6c;
+  cursor:grab;
+}
+.living-selection-rotate::after {
+  content:"↻";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font-size:18px;
+  font-weight:800;
+  color:white;
+}
+.living-paper-inline-text {
+  position:relative;
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:100%;
+  padding:3px 4px;
+  background:rgb(255 250 241 / 92%);
+  border:1px dashed #b66e6c;
+  border-radius:2px;
+  resize:none;
+  outline:2px solid #d7a69a;
+  overflow:auto;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  line-height:1.35;
+}
+.living-editor-paper .living-selection-toolbar {
+  position:absolute;
+  z-index:3000020;
+  display:flex;
+  align-items:center;
+  gap:3px;
+  max-width:min(94%,550px);
+  min-height:42px;
+  padding:4px 6px;
+  overflow-x:auto;
+  border:1px solid #e1bbae;
+  background:#fffaf3f5;
+  box-shadow:0 5px 16px rgb(88 52 42 / 21%);
+  border-radius:11px;
+  touch-action:pan-x;
+  scrollbar-width:thin;
+}
+.living-selection-toolbar-label {
+  color:#8a5853;
+  white-space:nowrap;
+  font-weight:750;
+  font-size:11px;
+  padding-inline:4px;
+}
+.living-editor-paper .living-selection-toolbar button {
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  min-width:38px;
+  min-height:38px;
+  padding:4px;
+  font:inherit;
+  font-size:12px;
+  font-weight:750;
+  color:#87584d;
+  border:1px solid transparent;
+  border-radius:8px;
+  background:transparent;
+  cursor:pointer;
+}
+.living-editor-paper .living-selection-toolbar button:hover,
+.living-editor-paper .living-selection-toolbar button[aria-pressed="true"] {
+  border-color:#d9b4a5;
+  background:#fce8dc;
+}
+.living-selection-color {
+  flex:0 0 auto;
+  display:flex;
+  min-width:38px;
+  min-height:38px;
+  align-items:center;
+  cursor:pointer;
+}
+.living-selection-color input[type="color"] {
+  width:34px;
+  height:34px;
+  border:0;
+  padding:2px;
+  background:transparent;
+  cursor:pointer;
+}
+.living-selection-color .sr-only {
+  position:absolute;
+  width:1px;height:1px;
+  margin:-1px;clip:rect(0,0,0,0);white-space:nowrap;overflow:hidden;
+}
+.living-editor-properties--contextual {
+  position:absolute;
+  z-index:50;
+  right:clamp(8px,2vw,22px);
+  top:clamp(70px,10vw,110px);
+  width:min(400px,calc(100% - 16px));
+  max-height:min(68vh,700px);
+  overflow:auto;
+  box-shadow:0 15px 35px rgb(88 52 42 / 24%);
+  border-color:#e1c0b3;
+  border-radius:14px;
+}
+.living-selection-advanced-close {
+  position:absolute;
+  top:8px;right:8px;
+  display:grid;place-items:center;
+  min-width:40px;min-height:40px;
+  background:#fff7ed;
+  border:1px solid #e3c1b2;
+  border-radius:9px;
+  cursor:pointer;
+}
+.living-editor-properties--contextual h3 {padding-right:40px;}
+.living-drawing-toolbar {
+  position:absolute;
+  top:15px;
+  left:clamp(10px,2vw,25px);
+  z-index:40;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  max-width:calc(100% - 90px);
+  padding:7px 10px;
+  flex-wrap:wrap;
+  background:#fffaf2f2;
+  border:1px solid #e4c5b4;
+  border-radius:12px;
+  box-shadow:0 4px 14px rgb(89 48 39 / 14%);
+  font-size:12px;
+}
+.living-drawing-toolbar label {display:flex;align-items:center;gap:5px;font-weight:650;}
+.living-drawing-toolbar input[type="color"] {width:36px;height:34px;cursor:pointer;}
+.living-drawing-toolbar input[type="range"] {width:min(105px,19vw);accent-color:#b66e6c;}
+.living-drawing-toolbar button {
+  display:inline-grid;
+  place-items:center;
+  min-height:40px;
+  padding:7px 9px;
+  font:inherit;
+  font-weight:750;
+  border:1px solid #d8b6a5;
+  border-radius:8px;
+  background:#fffaf3;
+  cursor:pointer;
+}
+.living-drawing-toolbar button[aria-pressed="true"] {
+  background:#b66e6c;
+  border-color:#b66e6c;
+  color:#fff;
+}
+.living-reader .living-editor-viewport.is-dropping {
+  outline:3px dashed #b66e6c;
+  outline-offset:-8px;
+  background:#f5dfd4;
+}
+@media(max-width:680px){
+  .living-editor-paper .living-selection-toolbar {
+    left:2%!important;
+    top:1.5%!important;
+    width:96%;
+    max-width:96%;
+  }
+  .living-selection-handle,.living-selection-rotate {width:30px;height:30px;}
+  .living-editor-properties--contextual {
+    position:fixed;
+    inset:auto 8px 8px 8px;
+    width:auto;
+    max-height:68dvh;
+    z-index:90;
+  }
+  .living-drawing-toolbar {
+    left:8px;top:8px;
+    max-width:calc(100% - 74px);
+    gap:4px;
+    padding:4px;
+  }
+  .living-drawing-toolbar input[type="range"] {width:85px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .living-selection-toolbar,.living-editor-properties--contextual,
+  .living-selection-handle {transition:none!important;animation:none!important;}
+}
