@@ -500,7 +500,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
   function move(event:PointerEvent<HTMLDivElement>){
     if(activeFingers.current.has(event.pointerId)){
-      activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY})
+      const finger=activeFingers.current.get(event.pointerId)!
+      activeFingers.current.set(event.pointerId,{...finger,x:event.clientX,y:event.clientY})
       if(pinch.current&&activeFingers.current.size>=2){
         const [a,b]=[...activeFingers.current.values()]
         const distance=Math.hypot(a.x-b.x,a.y-b.y)
