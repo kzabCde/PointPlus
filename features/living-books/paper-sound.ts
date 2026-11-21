@@ -4,6 +4,11 @@ import {useCallback,useEffect,useRef,useState} from 'react'
 
 export type PaperCue='page'|'write'|'stamp'|'peel'|'reward'|'undo'|'error'
 const key='pointplus:living-paper-sound:v1'
+export const paperCueEvent='pointplus:living-paper-cue'
+export function emitPaperCue(cue:PaperCue) {
+  if(typeof window!=='undefined')
+    window.dispatchEvent(new CustomEvent<PaperCue>(paperCueEvent,{detail:cue}))
+}
 
 /** Generated WebAudio foley (no external music or copyrighted samples).
  * Muted by default; users opt in with a real button click.
@@ -89,5 +94,14 @@ export function usePaperSound(){
       }
     }catch{/* Safari/device with blocked audio must not break editing */}
   },[])
+  useEffect(()=>{
+    const handle=(event:Event)=>{
+      const detail=(event as CustomEvent<PaperCue>).detail
+      if(['page','write','stamp','peel','reward','undo','error'].includes(detail))
+        play(detail)
+    }
+    window.addEventListener(paperCueEvent,handle)
+    return ()=>window.removeEventListener(paperCueEvent,handle)
+  },[play])
   return {enabled,toggle,play}
 }
