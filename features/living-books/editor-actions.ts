@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { isUuid } from '@/lib/auth/validation'
 import { getSpaceContext } from '@/features/spaces/data'
 import {
-  backgrounds,clamp,isHexColor,validPayload, type EditorElement,type PaperBackground,
+  backgrounds,validPayload, type EditorElement,type PaperBackground,
 } from './editor-model'
 
 export type EditorResult<T=unknown> = {
@@ -77,7 +77,7 @@ export async function saveLivingElement(input:SaveElementInput):
     e.width<.005||e.width>1||e.height<.005||e.height>1||
     e.rotation_deg< -180||e.rotation_deg>180||
     e.opacity<.05||e.opacity>1||
-    !Number.isInteger(e.z_index)||e.z_index<0||e.z_index>1000000)
+    !Number.isInteger(e.z_index)||e.z_index< -1000000||e.z_index>1000000)
     return reject('ข้อความหรือรูปวาดไม่ถูกต้อง')
   const context=await ownerContext(input)
   if(!context)return reject('เฉพาะเจ้าของสมุดที่เปิดใช้งานเท่านั้นที่แก้ไขวัตถุได้')
