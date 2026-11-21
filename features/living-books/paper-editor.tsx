@@ -137,7 +137,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         setDirty(false);setNotice('บันทึกลงสมุดแล้ว')
       } else {
         if(revert) setItems(prev=>prev.map(item=>item.id===revert.id?revert:item))
-        setNotice('error' in result ? (result.error??'ไม่สามารถบันทึกวัตถุ') : result.message)
+        setNotice('message' in result ? result.message : (result.error??'ไม่สามารถบันทึกวัตถุ'))
         if(result.conflict) router.refresh()
       }
     }catch{
@@ -323,7 +323,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       if(result.ok) {
         setItems(prev=>prev.filter(e=>e.id!==item.id))
         setSelectedId(null);setDirty(false);setNotice('ลบวัตถุจากหน้ากระดาษแล้ว')
-      }else{setNotice('error' in result?(result.error??'ไม่สามารถลบวัตถุ'):result.message);if(result.conflict)router.refresh()}
+      }else{setNotice('message' in result?result.message:(result.error??'ไม่สามารถลบวัตถุ'));if(result.conflict)router.refresh()}
     }catch{setNotice('การเชื่อมต่อขัดข้อง ไม่สามารถลบวัตถุ')}
     finally{locked.current=false;setBusy(false)}
   }
