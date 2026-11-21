@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import {useEffect,useRef,useState,type MouseEvent} from 'react'
+import {useEffect,useRef,useState,type MouseEvent,type TouchEvent} from 'react'
 import {useRouter} from 'next/navigation'
 import {AddLivingBookPageForm} from './forms'
 import {reorderLivingPages,updateLivingPageSettings} from './editor-actions'
@@ -30,6 +30,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
   const savedRef=useRef({title:page.title??'',background:page.background_style,version:page.version})
   const savingRef=useRef(false)
   const retryBlocked=useRef(false)
+  const swipeStart=useRef<{x:number;y:number}|null>(null)
   const base='/s/'+spaceId+'/stamp-books/living/'+bookId
   const unsaved=title!==savedRef.current.title||background!==savedRef.current.background
 
@@ -48,6 +49,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
   useEffect(()=>{
     studio?.setPageUnsaved(unsaved||savingRef.current)
   },[unsaved,busy,studio?.setPageUnsaved])
+  useEffect(()=>()=>studio?.setPageUnsaved(false),[studio?.setPageUnsaved])
 
   async function savePage(){
     if(!editable||savingRef.current||!unsaved)return
@@ -112,9 +114,26 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
     }catch{setMessage('เชื่อมต่อไม่ได้ ลำดับหน้ายังไม่เปลี่ยน')}
     finally{setBusy(false)}
   }
+  function beginSwipe(event:TouchEvent<HTMLDivElement>){
+    const touch=event.touches[0]
+    if(touch)swipeStart.current={x:touch.clientX,y:touch.clientY}
+  }
+  function finishSwipe(event:TouchEvent<HTMLDivElement>){
+    const start=swipeStart.current
+    swipeStart.current=null
+    const touch=event.changedTouches[0]
+    if(!start||!touch)return
+    const dx=touch.clientX-start.x,dy=touch.clientY-start.y
+    if(Math.abs(dx)<72||Math.abs(dy)>Math.abs(dx)*.5)return
+    event.preventDefault()
+    const next=current+(dx<0?1:-1)
+    if(next>=0&&next<pages.length)go(next)
+  }
   const windowed=pages.slice(start,start+windowSize)
   return <section className="living-page-manager" aria-label="ตัวจัดการหน้าสมุด">
-    <div className="living-page-controls">
+    <div className="living-page-controls"
+      onTouchStart={beginSwipe} onTouchEnd={finishSwipe}
+      aria-label="พลิกหน้า: ปัดซ้ายหรือขวาบนแถบเครื่องมือนี้">
       <Link aria-disabled={current===0} tabIndex={current===0?-1:0}
         className={'button button--secondary'+(current===0?' is-disabled':'')}
         onClick={handleLink}
