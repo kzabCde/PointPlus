@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { loadLivingBookDetail, loadLivingEditorData,loadLivingPageMedia } from '@/features/living-books/data'
 import { LivingPageManager } from '@/features/living-books/page-manager'
 import { LivingPaperEditor } from '@/features/living-books/paper-editor'
+import {loadLivingRedemptionData} from '@/features/living-books/redemption-data'
+import {LivingRedemptionPanel} from '@/features/living-books/redemption-panel'
 import { BookCover } from '@/features/stamp-books/presentation'
 
 export const metadata: Metadata = {title:'Living Stampbook — สมุดความทรงจำ'}
@@ -19,11 +21,16 @@ export default async function LivingBookPage({params,searchParams}:{
   ])
   if(book.space_id!==spaceId)notFound()
   const {marks,requests,imageUrls,canGive}=await loadLivingPageMedia(spaceId,bookId,page.id)
+  const {balance,history,candidates,associations,knownStamps}=
+    await loadLivingRedemptionData(spaceId,bookId)
   const recipient=people.find(p=>p.id===book.recipient_participant_id)
   const canReview=Boolean(recipient?.user_id===context.user.id||
     (!recipient?.user_id&&['owner','admin'].includes(context.member.role)))&&
     context.user.id!==book.owner_user_id
   const owner=context.user.id===book.owner_user_id
+  const isRecipient=Boolean(recipient?.user_id===context.user.id||
+    (!recipient?.user_id&&recipient?.kind==='child'&&
+      recipient?.guardian_user_id===context.user.id))&&!owner
   return <section className="stamp-book-page living-book-detail">
     <Link className="text-link" href={'/s/'+spaceId+'/stamp-books'}>← กลับไปการสะสม</Link>
     <header className="stamp-book-detail-head">
@@ -50,6 +57,11 @@ export default async function LivingBookPage({params,searchParams}:{
         canGive={canGive&&book.status==='active'} canReview={canReview&&book.status==='active'}
         userId={context.user.id} pages={pages}/>
     </div>
+    <LivingRedemptionPanel spaceId={spaceId} bookId={bookId}
+      balance={balance} history={history} candidates={candidates}
+      associations={associations} knownStamps={knownStamps}
+      canRequest={isRecipient} canFulfill={owner}
+      isActive={book.status==='active'}/>
     {!owner && <p className="muted">คุณสามารถดูความทรงจำได้ เจ้าของสมุดเท่านั้นที่เพิ่มหน้าและแก้ไขกระดาษได้</p>}
   </section>
 }
