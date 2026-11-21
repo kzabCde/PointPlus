@@ -127,7 +127,12 @@ function mockActions({owner=id,status='active',dbError=null}={}){
       maybeSingle:async()=>({data:{id:bookId,owner_user_id:owner,status},error:null})}),
     rpc:async(name,args)=>{
       calls.push({name,args})
-      return {data:dbError?null:{id,version:2,updated_at:'2026-11-21T00:00:00Z'},error:dbError}
+      const data=name==='pointplus_reorder_living_book_pages'?1:
+        name==='pointplus_update_living_book_page'?
+          {id:pageId,version:2,title:'New page',background_style:'kraft'}:
+        name==='pointplus_delete_living_book_element'?{id,version:2,deleted:true}:
+          {id,version:2,updated_at:'2026-11-21T00:00:00Z'}
+      return {data:dbError?null:data,error:dbError}
     },
   }
   const mocked={
