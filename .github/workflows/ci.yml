@@ -79,6 +79,8 @@ jobs:
         run: node --test tests/living-v3-ux04-rewards.test.mjs
       - name: Syntax check staged two-account UX04 browser gate (never Production)
         run: node --check tests/e2e/living-v3-ux04-browser.mjs
+      - name: Syntax check staging-only two-account desktop/mobile V3 card E2E
+        run: node --check tests/e2e/living-v3-card-buttonless-browser.mjs
       - name: Verify Server Action runtime exports (prevents client form 500)
         run: node --test tests/server-action-export-boundary.test.mjs
       - name: Typecheck
