@@ -107,7 +107,7 @@ test('Pages save themselves, and navigation refuses a pending editor or page wri
   assert.doesNotMatch(pageManager,/pages\.map\(.*<Link/)
 })
 test('Original sound is opt-in, has user mute, and no external audio/music URL',()=>{
-  assert.match(sound,/setEnabled\(false\)/)
+  assert.match(sound,/useState\(false\)/)
   assert.match(sound,/localStorage\.setItem/)
   assert.match(sound,/new AudioContext\(\)/)
   assert.match(sound,/createBufferSource\(\)/)
