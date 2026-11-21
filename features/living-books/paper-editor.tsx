@@ -1177,7 +1177,9 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       onBeginPlacement={()=>{
         if(stampAttempted)return
         setTool('stamp');setSelectedStampId(null);setSelectedId(null)
-        setStampPanelOpen(true);setToolsOpen(false)
+        // Close the artwork tray so the paper stays accessible for the tap.
+        setStampPanelOpen(false);setToolsOpen(false)
+        setNotice('เลือกลายแล้ว แตะตำแหน่งบนกระดาษเพื่อวางตัวอย่าง')
       }}
       onPlacementAttempt={()=>setStampAttempted(true)}
       mark={selectedStamp} marks={marks}
