@@ -5,7 +5,8 @@ export type LivingStampMark={
   id:string;request_id:string;book_id:string;page_id:string
   recipient_participant_id:string;giver_user_id:string;asset_id:string;note:string|null
   position_x:number;position_y:number;rotation_deg:number;scale_factor:number
-  state:'available'|'peeled';version:number;granted_at:string;peeled_at:string|null
+  state:'available'|'reserved'|'redeemed'|'peeled';version:number;granted_at:string;peeled_at:string|null
+  reserved_at:string|null;redeemed_at:string|null;redemption_id:string|null
 }
 export type LivingStampRequest={
   id:string;page_id:string;book_id:string;recipient_participant_id:string
