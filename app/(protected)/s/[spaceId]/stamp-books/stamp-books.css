@@ -1318,3 +1318,14 @@
   .living-selection-toolbar,.living-editor-properties--contextual,
   .living-selection-handle {transition:none!important;animation:none!important;}
 }
+
+/* UX02 touch affordances: the visible controls remain compact, but tap areas
+ * match the paper-reader mobile accessibility baseline. */
+@media(max-width:680px) {
+  .living-editor-paper .living-selection-toolbar button {
+    min-width:44px;min-height:44px;
+  }
+  .living-drawing-toolbar button {min-height:44px;}
+  .living-selection-advanced-close {min-width:44px;min-height:44px;}
+  .living-drawing-toolbar label {min-height:44px;}
+}
