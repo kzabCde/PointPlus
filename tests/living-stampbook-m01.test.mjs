@@ -78,7 +78,7 @@ test('Living-only creation and library contain no legacy Stamp Card option',()=>
   assert.match(forms,/AddLivingBookPageForm/)
   assert.match(newPage,/CreateLivingBookForm/)
   assert.match(library,/LivingBookShelf/)
-  assert.doesNotMatch(library,/loadStampBookBoard|BookShelf[^a-zA-Z]|การ์ดสะสมเดิม/)
+  assert.doesNotMatch(library,/loadStampBookBoard|\bBookShelf\b|การ์ดสะสมเดิม/)
   assert.match(data,/pointplus_get_living_book_summary/)
 })
 function mockActions({role='member',kind='couple',owner=id,status='active'}={}){
