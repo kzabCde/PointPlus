@@ -11,7 +11,7 @@
 
 - [x] **UX01 — Paper First Layout** — implemented in this PR; the recorded CI outcome determines whether it can be considered verified
 - [x] **UX02 — Contextual Editing & Direct Manipulation** — implemented and covered by regression/geometry tests (CI status on final head)
-- [ ] UX03 — Stamp & Page Gestures (**not started**)
+- [x] **UX03 — Stamp & Page Gestures** — implemented; final CI and release gates below
 - [ ] UX04 — Rewards, Animation, Accessibility & Hosted E2E (**not started**)
 
 ## UX01: implementation
@@ -97,8 +97,48 @@ Implementation remains in the same stacked feature branch and Draft PR. **No new
 
 **Unverified before Release:** Full interaction E2E in a browser with real iOS/Android pointer/touch hardware, real signed URL photo uploading, and assistive-technology walkthrough. CI geometry and source tests do not substitute for device/browser E2E. UX03 and UX04 remain untouched.
 
-## Next explicitly authorized milestone: UX03
+## UX03: tactile stamping, peeling and page gestures
 
-Add contextual stamp placement and peeling, page-edge gestures, and compact page overview interactions without altering stamp spending or the database.
+Implemented on the original `feat/living-v3-buttonless-ux` branch in Draft PR #31. **No schema migration, no Production data mutation and no deployment.**
 
-**STOP after UX02. Keep PR #31 Draft.**
+### Real-stamp visual workflow
+
+- The single Add > Stamp entry exposes a visual, accessible stamp tray using the **existing official artwork**. Art choices are buttons with pressed-state accessibility; selecting art closes the tray to free the paper.
+- Tap an empty spot on paper to create an **unissued preview only**, never a `LivingStampMark`. The preview has an obvious `ตัวอย่าง` watermark; drag it to position and use compact on-paper actions to rotate or scale. Precise sliders are retained behind a collapsed control.
+- Reopen confirmation from the small floating preview action even after dismissing the mobile tray; draft is not lost. The tray has an explicit close button.
+- The user must submit the actual stamp request explicitly. The client calls the same `giveLivingStamp` server action and `pointplus_give_living_stamp` PostgreSQL RPC with exact art UUID/identity, position, angle, scale and a giver-scoped idempotency key.
+- A synchronous in-flight lock blocks double submissions. If a response is ambiguous due to network failure, **retry preserves the same key and the exact immutable input**, and editing the preview/note is locked until the user cancels. A successful response creates a fresh key only for the next intentional issuance.
+- Existing direct-issue versus pending approval flows, giver and recipient rules, approval/rejection/cancel, events ledger and historical marks are untouched. Existing confirmed stamp transformations are still owner-only; reservations, redemptions and peeled marks are non-editable.
+
+### Contextual peeling
+
+- Selecting a real stamp (tap or context-click/long-press where browser-supported) reveals only relevant actions.
+- The owner of an active book can request peeling an **available** mark; a separate, initially unchecked acknowledgement and a second explicit confirmation are required to execute `peelLivingStamp`. The stamp is permanently unspendable; the existing RPC writes the peel event and keeps a visual trace.
+- No client call can peel a reserved/redeemed/previously peeled mark, and successful Server Action permissions/version checks remain the same.
+- The transform controls and page selector for eligible owner marks remain accessible through a collapsed detailed positioning panel.
+
+### Page navigation, creation and ordering
+
+- Left/right edges of the paper provide subtle dedicated tap targets; mobile left-edge rightward swipe and right-edge leftward swipe require deliberate horizontal travel (≥70 px and dominant horizontal movement). Both only exist in Select mode without an active selected object or stamp preview.
+- Keyboard left/right arrows turn pages when the paper itself has focus and no object is selected. Existing explicit previous/next links and page indicator remain accessible.
+- All page transitions use `pointplus:living-page-turn` events scoped to the current **page UUID** and are consumed by the existing `LivingPageManager`; it checks pending page/editor saves and unsaved stamp previews before navigation. Pen strokes, dragging decorations and stamp placing cannot accidentally trigger page turning.
+- The folded corner on the final page directly submits the **existing idempotent** `AddLivingBookPageForm` once by invoking the underlying form, while keeping the full page overview and configurable form available.
+- Page overview retains 36-at-a-time thumbnail windows and keyboard-accessible navigation. Owners may also drag one thumbnail onto another to reorder UUIDs through the existing owner-authorized `reorderLivingPages` RPC. Original move-up/down controls remain as a touch/keyboard alternative.
+
+### Source and tests
+
+- `features/living-books/stamp-gesture.ts` — pure, non-ledger preview geometry and stable UUID reordering.
+- `features/living-books/m03-tools.tsx` — visual artwork tray, explicit idempotent confirmation, context-only peel consent.
+- `features/living-books/paper-editor.tsx` — transient unissued stamp preview, paper-edge hit zones, preview exit/reopen and unsaved guards.
+- `features/living-books/page-manager.tsx` — narrow, verified page-turn events, folded corner creation, thumbnail drag reorder.
+- Scoped CSS in `app/(protected)/s/[spaceId]/stamp-books/stamp-books.css` for warm paper/ink look, accessible mobile sheet and reduced motion.
+- `tests/living-v3-ux03-stamp-page.test.mjs` — executes stamp geometry and tests source contracts for the exact RPC/idempotency mechanism, peeling permissions, page-turn safety and stable UUID ordering.
+- CI continues all UX01–UX02 and M01–M05 suites, TypeScript/Next.js Build and ephemeral PostgreSQL 16 RLS/concurrency tests.
+
+**Outstanding before Production release:** true browser/device testing (iOS/Android, mobile drag, long-press, auth with two members, signed photos), and staged hosted Supabase Auth/RLS/Storage E2E. Source tests and CI are not evidence those manual interactions were performed. Follow-up UX04 must address final Rewards/Animation/Accessibility/E2E polish; it is **not started here**.
+
+## Next explicitly authorized milestone: UX04
+
+Finish the bottom-sheet reward workflow, animations/accessibility and comprehensive hosted/browser verification as defined in the master prompt. Do not begin without a new user instruction.
+
+**STOP after UX03. Keep PR #31 Draft.**
