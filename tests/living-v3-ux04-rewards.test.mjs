@@ -60,7 +60,7 @@ const canceled=req('canceled-1','canceled',1,'ดูหนังด้วยก�
 const defaults={
  spaceId:'room',bookId:'book',
  balance:{total:12,available:6,reserved:3,redeemed:2,peeled:1},
- history:[pending,fulfilled,canceled],
+ history:[pending,fulfilled,canceled],pendingCount:1,
  candidates:[{id:'stamp-1',asset_id:'heart',page_id:'page',
   state:'available',granted_at:'2026-11-21T07:00:00Z'}],
  associations:[{redemption_id:'fulfilled-1',mark_id:'stamp-2'}],
@@ -153,7 +153,7 @@ test('UX04 request/resolution uses exact authorized RPCs and immutable idempoten
   'role="group"','aria-label="ยืนยันการดำเนินการกับคำขอ"',
   'จองแสตมป์แล้ว','จำนวนแสตมป์ที่ต้องการแลก',
  ])assert.ok(panelSource.includes(str),'Missing reward integrity: '+str)
- assert.match(pageSource,/pendingRewards=\{owner\?history\.filter/)
+ assert.match(pageSource,/pendingRewards=\{owner\?pendingCount:0\}/)
  assert.doesNotMatch(panelSource,/supabase\.from\(|\.rpc\(/)
 })
 test('UX04 paper motion remains restrained, optional audio and reduced motion accessible',()=>{
