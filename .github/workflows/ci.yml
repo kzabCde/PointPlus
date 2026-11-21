@@ -43,17 +43,9 @@ jobs:
         run: node --test tests/room-security-contract.test.mjs
       - name: Verify v3 database schema proposals
         run: node --test tests/database-v3-contract.test.mjs
-      - name: Verify Stamp Book First contracts
-        run: node --test tests/stamp-book-first-contract.test.mjs
       - name: Verify Living Stamp Book login contracts
         run: node --test tests/living-auth.test.mjs
-      - name: Verify Stamp Book Journal and paper placement
-        run: node --test tests/stamp-book-journal.test.mjs tests/interactive-paper-stampbook.test.mjs
-      - name: Verify Stamp Card / Book choice and shared reward flow
-        run: node --test tests/stamp-card-choice.test.mjs
-      - name: Verify tap-to-stamp card slots and slot RPC
-        run: node --test tests/stamp-card-tap-slots.test.mjs
-      - name: Verify Living Stampbook V3 M01 foundations
+      - name: Verify Living-only Stampbook V3 M01 foundations
         run: node --test tests/living-stampbook-m01.test.mjs
       - name: Verify Living Stampbook V3 M02 page editor
         run: node --test tests/living-stampbook-m02.test.mjs
