@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteLivingElement,saveLivingElement,restoreLivingElement } from './editor-actions'
 import {useLivingEditorStudio} from './editor-studio'
@@ -146,7 +146,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const selectedStamp=marks.find(mark=>mark.id===selectedStampId)??null
   useEffect(()=>{
     if(!toolsOpen&&!stampPanelOpen)return
-    const onEscape=(event:globalThis.KeyboardEvent)=>{
+    const onEscape=(event:KeyboardEvent)=>{
       if(event.key==='Escape'){
         setToolsOpen(false)
         if(!stampPoint)setStampPanelOpen(false)
@@ -557,7 +557,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     }catch{setNotice('การเชื่อมต่อขัดข้อง ไม่สามารถลบวัตถุ')}
     finally{locked.current=false;setBusy(false)}
   }
-  function handleKey(event:KeyboardEvent<HTMLDivElement>){
+  function handleKey(event:ReactKeyboardEvent<HTMLDivElement>){
     if(!editable||locked.current)return
     if((event.target as HTMLElement).closest('textarea,input,select'))return
     if((event.ctrlKey||event.metaKey)&&!event.altKey){
