@@ -23,7 +23,7 @@ export function peekPaperHistory(state:PaperHistory,direction:'undo'|'redo'){
 export function completePaperHistory(state:PaperHistory,direction:'undo'|'redo'):PaperHistory {
   const current=state[direction]
   if(current.length===0)return state
-  const [other,next]=direction==='undo'?['redo','undo']:['undo','redo'] as const
+  const other:'undo'|'redo'=direction==='undo'?'redo':'undo'
   return {
     ...state,[direction]:current.slice(0,-1),
     [other]:[...state[other],current[current.length-1]].slice(-maxPaperUndoDepth),
