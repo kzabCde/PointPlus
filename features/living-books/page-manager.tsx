@@ -87,11 +87,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
       savingRef.current=false;setBusy(false)
     }
   }
-  useEffect(()=>{
-    if(!editable||!unsaved||busy||retryBlocked.current)return
-    const timer=window.setTimeout(()=>{void savePage()},850)
-    return ()=>window.clearTimeout(timer)
-  },[title,background,editable,busy,page.id])
+  // Page title and background remain a local draft until Save is explicitly pressed.
 
   function toggleOverview(){
     if(overviewOpen&&(unsaved||savingRef.current)){
