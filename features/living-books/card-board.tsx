@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import {useEffect,useState,type FormEvent} from 'react'
+import {useEffect,useRef,useState,type FormEvent} from 'react'
 import {useRouter} from 'next/navigation'
 import {pointPlusStamps} from '@/lib/point-plus/assets'
 import {giveLivingStamp,reviewLivingStamp,cancelLivingStampRequest} from './m03-actions'
@@ -29,6 +29,9 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
   const router=useRouter()
   const {columns,rows}=cardGrid(target)
   const [selected,setSelected]=useState<number|null>(null)
+  const sheetRef=useRef<HTMLElement|null>(null)
+  const slotRefs=useRef(new Map<number,HTMLButtonElement>())
+  const submitLock=useRef(false)
   const [asset,setAsset]=useState(pointPlusStamps[0].id)
   const [note,setNote]=useState('')
   const [key,setKey]=useState('')
@@ -36,6 +39,41 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
   const [busy,setBusy]=useState(false)
   const [feedback,setFeedback]=useState('')
   useEffect(()=>setKey(crypto.randomUUID()),[])
+  useEffect(()=>{
+    if(selected===null)return
+    const previouslyFocused=document.activeElement as HTMLElement|null
+    const beforeOverflow=document.body.style.overflow
+    document.body.style.overflow='hidden'
+    sheetRef.current?.focus()
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        event.preventDefault()
+        if(!attempted&&!submitLock.current)setSelected(null)
+      } else if(event.key==='Tab'){
+        const sheet=sheetRef.current
+        if(!sheet)return
+        const focusable=Array.from(sheet.querySelectorAll<HTMLElement>(
+          'button:not([disabled]),input:not([disabled]),textarea:not([disabled]),'+
+          'select:not([disabled]),[tabindex]:not([tabindex="-1"])'
+        )).filter(node=>node.getClientRects().length>0)
+        if(focusable.length===0){event.preventDefault();sheet.focus();return}
+        const first=focusable[0],last=focusable[focusable.length-1]
+        if(!sheet.contains(document.activeElement)){
+          event.preventDefault();(event.shiftKey?last:first).focus()
+        }else if(event.shiftKey&&document.activeElement===first){
+          event.preventDefault();last.focus()
+        }else if(!event.shiftKey&&document.activeElement===last){
+          event.preventDefault();first.focus()
+        }
+      }
+    }
+    document.addEventListener('keydown',onKey,true)
+    return ()=>{
+      document.removeEventListener('keydown',onKey,true)
+      document.body.style.overflow=beforeOverflow
+      if(previouslyFocused?.isConnected)previouslyFocused.focus()
+    }
+  },[selected,attempted])
   const marksBySlot=new Map<number,LivingStampMark>()
   for(const mark of marks){
     const slot=slotNumber(Number(mark.position_x),Number(mark.position_y),target)
@@ -50,8 +88,9 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
 
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault()
-    if(!active||!canGive||!selected||busy||!key)return
+    if(!active||!canGive||!selected||busy||!key||submitLock.current)return
     if(marksBySlot.has(selected)||pendingBySlot.has(selected))return
+    submitLock.current=true
     setBusy(true);setAttempted(true);setFeedback('')
     const index=selected-1
     const x=Number(((index%columns+0.5)/columns).toFixed(4))
@@ -68,7 +107,7 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
       }else if(result.conflict){router.refresh()}
     } catch {
       setFeedback('ยังไม่ทราบผลการส่งคำขอ กรุณาตรวจสอบสมุดแล้วลองซ้ำด้วยข้อมูลเดิม')
-    } finally {setBusy(false)}
+    } finally {submitLock.current=false;setBusy(false)}
   }
   async function review(requestId:string,approve:boolean){
     if(busy||!canReview)return
@@ -91,65 +130,115 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
     finally{setBusy(false)}
   }
 
-  return <section className="card" aria-label="การ์ดสะสมช่องหมายเลข">
-    <header>
-      <h3>การ์ดสะสม {occupied} / {target} ช่อง</h3>
-      <p>รางวัลเมื่อครบ: <strong>{reward}</strong></p>
-      <p className="muted">เลือกช่องว่างเพื่อให้แสตมป์จริง ช่องที่รออนุมัติจะถูกจองไว้</p>
+  return <section className="living-card-sheet" aria-label="การ์ดสะสมแบบแตะช่อง">
+    <header className="living-card-heading">
+      <span className="living-card-kicker">POINT+ / STAMP CARD</span>
+      <h2>การ์ดแห่งความทรงจำ</h2>
+      <p className="living-card-progress" role="status">
+        <strong>{marksBySlot.size}</strong> / {target} ดวง
+      </p>
+      <p className="living-card-reward">ครบแล้วแลก: <strong>{reward}</strong></p>
+      {canGive&&active&&<p className="living-card-hint">แตะช่องว่างเพื่อเลือกแสตมป์</p>}
     </header>
-    <div role="group" aria-label="ช่องแสตมป์"
-      style={{display:'grid',gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`,gap:10}}>
+
+    <div className="living-card-slots" role="group" aria-label="ช่องสะสมแสตมป์"
+      style={{gridTemplateColumns:'repeat('+columns+',minmax(0,1fr))'}}>
       {Array.from({length:target},(_,index)=>{
         const slot=index+1
         const mark=marksBySlot.get(slot)
         const pending=pendingBySlot.get(slot)
         const art=mark&&pointPlusStamps.find(a=>a.id===mark.asset_id)
-        const label=mark?`ช่อง ${slot}: ${mark.state==='peeled'?'ลอกแล้ว':mark.state==='redeemed'?'แลกแล้ว':'ได้รับแสตมป์'}`:
-          pending?`ช่อง ${slot}: รออนุมัติ`:`ช่อง ${slot}: ว่าง`
-        return <button type="button" key={slot}
-          className="button button--secondary" aria-label={label}
-          aria-pressed={selected===slot}
-          disabled={!canGive||!active||!!mark||!!pending||attempted||busy}
-          onClick={()=>{setSelected(slot);setFeedback('')}}
-          style={{minHeight:90,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5}}>
-          <span aria-hidden="true">{slot}</span>
-          {art?<Image src={art.png} alt="" width={44} height={44}/>:
-            <span aria-hidden="true">{pending?'⌛':selected===slot?'✿':'○'}</span>}
-          {mark&&<small>{mark.state==='available'?'สะสมแล้ว':mark.state==='peeled'?'ลอกแล้ว':'ใช้แล้ว'}</small>}
+        const label=mark?'ช่อง '+slot+': '+(mark.state==='peeled'?'ลอกแล้ว':
+          mark.state==='redeemed'?'แลกแล้ว':mark.state==='reserved'?'จองแลกแล้ว':'ได้รับแสตมป์'):
+          pending?'ช่อง '+slot+': รออนุมัติ':'ช่อง '+slot+': ว่าง'
+        const disabled=!canGive||!active||!!mark||!!pending||busy||attempted
+        return <button type="button" key={slot} ref={node=>{
+            if(node)slotRefs.current.set(slot,node)
+            else slotRefs.current.delete(slot)
+          }}
+          className="living-card-slot" data-state={mark?.state??(pending?'pending':'empty')}
+          aria-label={label} aria-pressed={selected===slot}
+          disabled={disabled}
+          onClick={()=>{setSelected(slot);setAsset(pointPlusStamps[0].id);setFeedback('')}}>
+          <span className="living-card-slot-number" aria-hidden="true">{slot}</span>
+          {art?<Image src={art.png} alt="" width={62} height={62}/>:
+            <span className="living-card-empty-glyph" aria-hidden="true">{pending?'⌛':'✳'}</span>}
+          {mark&&mark.state!=='available'&&
+            <small className="living-card-slot-state">{mark.state==='peeled'?'ลอกแล้ว':'ใช้แล้ว'}</small>}
+          {pending&&<small className="living-card-slot-state">รออนุมัติ</small>}
         </button>
       })}
     </div>
-    {selected&&canGive&&active&&<form onSubmit={event=>void submit(event)}
-      style={{display:'grid',gap:10,marginTop:16}}>
-      <h4>แปะแสตมป์ช่อง {selected}</h4>
-      <label htmlFor="living-card-art">ลายแสตมป์</label>
-      <select id="living-card-art" className="input" value={asset} disabled={attempted||busy}
-        onChange={event=>setAsset(event.target.value)}>
-        {pointPlusStamps.map(a=><option key={a.id} value={a.id}>{a.nameTh}</option>)}
-      </select>
-      <label htmlFor="living-card-note">ข้อความสั้น ๆ (ไม่บังคับ)</label>
-      <textarea id="living-card-note" className="input" rows={2} maxLength={1000}
-        value={note} disabled={attempted||busy}
-        onChange={event=>setNote(event.target.value)}/>
-      <button className="button button--primary" type="submit" disabled={busy||!key}>
-        {busy?'กำลังบันทึก…':attempted?'ตรวจสอบและยืนยันคำขอเดิม':'ยืนยันให้แสตมป์'}
-      </button>
-      <p className="muted">{attempted
-        ?'หากผลไม่ชัดเจน ให้ตรวจสอบสถานะช่องก่อนเริ่มรายการใหม่ เพื่อป้องกันแสตมป์ซ้ำ'
-        :'แสตมป์จริงจะถูกบันทึกในประวัติหลังยืนยันเท่านั้น'}</p>
-    </form>}
-    {requests.length>0&&<section aria-label="คำขอแสตมป์รออนุมัติ">
-      <h4>คำขอที่รออนุมัติ</h4>
-      {requests.map(request=><div key={request.id}>
-        <p>ช่อง {slotNumber(Number(request.position_x),Number(request.position_y),target)??'?'} · {pointPlusStamps.find(a=>a.id===request.asset_id)?.nameTh??'แสตมป์'}</p>
-        {canReview&&<><button className="button button--primary" type="button" disabled={busy}
-          onClick={()=>void review(request.id,true)}>อนุมัติ</button>
+
+    {requests.length>0&&<details className="living-card-requests">
+      <summary>คำขอแสตมป์ที่รออนุมัติ ({requests.length})</summary>
+      {requests.map(request=><div className="living-card-request" key={request.id}>
+        <p>ช่อง {slotNumber(Number(request.position_x),Number(request.position_y),target)??'?'}
+          {' · '}{pointPlusStamps.find(a=>a.id===request.asset_id)?.nameTh??'แสตมป์'}</p>
+        {canReview&&<div className="living-card-request-actions">
+          <button className="button button--primary" type="button" disabled={busy}
+            onClick={()=>void review(request.id,true)}>อนุมัติ</button>
           <button className="button button--secondary" type="button" disabled={busy}
-          onClick={()=>void review(request.id,false)}>ปฏิเสธ</button></>}
-        {request.giver_user_id===userId&&<button className="button button--secondary" type="button"
-          disabled={busy} onClick={()=>void cancel(request.id)}>ยกเลิกคำขอ</button>}
+            onClick={()=>void review(request.id,false)}>ปฏิเสธ</button>
+        </div>}
+        {request.giver_user_id===userId&&<button className="button button--secondary"
+          type="button" disabled={busy} onClick={()=>void cancel(request.id)}>
+          ยกเลิกคำขอ
+        </button>}
       </div>)}
-    </section>}
-    {feedback&&<p role="status">{feedback}</p>}
+    </details>}
+
+    {feedback&&<p className="living-card-feedback" role="status">{feedback}</p>}
+    {selected!==null&&canGive&&active&&<div className="living-card-overlay">
+      <button type="button" className="living-card-backdrop" tabIndex={-1}
+        aria-label="ปิดถาดเลือกแสตมป์"
+        disabled={busy||attempted} onClick={()=>setSelected(null)}/>
+      <section ref={sheetRef} role="dialog" aria-modal="true" tabIndex={-1}
+        aria-labelledby="living-card-dialog-heading" className="living-card-tray">
+        <header className="living-card-tray-title">
+          <div>
+            <small>STAMP / {selected.toString().padStart(2,'0')}</small>
+            <h3 id="living-card-dialog-heading">แสตมป์ช่อง {selected}</h3>
+          </div>
+          <button type="button" className="living-reader-close"
+            aria-label="ปิดถาดเลือกแสตมป์"
+            disabled={busy||attempted} onClick={()=>setSelected(null)}>✕</button>
+        </header>
+        <form onSubmit={event=>void submit(event)} className="living-card-stamp-form">
+          <fieldset disabled={busy||attempted}>
+            <legend>เลือกลายแสตมป์</legend>
+            <div className="living-card-art-tray">
+              {pointPlusStamps.map(art=><button type="button" key={art.id}
+                className="living-card-art-choice" aria-label={art.nameTh}
+                aria-pressed={asset===art.id} onClick={()=>setAsset(art.id)}>
+                <Image src={art.png} alt="" width={64} height={64}/>
+                <span>{art.nameTh}</span>
+              </button>)}
+            </div>
+            <label className="living-card-note">ข้อความสั้น ๆ (ไม่บังคับ)
+              <textarea className="input" rows={2} maxLength={1000}
+                value={note} onChange={event=>setNote(event.target.value)}/>
+            </label>
+          </fieldset>
+          {attempted&&<p role="status" className="living-card-retry-note">
+            คำขอนี้อาจถึงระบบแล้ว ลองยืนยันซ้ำด้วยรหัสเดิม หรือตรวจสอบสถานะก่อนเริ่มใหม่
+          </p>}
+          {feedback&&<p role="status" className="living-card-feedback">{feedback}</p>}
+          <div className="living-card-tray-actions">
+            {!attempted&&<button type="button" className="button button--secondary"
+              disabled={busy} onClick={()=>setSelected(null)}>กลับไปที่การ์ด</button>}
+            <button className="button button--primary" type="submit" disabled={busy||!key}>
+              {busy?'กำลังประทับ…':attempted?'ลองยืนยันคำขอเดิม':'ยืนยันให้แสตมป์'}
+            </button>
+            {attempted&&<button type="button" className="button button--secondary"
+              disabled={busy} onClick={()=>{
+                if(!window.confirm('ตรวจสอบสถานะช่องและประวัติแล้วใช่ไหม? คำขอใหม่อาจทำรายการซ้ำได้'))return
+                setKey(crypto.randomUUID());setAttempted(false);setNote('');setSelected(null)
+                router.refresh()
+              }}>ตรวจสอบแล้ว ปิดคำขอนี้</button>}
+          </div>
+        </form>
+      </section>
+    </div>}
   </section>
 }
