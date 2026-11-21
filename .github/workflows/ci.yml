@@ -67,6 +67,8 @@ jobs:
         run: node --test tests/living-stampbook-m05.test.mjs
       - name: Syntax check isolated hosted two-account E2E (no credentials or deployment)
         run: node --check tests/e2e/living-v3-hosted.test.mjs
+      - name: Verify Buttonless V3 card visual and ledger interaction contracts
+        run: node --test tests/living-v3-card-buttonless.test.mjs
       - name: Verify UX01 Paper First layout and preserved interactions
         run: node --test tests/living-v3-ux01-paper-first.test.mjs
       - name: Verify UX02 Contextual Editing and normalized transform geometry
