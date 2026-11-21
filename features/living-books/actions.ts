@@ -11,7 +11,6 @@ export type LivingActionState = {
   bookId?: string
   pageId?: string
 }
-export const livingIdle: LivingActionState = {status:'idle',message:''}
 const fail = (message:string):LivingActionState => ({status:'error',message})
 const text = (data:FormData,name:string) => field(data,name)
 
