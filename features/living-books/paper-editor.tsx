@@ -198,6 +198,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     }
     if(tool==='text'){if(!element)newText(p.x,p.y);return}
     if(tool==='select'){
+      setSelectedStampId(null)
       setSelectedId(element?.id??null)
       if(!element)return
       gesture.current={mode:'move',id:event.pointerId,startX:event.clientX,
@@ -362,7 +363,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       {editable&&<div className="living-editor-toolset" role="group" aria-label="เลือกเครื่องมือ">
         {toolLabels.filter(item=>item.tool!=='stamp'||canGive).map(item=><button key={item.tool} type="button"
           className="button button--secondary" aria-pressed={tool===item.tool}
-          disabled={busy} onClick={()=>{setTool(item.tool);setSelectedId(null)}}>
+          disabled={busy} onClick={()=>{setTool(item.tool);setSelectedId(null);setSelectedStampId(null)}}>
           {item.label}
         </button>)}
       </div>}
