@@ -115,9 +115,10 @@ CREATE POLICY living_elements_room_member_read
 CREATE FUNCTION public.pointplus_update_living_book_page(
   p_book uuid,p_page uuid,p_title text,p_background text,p_expected_version bigint
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $fn$
-DECLARE v_uid uuid:=auth.uid();
-DECLARE v_book public.living_books%ROWTYPE;
-DECLARE v_page public.living_book_pages%ROWTYPE;
+DECLARE
+  v_uid uuid := auth.uid();
+  v_book public.living_books%ROWTYPE;
+  v_page public.living_book_pages%ROWTYPE;
 BEGIN
   IF v_uid IS NULL OR p_book IS NULL OR p_page IS NULL OR p_expected_version IS NULL
      OR p_expected_version<1 OR length(coalesce(p_title,''))>160
@@ -150,9 +151,10 @@ CREATE FUNCTION public.pointplus_save_living_book_element(
   p_x numeric,p_y numeric,p_width numeric,p_height numeric,p_rotation numeric,
   p_opacity numeric,p_z integer,p_expected_version bigint
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $fn$
-DECLARE v_uid uuid:=auth.uid();
-DECLARE v_book public.living_books%ROWTYPE;
-DECLARE v_element public.living_book_elements%ROWTYPE;
+DECLARE
+  v_uid uuid := auth.uid();
+  v_book public.living_books%ROWTYPE;
+  v_element public.living_book_elements%ROWTYPE;
 BEGIN
   IF v_uid IS NULL OR p_book IS NULL OR p_page IS NULL OR p_element IS NULL
      OR p_expected_version IS NULL OR p_expected_version<0
@@ -206,9 +208,10 @@ END $fn$;
 CREATE FUNCTION public.pointplus_delete_living_book_element(
   p_book uuid,p_page uuid,p_element uuid,p_expected_version bigint
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $fn$
-DECLARE v_uid uuid:=auth.uid();
-DECLARE v_book public.living_books%ROWTYPE;
-DECLARE v_element public.living_book_elements%ROWTYPE;
+DECLARE
+  v_uid uuid := auth.uid();
+  v_book public.living_books%ROWTYPE;
+  v_element public.living_book_elements%ROWTYPE;
 BEGIN
   IF v_uid IS NULL OR p_book IS NULL OR p_page IS NULL OR p_element IS NULL
      OR p_expected_version IS NULL OR p_expected_version<1
