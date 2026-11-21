@@ -87,6 +87,8 @@ jobs:
         run: node --check tests/e2e/living-v3-card-buttonless-browser.mjs
       - name: Verify M01 Fast Stamp authorized shelf and retry-safe issue contracts
         run: node --test tests/fast-stamp-m01.test.mjs
+      - name: Verify M02 page-only Reader, card SSR, lazy Editor and rewards
+        run: node --test tests/fast-stamp-m02-reader.test.mjs
       - name: Verify Server Action runtime exports (prevents client form 500)
         run: node --test tests/server-action-export-boundary.test.mjs
       - name: Typecheck
