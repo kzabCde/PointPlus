@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { loadLivingBookDetail, loadLivingEditorData } from '@/features/living-books/data'
+import { loadLivingBookDetail, loadLivingEditorData,loadLivingPageMedia } from '@/features/living-books/data'
 import { LivingPageManager } from '@/features/living-books/page-manager'
 import { LivingPaperEditor } from '@/features/living-books/paper-editor'
 import { BookCover } from '@/features/stamp-books/presentation'
@@ -18,7 +18,11 @@ export default async function LivingBookPage({params,searchParams}:{
     loadLivingEditorData(spaceId,bookId,typeof requestedPage==='string'?requestedPage:undefined),
   ])
   if(book.space_id!==spaceId)notFound()
+  const {marks,requests,imageUrls,canGive}=await loadLivingPageMedia(spaceId,bookId,page.id)
   const recipient=people.find(p=>p.id===book.recipient_participant_id)
+  const canReview=Boolean(recipient?.user_id===context.user.id||
+    (!recipient?.user_id&&['owner','admin'].includes(context.member.role)))&&
+    context.user.id!==book.owner_user_id
   const owner=context.user.id===book.owner_user_id
   return <section className="stamp-book-page living-book-detail">
     <Link className="text-link" href={'/s/'+spaceId+'/stamp-books'}>← กลับไปการสะสม</Link>
@@ -41,7 +45,10 @@ export default async function LivingBookPage({params,searchParams}:{
       <LivingPageManager spaceId={spaceId} bookId={bookId} pages={pages}
         page={page} editable={owner && book.status==='active'}/>
       <LivingPaperEditor key={page.id} spaceId={spaceId} bookId={bookId}
-        page={page} initialElements={elements} editable={owner && book.status==='active'}/>
+        page={page} initialElements={elements} editable={owner && book.status==='active'}
+        initialMarks={marks} initialRequests={requests} imageUrls={imageUrls}
+        canGive={canGive&&book.status==='active'} canReview={canReview&&book.status==='active'}
+        userId={context.user.id} pages={pages}/>
     </div>
     {!owner && <p className="muted">คุณสามารถดูความทรงจำได้ เจ้าของสมุดเท่านั้นที่เพิ่มหน้าและแก้ไขกระดาษได้</p>}
   </section>
