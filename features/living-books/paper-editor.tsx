@@ -164,6 +164,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const [stampArtworkId,setStampArtworkId]=useState(pointPlusStamps[0].id)
   const [stampPreview,setStampPreview]=useState<StampDraft|null>(null)
   const [stampAttempted,setStampAttempted]=useState(false)
+  const edgeSwipe=useRef<{side:'prev'|'next';x:number;y:number}|null>(null)
+  const suppressEdgeClick=useRef(false)
   const [selectedStampId,setSelectedStampId]=useState<string|null>(null)
   useEffect(()=>{
     if(!locked.current&&draftEdits.current.size===0){
@@ -222,8 +224,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   },[toolsOpen,stampPanelOpen,stampPoint])
 
   useEffect(()=>{
-    studio?.setPaperUnsaved(dirty||busy)
-  },[dirty,busy,studio?.setPaperUnsaved])
+    studio?.setPaperUnsaved(dirty||busy||!!stampPreview)
+  },[dirty,busy,stampPreview,studio?.setPaperUnsaved])
   useEffect(()=>()=>studio?.setPaperUnsaved(false),[studio?.setPaperUnsaved])
   useEffect(()=>{
     if(!dirty&&!busy)return
@@ -688,7 +690,21 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     }catch{setNotice('การเชื่อมต่อขัดข้อง ไม่สามารถลบวัตถุ')}
     finally{locked.current=false;setBusy(false)}
   }
+  function emitPageTurn(direction:-1|1){
+    if(tool!=='select'||stampPreview||selected||selectedStampId||busy||dirty||
+      draftEdits.current.size>0)return
+    window.dispatchEvent(new CustomEvent('pointplus:living-page-turn',{
+      detail:{pageId:page.id,direction},
+    }))
+  }
   function handleKey(event:ReactKeyboardEvent<HTMLDivElement>){
+    if(event.target===event.currentTarget&&tool==='select'&&!selected&&!selectedStampId&&
+      (event.key==='ArrowLeft'||event.key==='ArrowRight')&&
+      !event.altKey&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey){
+      event.preventDefault()
+      emitPageTurn(event.key==='ArrowRight'?1:-1)
+      return
+    }
     if(!editable||locked.current)return
     if((event.target as HTMLElement).closest('textarea,input,select,[data-context-toolbar]'))return
     if((event.ctrlKey||event.metaKey)&&!event.altKey){
@@ -876,6 +892,38 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         if(!event.currentTarget.contains(event.relatedTarget as Node))setDropActive(false)
       }}
       onDrop={event=>{void handlePhotoDrop(event)}}>
+      {tool==='select'&&!selected&&!selectedStampId&&!stampPreview&&
+        <div className="living-page-edge-actions" aria-label="พลิกหน้าจากริมกระดาษ">
+          {(['prev','next'] as const).map(side=><button key={side} type="button"
+            className={'living-page-edge living-page-edge--'+side}
+            data-living-page-edge={side}
+            aria-label={side==='prev'?'พลิกไปหน้าก่อนหน้า':'พลิกไปหน้าถัดไป'}
+            title={side==='prev'?'หน้าก่อนหน้า':'หน้าถัดไป'}
+            onTouchStart={event=>{
+              const touch=event.touches[0]
+              if(touch)edgeSwipe.current={side,x:touch.clientX,y:touch.clientY}
+            }}
+            onTouchEnd={event=>{
+              const begin=edgeSwipe.current
+              edgeSwipe.current=null
+              const touch=event.changedTouches[0]
+              if(!begin||!touch||begin.side!==side)return
+              const dx=touch.clientX-begin.x,dy=touch.clientY-begin.y
+              if(Math.abs(dx)>=70&&Math.abs(dy)<Math.abs(dx)*.55&&
+                (side==='prev'?dx>0:dx<0)){
+                event.preventDefault()
+                suppressEdgeClick.current=true
+                emitPageTurn(side==='prev'?-1:1)
+                window.setTimeout(()=>{suppressEdgeClick.current=false},400)
+              }
+            }}
+            onClick={event=>{
+              if(suppressEdgeClick.current){event.preventDefault();return}
+              emitPageTurn(side==='prev'?-1:1)
+            }}>
+            <span aria-hidden="true">{side==='prev'?'‹':'›'}</span>
+          </button>)}
+        </div>}
       <div ref={canvas} className="living-editor-paper" data-background={page.background_style}
         data-tool={tool} data-editable={editable}
         style={{width:(zoom*100)+'%'}}
