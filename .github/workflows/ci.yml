@@ -65,6 +65,8 @@ jobs:
         run: node --test tests/living-v3-ux01-paper-first.test.mjs
       - name: Verify UX02 Contextual Editing and normalized transform geometry
         run: node --test tests/living-v3-ux02-contextual.test.mjs
+      - name: Verify UX03 stamp previews, guarded page turns and ledger invariants
+        run: node --test tests/living-v3-ux03-stamp-page.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
