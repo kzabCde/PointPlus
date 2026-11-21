@@ -8,7 +8,7 @@ import { LivingBookShelf } from '@/features/living-books/shelf'
 
 export default async function RoomHomePage({ params }: { params: Promise<{ spaceId: string }> }) {
   const { spaceId } = await params
-  const {context, books, people}=await loadLivingBookShelf(spaceId)
+  const {context, books, people, giverBookIds}=await loadLivingBookShelf(spaceId)
   const canCreate=context.space.kind==='couple'||canManage(context.member.role)
   const base='/s/'+spaceId+'/stamp-books'
   const current=books.filter(book=>book.status==='active')
@@ -18,7 +18,8 @@ export default async function RoomHomePage({ params }: { params: Promise<{ space
     {current.length>0
       ? <section className="stationery-stack" aria-label="สมุดและการ์ดที่กำลังสะสม">
           <h3 className="shelf-heading">การสะสมของเรา</h3>
-          <LivingBookShelf books={current} people={people} base={base}/>
+          <LivingBookShelf books={current} people={people} base={base}
+            spaceId={spaceId} giverBookIds={giverBookIds}/>
         </section>
       : <div className="room-book-feature">
           <Image src={roomArt[context.space.kind]} alt="" width={86} height={86}/>
