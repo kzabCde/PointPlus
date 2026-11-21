@@ -57,13 +57,15 @@ jobs:
         run: node --test tests/living-stampbook-m01.test.mjs
       - name: Verify Living Stampbook V3 M02 page editor
         run: node --test tests/living-stampbook-m02.test.mjs
+      - name: Verify Living Stampbook V3 M03 images and real stamps
+        run: node --test tests/living-stampbook-m03.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
         run: npm run build
 
   verify-living-migrations:
-    name: Living M01 + M02 PostgreSQL migration and RLS tests
+    name: Living M01–M03 PostgreSQL migrations and RLS tests
     if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3'
     runs-on: ubuntu-latest
     services:
@@ -97,3 +99,9 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/17_living_stampbook_v3_m02_editor.sql
       - name: Verify 100+ pages, editing, permissions and RLS
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m02-assertions.sql
+      - name: Set up isolated Storage fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m03-storage-fixture.sql
+      - name: Apply M03 migration on isolated database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/18_living_stampbook_v3_m03_photos_stamps.sql
+      - name: Verify private photos, real stamp permissions, idempotency and peel history
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m03-assertions.sql
