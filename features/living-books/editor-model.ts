@@ -1,5 +1,5 @@
 export type PaperBackground = 'cream' | 'white' | 'lined' | 'grid' | 'kraft'
-export type EditorTool = 'select' | 'text' | 'pen' | 'eraser'
+export type EditorTool = 'select' | 'text' | 'pen' | 'eraser' | 'hand'
 export type Point = {x:number;y:number}
 export type EditorText = {
   text:string;fontSize:number;color:string;fontFamily:'sans'|'serif'|'mono'
