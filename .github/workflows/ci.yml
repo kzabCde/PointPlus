@@ -59,6 +59,8 @@ jobs:
         run: node --test tests/living-stampbook-m02.test.mjs
       - name: Verify Living Stampbook V3 M03 images and real stamps
         run: node --test tests/living-stampbook-m03.test.mjs
+      - name: Verify Living Stampbook V3 M04 flexible redemption
+        run: node --test tests/living-stampbook-m04.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
@@ -107,3 +109,5 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m03-assertions.sql
       - name: Apply M04 flexible redemption migration on isolated database
         run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/19_living_stampbook_v3_m04_redemptions.sql
+      - name: Verify partial claims, reserved/used marks and authorization
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m04-assertions.sql
