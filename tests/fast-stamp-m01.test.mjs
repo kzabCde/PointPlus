@@ -42,7 +42,9 @@ function harness({allowed=true,cardTarget=6,occupied=[2]}={}){
       select:()=>chain,eq:()=>chain,order:()=>chain,in:()=>chain,
       not:()=>chain,
       maybeSingle:async()=>({data:rows[name]??null,error:null}),
-      limit:async()=>({data:rows[name]??[],error:null}),
+      limit:()=>chain,
+      then:(resolve,reject)=>Promise.resolve({data:rows[name]??[],error:null})
+        .then(resolve,reject),
     }
     return chain
   }
