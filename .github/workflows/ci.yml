@@ -91,6 +91,12 @@ jobs:
         run: node --test tests/fast-stamp-m02-reader.test.mjs
       - name: Verify M03 Fast Creation, immutable retries and atomic RPC contracts
         run: node --test tests/fast-stamp-m03-creation.test.mjs
+      - name: Verify M04 performance statistics and Staging isolation guard
+        run: node --test tests/m04-performance-verification.test.mjs
+      - name: Syntax check M04 isolated two-account Staging browser harness (no credentials)
+        run: node --check tests/e2e/fast-stamp-m04-staging.mjs
+      - name: Syntax check M04 metrics CLI and Staging guard
+        run: node --check scripts/m04-performance-summary.mjs && node --check tests/e2e/m04-staging-guard.mjs
       - name: Verify Server Action runtime exports (prevents client form 500)
         run: node --test tests/server-action-export-boundary.test.mjs
       - name: Typecheck
