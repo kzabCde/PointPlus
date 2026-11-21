@@ -33,7 +33,7 @@ function PaperObject({item,selected,editable}:{
     left:(item.position_x*100)+'%',top:(item.position_y*100)+'%',
     width:(item.width*100)+'%',height:(item.height*100)+'%',
     transform:'rotate('+item.rotation_deg+'deg)',opacity:item.opacity,
-    zIndex:item.z_index,
+    zIndex:item.z_index+1000000,
   }
   if(item.element_type==='text') {
     const p=item.payload as EditorText
@@ -225,8 +225,16 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable}
     finally{locked.current=false;setBusy(false)}
   }
   function handleKey(event:KeyboardEvent<HTMLDivElement>){
-    if(!editable||!selected||locked.current)return
+    if(!editable||locked.current)return
     if((event.target as HTMLElement).closest('textarea,input,select'))return
+    const focused=(event.target as Element).closest<HTMLElement>('[data-editor-id]')
+    if((event.key==='Enter'||event.key===' ')&&focused){
+      event.preventDefault()
+      setSelectedId(focused.dataset.editorId??null)
+      setTool('select')
+      return
+    }
+    if(!selected)return
     if(event.key==='Escape'){setSelectedId(null);return}
     if(event.key==='Delete'||event.key==='Backspace'){
       event.preventDefault()
