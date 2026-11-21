@@ -44,7 +44,7 @@ export async function saveLivingPaperBatch(input:{
           element,expectedVersion,
         })
       return {id:element.id,ok:result.ok,version:result.data?.version,
-        error:result.ok?undefined:('error' in result?result.error:result.message),
+        error:result.ok?undefined:('message' in result?result.message:result.error),
         conflict:result.conflict}
     }catch{
       return {id:element.id,ok:false,
