@@ -9,6 +9,7 @@ DECLARE
  v_text uuid;
  v_photo uuid;
  v_photo_version bigint;
+ v_text_payload jsonb;
  v_deleted_version bigint;
  v_restored jsonb;
  v_mark_count bigint;
@@ -99,14 +100,15 @@ BEGIN
      '{"text":"M05 paper undo","fontSize":24,"color":"#774455","fontFamily":"sans","align":"left","bold":false,"italic":false}'::jsonb,
      .3,.35,.4,.15,0,1,0,0);
  END IF;
- SELECT page_id INTO v_page FROM public.living_book_elements WHERE id=v_text;
+ SELECT page_id,payload INTO v_page,v_text_payload
+ FROM public.living_book_elements WHERE id=v_text;
  SELECT version INTO v_photo_version FROM public.living_book_elements WHERE id=v_text;
  PERFORM public.pointplus_delete_living_book_element(v_book,v_page,v_text,v_photo_version);
  SELECT version INTO v_deleted_version FROM public.living_book_elements WHERE id=v_text;
  PERFORM public.pointplus_restore_living_book_element(v_book,v_page,v_text,v_deleted_version);
- IF (SELECT payload->>'text' FROM public.living_book_elements WHERE id=v_text)<>'M05 paper undo'
-   AND (SELECT payload->>'text' FROM public.living_book_elements WHERE id=v_text) IS NULL
- THEN RAISE EXCEPTION 'Text payload lost on restore'; END IF;
+ IF (SELECT payload FROM public.living_book_elements WHERE id=v_text)
+      IS DISTINCT FROM v_text_payload
+ THEN RAISE EXCEPTION 'Original text payload was changed during restore'; END IF;
 
  -- Undo is strictly for paper decorations: no stamp, redemption or audit mutation.
  IF (SELECT count(*) FROM public.living_stamp_marks WHERE book_id=v_book)<>v_mark_count OR
