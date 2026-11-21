@@ -18,11 +18,15 @@ export function LivingStampOverlay({marks,pending,selectedId,onSelect,selectable
     {marks.map(mark=>{
       const artwork=stampArtwork.get(mark.asset_id)
       const peeled=mark.state==='peeled'
+      const used=mark.state==='redeemed'
+      const reserved=mark.state==='reserved'
       return <button type="button" key={mark.id} data-living-stamp-id={mark.id}
         className="living-real-stamp" data-peeled={peeled}
+        data-used={used} data-reserved={reserved}
         aria-pressed={mark.id===selectedId} disabled={!selectable}
-        aria-label={peeled?'รอยแสตมป์ที่ลอกแล้ว':(artwork?.nameTh??'แสตมป์')+
-          ' · ยังใช้ได้ · เลือกเพื่อดูรายละเอียด'}
+        aria-label={peeled?'รอยแสตมป์ที่ลอกแล้ว':
+          used?'แสตมป์แลกแล้ว ใช้ซ้ำไม่ได้':reserved?'แสตมป์จองไว้รอส่งมอบ':
+          (artwork?.nameTh??'แสตมป์')+' · ยังใช้ได้ · เลือกเพื่อดูรายละเอียด'}
         title={mark.note??artwork?.nameTh??'แสตมป์'}
         style={{left:mark.position_x*100+'%',top:mark.position_y*100+'%',
           width:stampSize(mark.scale_factor)+'%',
@@ -31,6 +35,8 @@ export function LivingStampOverlay({marks,pending,selectedId,onSelect,selectable
         {artwork&&<Image src={artwork.png} alt="" width={128} height={128}
           className="living-real-stamp__image" draggable={false}/>}
         {peeled&&<span className="living-real-stamp__trace">ลอกแล้ว</span>}
+        {used&&<span className="living-real-stamp__used">แลกแล้ว</span>}
+        {reserved&&<span className="living-real-stamp__reserved">จองไว้</span>}
       </button>
     })}
     {pending.map(request=>{
@@ -143,7 +149,7 @@ export function LivingStampTools({
   return <section className="living-stamp-toolbox" aria-label="แสตมป์และประวัติการสะสม">
     <header>
       <h3>แสตมป์ของเล่มนี้</h3>
-      <p>ใช้ได้ {available} ดวง · ลอกแล้ว {marks.filter(m=>m.state==='peeled').length} ดวง
+      <p>บนหน้านี้: ใช้ได้ {available} ดวง · จองอยู่ {marks.filter(m=>m.state==='reserved').length} ดวง · แลกแล้ว {marks.filter(m=>m.state==='redeemed').length} ดวง · ลอกแล้ว {marks.filter(m=>m.state==='peeled').length} ดวง
         {pending.length>0?' · รออนุมัติ '+pending.length+' ดวง':''}</p>
     </header>
     {placement&&canGive&&<form onSubmit={give} className="living-stamp-form">
@@ -178,7 +184,9 @@ export function LivingStampTools({
     {mark&&<div className="living-stamp-inspector">
       <h4>แสตมป์ {stampArtwork.get(mark.asset_id)?.nameTh??mark.asset_id}</h4>
       {mark.note&&<p>“{mark.note}”</p>}
-      <p>{mark.state==='peeled'?'ลอกแล้ว · ไม่สามารถใช้แลกรางวัล': 'ยังใช้ได้'}</p>
+      <p>{mark.state==='peeled'?'ลอกแล้ว · ไม่สามารถใช้แลกรางวัล':
+        mark.state==='reserved'?'จองไว้สำหรับคำขอแลกรางวัล · ย้ายและลอกไม่ได้':
+        mark.state==='redeemed'?'แลกแล้ว · ไม่สามารถนำไปใช้อีก':'ยังใช้ได้'}</p>
       {selectedIsEditable&&<>
         <label>หน้า
           <select className="input" disabled={busy} value={targetPage}
