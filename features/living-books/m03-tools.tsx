@@ -9,6 +9,7 @@ import {giveLivingStamp,reviewLivingStamp,cancelLivingStampRequest,
 import {stampArtwork,type LivingStampMark,type LivingStampRequest} from './stamp-model'
 import {emitPaperCue} from './paper-sound'
 import type {Point,LivingEditorPage} from './editor-model'
+import {stampDraftValid,type StampDraft} from './stamp-gesture'
 
 type Context={spaceId:string;bookId:string;pageId:string}
 type OverlayProps={marks:LivingStampMark[];pending:LivingStampRequest[];
@@ -57,54 +58,72 @@ export function LivingStampOverlay({marks,pending,selectedId,onSelect,selectable
 }
 
 export function LivingStampTools({
-  spaceId,bookId,pageId,placement,mark,marks,pending,
-  pages,canGive,canEdit,canReview,userId,onComplete,onCancelPlacement,
+  spaceId,bookId,pageId,placement,preview,onPreviewChange,
+  selectedArtwork,onSelectArtwork,onBeginPlacement,onPlacementAttempt,
+  mark,marks,pending,pages,canGive,canEdit,canReview,userId,onComplete,onCancelPlacement,
 }:Context&{
-  placement:Point|null;mark:LivingStampMark|null;marks:LivingStampMark[];
-  pending:LivingStampRequest[];pages:LivingEditorPage[];
-  canGive:boolean;canEdit:boolean;canReview:boolean;userId:string;
-  onComplete:()=>void;onCancelPlacement:()=>void;
+  placement:Point|null;preview:StampDraft|null
+  onPreviewChange:(next:StampDraft)=>void;selectedArtwork:string
+  onSelectArtwork:(id:string)=>void;onBeginPlacement:()=>void
+  onPlacementAttempt:()=>void
+  mark:LivingStampMark|null;marks:LivingStampMark[]
+  pending:LivingStampRequest[];pages:LivingEditorPage[]
+  canGive:boolean;canEdit:boolean;canReview:boolean;userId:string
+  onComplete:()=>void;onCancelPlacement:()=>void
 }){
   const router=useRouter()
-  const [art,setArt]=useState(pointPlusStamps[0].id)
   const [note,setNote]=useState('')
   const [key,setKey]=useState('')
+  const previouslyPlacing=useRef(false)
+  const inFlight=useRef(false)
+  const [attempted,setAttempted]=useState(false)
   const [x,setX]=useState(.5),[y,setY]=useState(.5)
   const [angle,setAngle]=useState(0),[scale,setScale]=useState(1)
   const [targetPage,setTargetPage]=useState(pageId)
   const [busy,setBusy]=useState(false)
   const [message,setMessage]=useState('')
   const [confirmPeel,setConfirmPeel]=useState(false)
+  const [advancedOpen,setAdvancedOpen]=useState(false)
   useEffect(()=>{
-    setKey(crypto.randomUUID())
-  },[placement?.x,placement?.y,pageId])
+    if(preview&&!previouslyPlacing.current){
+      setKey(crypto.randomUUID());setAttempted(false);setNote('');setMessage('')
+    }
+    previouslyPlacing.current=!!preview
+  },[!!preview,pageId])
   useEffect(()=>{
     if(mark){
       setX(mark.position_x);setY(mark.position_y)
       setAngle(mark.rotation_deg);setScale(mark.scale_factor)
-      setTargetPage(mark.page_id);setConfirmPeel(false)
-    }
-    else if(placement){setX(placement.x);setY(placement.y);setTargetPage(pageId)}
+      setTargetPage(mark.page_id);setConfirmPeel(false);setAdvancedOpen(false)
+    }else if(placement){setTargetPage(pageId)}
     setMessage('')
   },[mark?.id,mark?.version,mark?.position_x,mark?.position_y,
-    mark?.rotation_deg,mark?.scale_factor,placement?.x,placement?.y,pageId])
+    mark?.rotation_deg,mark?.scale_factor,pageId])
   async function give(event:FormEvent<HTMLFormElement>){
     event.preventDefault()
-    if(busy||!canGive||!placement||!key)return
-    setBusy(true);setMessage('')
+    if(inFlight.current||!canGive||!preview||!key||!stampDraftValid(preview))return
+    inFlight.current=true;setBusy(true);setMessage('')
+    setAttempted(true);onPlacementAttempt()
     try{
       const result=await giveLivingStamp({
-        spaceId,bookId,pageId,assetId:art,note,key,x,y,
-        rotation:angle,scale,
+        spaceId,bookId,pageId,assetId:preview.artId,note,key,
+        x:preview.x,y:preview.y,rotation:preview.rotation,scale:preview.scale,
       })
       setMessage(result.message)
-      if(result.ok){emitPaperCue('stamp');setKey(crypto.randomUUID());onCancelPlacement();onComplete();router.refresh()}
-    }catch{setMessage('เชื่อมต่อไม่ได้ กรุณาลองอีกครั้งโดยไม่เปลี่ยนข้อมูลคำขอ')}
-    finally{setBusy(false)}
+      if(result.ok){
+        emitPaperCue('stamp')
+        // A new key is created for the NEXT intentional issuance only.
+        setKey(crypto.randomUUID());setAttempted(false)
+        onCancelPlacement();onComplete();router.refresh()
+      }
+    }catch{
+      // In an ambiguous network failure, retry with the SAME idempotency key.
+      setMessage('เชื่อมต่อไม่ได้ ลองส่งคำขอเดิมอีกครั้งโดยไม่เปลี่ยนข้อมูล หรือยกเลิกเพื่อเริ่มใหม่')
+    }finally{inFlight.current=false;setBusy(false)}
   }
   async function update(){
-    if(!canEdit||!mark||busy)return
-    setBusy(true);setMessage('')
+    if(!canEdit||!mark||mark.state!=='available'||inFlight.current)return
+    inFlight.current=true;setBusy(true);setMessage('')
     try{
       const result=await transformLivingStamp({
         spaceId,bookId,markId:mark.id,pageId:targetPage,x,y,
@@ -113,120 +132,169 @@ export function LivingStampTools({
       setMessage(result.message)
       if(result.ok){onComplete();router.refresh()}
     }catch{setMessage('เชื่อมต่อไม่ได้ การเปลี่ยนแปลงยังไม่ถูกบันทึก')}
-    finally{setBusy(false)}
+    finally{inFlight.current=false;setBusy(false)}
   }
   async function peel(){
-    if(!canEdit||!mark||busy||!confirmPeel)return
-    setBusy(true);setMessage('')
+    if(!canEdit||!mark||mark.state!=='available'||inFlight.current||!confirmPeel)return
+    inFlight.current=true;setBusy(true);setMessage('')
     try{
       const result=await peelLivingStamp({
         spaceId,bookId,markId:mark.id,expectedVersion:mark.version,
       })
       setMessage(result.message)
-      if(result.ok){emitPaperCue('peel');setConfirmPeel(false);onComplete();router.refresh()}
+      if(result.ok){
+        emitPaperCue('peel');setConfirmPeel(false)
+        onComplete();router.refresh()
+      }
     }catch{setMessage('เชื่อมต่อไม่ได้ ไม่สามารถลอกแสตมป์ได้')}
-    finally{setBusy(false)}
+    finally{inFlight.current=false;setBusy(false)}
   }
   async function review(requestId:string,approve:boolean){
-    if(busy)return
-    setBusy(true);setMessage('')
+    if(inFlight.current||!canReview)return
+    inFlight.current=true;setBusy(true);setMessage('')
     try{
       const result=await reviewLivingStamp({spaceId,bookId,requestId,approve})
       setMessage(result.message)
       if(result.ok){if(approve)emitPaperCue('stamp');onComplete();router.refresh()}
     }catch{setMessage('เชื่อมต่อไม่ได้ กรุณาลองอนุมัติอีกครั้ง')}
-    finally{setBusy(false)}
+    finally{inFlight.current=false;setBusy(false)}
   }
   async function cancel(requestId:string){
-    if(busy)return
-    setBusy(true);setMessage('')
+    if(inFlight.current)return
+    inFlight.current=true;setBusy(true);setMessage('')
     try{
       const result=await cancelLivingStampRequest({spaceId,bookId,requestId})
       setMessage(result.message)
       if(result.ok){onComplete();router.refresh()}
     }catch{setMessage('เชื่อมต่อไม่ได้ กรุณาลองใหม่')}
-    finally{setBusy(false)}
+    finally{inFlight.current=false;setBusy(false)}
   }
   const available=marks.filter(m=>m.state==='available').length
   const selectedIsEditable=mark?.state==='available'&&canEdit
-  return <section className="living-stamp-toolbox" aria-label="แสตมป์และประวัติการสะสม">
-    <header>
-      <h3>แสตมป์ของเล่มนี้</h3>
-      <p>บนหน้านี้: ใช้ได้ {available} ดวง · จองอยู่ {marks.filter(m=>m.state==='reserved').length} ดวง · แลกแล้ว {marks.filter(m=>m.state==='redeemed').length} ดวง · ลอกแล้ว {marks.filter(m=>m.state==='peeled').length} ดวง
-        {pending.length>0?' · รออนุมัติ '+pending.length+' ดวง':''}</p>
-    </header>
-    {placement&&canGive&&<form onSubmit={give} className="living-stamp-form">
-      <h4>เลือกแสตมป์ที่จะแปะลงกระดาษ</h4>
-      <label>ลายแสตมป์
-        <select className="input" value={art} disabled={busy}
-          onChange={e=>setArt(e.target.value)}>
-          {pointPlusStamps.map(a=><option key={a.id} value={a.id}>{a.nameTh}</option>)}
-        </select>
-      </label>
+  return <section className="living-stamp-toolbox living-stamp-tray" aria-label="ถาดแสตมป์และคำขอ">
+    {canGive&&!mark&&<div className="living-stamp-tray-catalog">
+      <div className="living-stamp-tray-heading">
+        <h3>เลือกแสตมป์</h3>
+        <small>เลือกลาย แล้วแตะบนกระดาษเพื่อวางตัวอย่าง</small>
+      </div>
+      <div className="living-stamp-art-grid" role="group" aria-label="เลือกลายแสตมป์">
+        {pointPlusStamps.map(art=><button key={art.id} type="button"
+          className="living-stamp-art-choice" data-chosen={selectedArtwork===art.id}
+          aria-pressed={selectedArtwork===art.id} disabled={busy||attempted}
+          onClick={()=>{
+            onSelectArtwork(art.id);onBeginPlacement();setMessage('')
+          }}>
+          <Image src={art.png} alt="" width={70} height={70} draggable={false}/>
+          <span>{art.nameTh}</span>
+        </button>)}
+      </div>
+      {!preview&&<p className="living-stamp-tray-help">
+        {selectedArtwork?'แตะหน้ากระดาษเพื่อวางแสตมป์ที่เลือก':'เลือกลายแสตมป์ก่อนวาง'}
+      </p>}
+    </div>}
+    {placement&&preview&&canGive&&<form onSubmit={give}
+      className="living-stamp-form living-stamp-preview-settings" aria-label="ยืนยันประทับแสตมป์">
+      <h4>ตัวอย่างบนกระดาษ <span className="living-stamp-unissued">ยังไม่ประทับจริง</span></h4>
+      <p>ลากแสตมป์ตัวอย่างบนกระดาษเพื่อย้ายตำแหน่ง หรือใช้ปุ่มหมุนและขนาดข้างตัวอย่าง</p>
       <label>ข้อความแนบ (ไม่บังคับ)
         <textarea className="input" value={note} maxLength={1000}
-          onChange={e=>setNote(e.target.value)} disabled={busy} rows={2}/>
+          onChange={e=>setNote(e.target.value)} disabled={busy||attempted} rows={2}/>
       </label>
-      <label>หมุน {angle}°
-        <input type="range" min="-180" max="180" value={angle} disabled={busy}
-          onChange={e=>setAngle(Number(e.target.value))}/>
-      </label>
-      <label>ขนาดแสตมป์ {Math.round(scale*100)}%
-        <input type="range" min="0.3" max="3" step="0.1" value={scale}
-          disabled={busy} onChange={e=>setScale(Number(e.target.value))}/>
-      </label>
-      <p>ตำแหน่งที่เลือก X {Math.round(x*100)}% · Y {Math.round(y*100)}%</p>
+      <details className="living-stamp-precision">
+        <summary>ปรับตำแหน่งแบบละเอียด</summary>
+        <label>หมุน {preview.rotation}°
+          <input type="range" min="-180" max="180" value={preview.rotation}
+            disabled={busy||attempted}
+            onChange={e=>onPreviewChange({...preview,rotation:Number(e.target.value)})}/>
+        </label>
+        <label>ขนาด {Math.round(preview.scale*100)}%
+          <input type="range" min=".3" max="3" step=".1" value={preview.scale}
+            disabled={busy||attempted}
+            onChange={e=>onPreviewChange({...preview,scale:Number(e.target.value)})}/>
+        </label>
+        <p>ตำแหน่ง X {Math.round(preview.x*100)}% · Y {Math.round(preview.y*100)}%</p>
+      </details>
+      {attempted&&<p role="status">
+        คำขอนี้ส่งไปแล้วหรืออาจได้รับการบันทึก กรุณาลองยืนยันซ้ำด้วยรหัสเดิม
+        หากต้องเปลี่ยนตำแหน่ง ให้ยกเลิกและเริ่มคำขอใหม่หลังตรวจสอบยอด
+      </p>}
       <div className="living-m03-actions">
-        <button className="button button--primary" type="submit" disabled={busy||!key}>
-          {busy?'กำลังบันทึก…':'ยืนยันแปะแสตมป์'}
+        <button className="button button--primary" type="submit"
+          disabled={busy||!key||!stampDraftValid(preview)}>
+          {busy?'กำลังบันทึก…':attempted?'ลองยืนยันคำขอเดิม':'ยืนยันประทับแสตมป์'}
         </button>
         <button type="button" className="button button--secondary" disabled={busy}
-          onClick={onCancelPlacement}>ยกเลิก</button>
+          onClick={()=>{
+            setAttempted(false);setKey('')
+            onCancelPlacement()
+          }}>ยกเลิกตัวอย่าง</button>
       </div>
     </form>}
-    {mark&&<div className="living-stamp-inspector">
+    {mark&&<div className="living-stamp-inspector living-stamp-context">
       <h4>แสตมป์ {stampArtwork.get(mark.asset_id)?.nameTh??mark.asset_id}</h4>
       {mark.note&&<p>“{mark.note}”</p>}
       <p>{mark.state==='peeled'?'ลอกแล้ว · ไม่สามารถใช้แลกรางวัล':
         mark.state==='reserved'?'จองไว้สำหรับคำขอแลกรางวัล · ย้ายและลอกไม่ได้':
         mark.state==='redeemed'?'แลกแล้ว · ไม่สามารถนำไปใช้อีก':'ยังใช้ได้'}</p>
       {selectedIsEditable&&<>
-        <label>หน้า
-          <select className="input" disabled={busy} value={targetPage}
-            onChange={e=>setTargetPage(e.target.value)}>
-            {pages.map((p,i)=><option value={p.id} key={p.id}>{i+1} · {p.title??'หน้ากระดาษ'}</option>)}
-          </select>
-        </label>
-        <label>ตำแหน่งแนวนอน {Math.round(x*100)}%
-          <input type="range" min="0" max="1" step=".01" value={x} disabled={busy}
-            onChange={e=>setX(Number(e.target.value))}/>
-        </label>
-        <label>ตำแหน่งแนวตั้ง {Math.round(y*100)}%
-          <input type="range" min="0" max="1" step=".01" value={y} disabled={busy}
-            onChange={e=>setY(Number(e.target.value))}/>
-        </label>
-        <label>หมุน {angle}°
-          <input type="range" min="-180" max="180" value={angle} disabled={busy}
-            onChange={e=>setAngle(Number(e.target.value))}/>
-        </label>
-        <label>ขนาด {Math.round(scale*100)}%
-          <input type="range" min=".3" max="3" step=".1" value={scale} disabled={busy}
-            onChange={e=>setScale(Number(e.target.value))}/>
-        </label>
         <div className="living-m03-actions">
-          <button type="button" className="button button--primary" disabled={busy}
-            onClick={()=>void update()}>บันทึกตำแหน่งแสตมป์</button>
+          <button type="button" className="button button--secondary"
+            aria-expanded={advancedOpen} disabled={busy}
+            onClick={()=>setAdvancedOpen(value=>!value)}>จัดตำแหน่ง / ย้ายหน้า</button>
+          <button type="button" className="button button--secondary"
+            aria-expanded={confirmPeel} disabled={busy}
+            onClick={()=>setConfirmPeel(value=>!value)}>ลอกแสตมป์</button>
+        </div>
+        {advancedOpen&&<div className="living-stamp-precision">
+          <label>หน้า
+            <select className="input" disabled={busy} value={targetPage}
+              onChange={e=>setTargetPage(e.target.value)}>
+              {pages.map((p,i)=><option value={p.id} key={p.id}>
+                {i+1} · {p.title??'หน้ากระดาษ'}
+              </option>)}
+            </select>
+          </label>
+          <label>ตำแหน่งแนวนอน {Math.round(x*100)}%
+            <input type="range" min="0" max="1" step=".01" value={x}
+              disabled={busy} onChange={e=>setX(Number(e.target.value))}/>
+          </label>
+          <label>ตำแหน่งแนวตั้ง {Math.round(y*100)}%
+            <input type="range" min="0" max="1" step=".01" value={y}
+              disabled={busy} onChange={e=>setY(Number(e.target.value))}/>
+          </label>
+          <label>หมุน {angle}°
+            <input type="range" min="-180" max="180" value={angle} disabled={busy}
+              onChange={e=>setAngle(Number(e.target.value))}/>
+          </label>
+          <label>ขนาด {Math.round(scale*100)}%
+            <input type="range" min=".3" max="3" step=".1" value={scale}
+              disabled={busy} onChange={e=>setScale(Number(e.target.value))}/>
+          </label>
+          <button type="button" className="button button--primary"
+            disabled={busy} onClick={()=>void update()}>บันทึกการจัดวาง</button>
+        </div>}
+        {confirmPeel&&<div className="living-stamp-peel-confirm" role="group"
+          aria-label="ยืนยันการลอกแสตมป์">
+          <strong>ต้องการลอกแสตมป์ดวงนี้ใช่ไหม?</strong>
+          <p>แสตมป์จะใช้แลกรางวัลไม่ได้อีก ร่องรอยและประวัติการลอกจะคงอยู่ตลอด</p>
           <label className="living-m03-peel-confirm">
             <input type="checkbox" checked={confirmPeel} disabled={busy}
-              onChange={e=>setConfirmPeel(e.target.checked)}/> ยืนยันการลอกแสตมป์ (ไม่คืนยอด)
+              onChange={e=>setConfirmPeel(e.target.checked)}/>
+            ฉันเข้าใจว่าจะไม่คืนยอดแสตมป์
           </label>
-          <button type="button" className="button button--secondary"
-            disabled={busy||!confirmPeel} onClick={()=>void peel()}>ลอกแสตมป์</button>
-        </div>
+          <div className="living-m03-actions">
+            <button type="button" className="button button--secondary"
+              disabled={busy} onClick={()=>setConfirmPeel(false)}>ไม่ลอก</button>
+            <button type="button" className="button button--primary"
+              disabled={busy||!confirmPeel} onClick={()=>void peel()}>
+              ยืนยันลอกแสตมป์
+            </button>
+          </div>
+        </div>}
       </>}
     </div>}
     {pending.length>0&&<div className="living-stamp-pending">
-      <h4>รายการรออนุมัติ</h4>
+      <h4>รายการรออนุมัติ ({pending.length})</h4>
       {pending.map(r=><div key={r.id} className="living-stamp-pending__item">
         <span>{stampArtwork.get(r.asset_id)?.nameTh??r.asset_id}
           {r.note?' — '+r.note:''}</span>
@@ -242,6 +310,11 @@ export function LivingStampTools({
       </div>)}
     </div>}
     {message&&<p role="status" className="living-m03-feedback">{message}</p>}
+    <small className="living-stamp-ledger-note">หน้านี้: ใช้ได้ {available} ดวง ·
+      จองอยู่ {marks.filter(m=>m.state==='reserved').length} ·
+      แลกแล้ว {marks.filter(m=>m.state==='redeemed').length} ·
+      ลอกแล้ว {marks.filter(m=>m.state==='peeled').length}
+    </small>
   </section>
 }
 
