@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { deleteLivingElement,saveLivingElement } from './editor-actions'
+import { deleteLivingElement,saveLivingElement,restoreLivingElement } from './editor-actions'
+import {useLivingEditorStudio} from './editor-studio'
+import {emitPaperCue} from './paper-sound'
+import {appendPaperHistory,emptyPaperHistory,peekPaperHistory,
+  completePaperHistory,samePaperDecoration,type PaperHistory} from './paper-history'
 import {deleteLivingPhoto,transformLivingPhoto,transformLivingStamp} from './m03-actions'
 import {LivingStampOverlay,LivingStampTools,LivingPhotoUpload} from './m03-tools'
 import type {LivingStampMark,LivingStampRequest} from './stamp-model'
@@ -86,6 +90,14 @@ function PaperObject({item,selected,editable,photoSrc}:{
 export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   imageUrls,initialMarks,initialRequests,pages,canGive,canReview,userId}:EditorProps){
   const router=useRouter()
+  const studio=useLivingEditorStudio()
+  const savedRef=useRef(new Map(initialElements.map(item=>[item.id,item])))
+  const deletedVersions=useRef(new Map<string,number>())
+  const draftEdits=useRef(new Map<string,EditorElement>())
+  const autosaveTimer=useRef<ReturnType<typeof setTimeout>|null>(null)
+  const historyRef=useRef<PaperHistory>(emptyPaperHistory())
+  const [history,setHistory]=useState<PaperHistory>(emptyPaperHistory)
+  const [saveFailed,setSaveFailed]=useState(false)
   const canvas=useRef<HTMLDivElement>(null)
   const viewport=useRef<HTMLDivElement>(null)
   const gesture=useRef<Gesture|null>(null)
@@ -96,8 +108,13 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const [requests,setRequests]=useState(initialRequests)
   const [stampPoint,setStampPoint]=useState<Point|null>(null)
   const [selectedStampId,setSelectedStampId]=useState<string|null>(null)
-  useEffect(()=>{if(!locked.current){setItems(initialElements);setPhotos(imageUrls)}},
-    [initialElements,imageUrls])
+  useEffect(()=>{
+    if(!locked.current&&draftEdits.current.size===0){
+      setItems(initialElements)
+      savedRef.current=new Map(initialElements.map(item=>[item.id,item]))
+      setPhotos(imageUrls)
+    }
+  },[initialElements,imageUrls])
   useEffect(()=>{setMarks(initialMarks);setRequests(initialRequests)},
     [initialMarks,initialRequests])
   const [selectedId,setSelectedId]=useState<string|null>(null)
@@ -114,42 +131,189 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const selectedPhoto=selected?.element_type==='image'?selected.payload as EditorImage:null
   const selectedStamp=marks.find(mark=>mark.id===selectedStampId)??null
 
-  async function saveObject(element:EditorElement,revert?:EditorElement){
-    if(!editable||locked.current)return
+  useEffect(()=>{
+    studio?.setPaperUnsaved(dirty||busy)
+  },[dirty,busy,studio?.setPaperUnsaved])
+  useEffect(()=>{
+    if(!dirty&&!busy)return
+    const beforeUnload=(event:BeforeUnloadEvent)=>{
+      event.preventDefault()
+      event.returnValue=''
+    }
+    window.addEventListener('beforeunload',beforeUnload)
+    return ()=>window.removeEventListener('beforeunload',beforeUnload)
+  },[dirty,busy])
+  useEffect(()=>()=>{if(autosaveTimer.current)clearTimeout(autosaveTimer.current)},[])
+
+  function pushHistory(before:EditorElement|null,after:EditorElement|null){
+    if(samePaperDecoration(before,after))return
+    const id=after?.id??before?.id
+    if(!id)return
+    const next=appendPaperHistory(historyRef.current,{id,before,after})
+    historyRef.current=next;setHistory(next)
+  }
+
+  async function saveObject(element:EditorElement,revert?:EditorElement):Promise<boolean>{
+    if(!editable||locked.current)return false
+    const previous=savedRef.current.get(element.id)??null
+    // A draft must use the latest confirmed version, never a stale UI version.
+    const item={...element,version:previous?.version??element.version}
     locked.current=true;setBusy(true);setNotice('กำลังบันทึก…')
     try{
-      const result=element.element_type==='image'
+      const result=item.element_type==='image'
         ? await transformLivingPhoto({
-          spaceId,bookId,pageId:page.id,elementId:element.id,
-          expectedVersion:element.version,x:element.position_x,y:element.position_y,
-          width:element.width,height:element.height,rotation:element.rotation_deg,
-          opacity:element.opacity,zIndex:element.z_index,
-          crop:(element.payload as EditorImage).crop,
+          spaceId,bookId,pageId:page.id,elementId:item.id,
+          expectedVersion:item.version,x:item.position_x,y:item.position_y,
+          width:item.width,height:item.height,rotation:item.rotation_deg,
+          opacity:item.opacity,zIndex:item.z_index,
+          crop:(item.payload as EditorImage).crop,
         })
         : await saveLivingElement({
-          spaceId,bookId,pageId:page.id,element,expectedVersion:element.version,
+          spaceId,bookId,pageId:page.id,element:item,expectedVersion:item.version,
         })
-      if(result.ok&&result.data) {
-        const version=result.data.version
-        setItems(prev=>[...prev.filter(item=>item.id!==element.id),
-          {...element,version}].sort((a,b)=>a.z_index-b.z_index||a.id.localeCompare(b.id)))
-        setSelectedId(element.id)
-        setDirty(false);setNotice('บันทึกลงสมุดแล้ว')
-      } else {
-        if(revert) setItems(prev=>prev.map(item=>item.id===revert.id?revert:item))
-        setNotice('message' in result ? result.message : (result.error??'ไม่สามารถบันทึกวัตถุ'))
-        if(result.conflict) router.refresh()
+      if(result.ok&&result.data){
+        const confirmed={...item,version:result.data.version}
+        savedRef.current.set(item.id,confirmed)
+        pushHistory(previous,confirmed)
+        if(draftEdits.current.has(item.id)){
+          const pending=draftEdits.current.get(item.id)!
+          if(samePaperDecoration(pending,item))draftEdits.current.delete(item.id)
+        }
+        setItems(prev=>[...prev.filter(existing=>existing.id!==item.id),
+          ...((draftEdits.current.get(item.id)?[draftEdits.current.get(item.id)!]:[confirmed]))]
+          .sort((a,b)=>a.z_index-b.z_index||a.id.localeCompare(b.id)))
+        setSelectedId(item.id)
+        setDirty(draftEdits.current.size>0)
+        setSaveFailed(false)
+        setNotice('บันทึกลงสมุดแล้ว')
+        emitPaperCue(item.element_type==='drawing'?'write':'write')
+        return true
+      }
+      if(revert)setItems(prev=>prev.map(existing=>
+        existing.id===revert.id?revert:existing))
+      setSaveFailed(true)
+      setNotice('message' in result?result.message:
+        result.error??'ไม่สามารถบันทึกวัตถุ')
+      // Never silently overwrite a newer remote version or discard local drafts.
+      return false
+    }catch{
+      if(revert)setItems(prev=>prev.map(existing=>
+        existing.id===revert.id?revert:existing))
+      setSaveFailed(true)
+      setNotice('เครือข่ายขัดข้อง ฉบับที่ยังไม่บันทึกยังอยู่บนหน้านี้ กดลองอีกครั้ง')
+      return false
+    }finally{
+      locked.current=false;setBusy(false)
+    }
+  }
+
+  async function flushDrafts():Promise<boolean>{
+    if(!editable||locked.current)return false
+    if(autosaveTimer.current){clearTimeout(autosaveTimer.current);autosaveTimer.current=null}
+    for(const [id] of draftEdits.current){
+      const draft=draftEdits.current.get(id)
+      if(!draft)continue
+      if(!await saveObject(draft))return false
+    }
+    setDirty(draftEdits.current.size>0)
+    return draftEdits.current.size===0
+  }
+
+  function scheduleAutosave(){
+    if(autosaveTimer.current)clearTimeout(autosaveTimer.current)
+    autosaveTimer.current=setTimeout(()=>{
+      autosaveTimer.current=null
+      if(!locked.current&&!saveFailed)void flushDrafts()
+    },850)
+  }
+
+  async function undoRedo(direction:'undo'|'redo'){
+    if(!editable||locked.current||dirty||draftEdits.current.size>0)return
+    const command=peekPaperHistory(historyRef.current,direction)
+    if(!command)return
+    const target=direction==='undo'?command.before:command.after
+    const current=savedRef.current.get(command.id)??null
+    locked.current=true;setBusy(true);setNotice('กำลัง'+(direction==='undo'?'ย้อนกลับ':'ทำซ้ำ')+'…')
+    let ok=false;let resultVersion=0
+    try{
+      if(target===null&&current){
+        const result=await deleteLivingElement({
+          spaceId,bookId,pageId:page.id,elementId:current.id,
+          expectedVersion:current.version,
+        })
+        ok=result.ok&&!!result.data
+        resultVersion=result.data?.version??0
+        if(ok){
+          deletedVersions.current.set(command.id,resultVersion)
+          savedRef.current.delete(command.id)
+          setItems(prev=>prev.filter(item=>item.id!==command.id))
+          setSelectedId(null)
+        }
+      }else if(target&&!current){
+        const version=deletedVersions.current.get(command.id)
+        if(version){
+          const result=await restoreLivingElement({
+            spaceId,bookId,pageId:page.id,elementId:command.id,
+            expectedVersion:version,
+          })
+          ok=result.ok&&!!result.data
+          resultVersion=result.data?.version??0
+          if(ok){
+            const restored={...target,version:resultVersion}
+            savedRef.current.set(command.id,restored)
+            setItems(prev=>[...prev.filter(item=>item.id!==command.id),restored]
+              .sort((a,b)=>a.z_index-b.z_index||a.id.localeCompare(b.id)))
+            setSelectedId(command.id)
+          }
+        }
+      }else if(target&&current){
+        const source={...target,version:current.version}
+        const result=target.element_type==='image'
+          ?await transformLivingPhoto({
+            spaceId,bookId,pageId:page.id,elementId:command.id,
+            expectedVersion:current.version,
+            x:source.position_x,y:source.position_y,width:source.width,
+            height:source.height,rotation:source.rotation_deg,
+            opacity:source.opacity,zIndex:source.z_index,
+            crop:(source.payload as EditorImage).crop,
+          })
+          :await saveLivingElement({
+            spaceId,bookId,pageId:page.id,element:source,
+            expectedVersion:current.version,
+          })
+        ok=result.ok&&!!result.data
+        resultVersion=result.data?.version??0
+        if(ok){
+          const restored={...source,version:resultVersion}
+          savedRef.current.set(command.id,restored)
+          setItems(prev=>[...prev.filter(item=>item.id!==command.id),restored]
+            .sort((a,b)=>a.z_index-b.z_index||a.id.localeCompare(b.id)))
+          setSelectedId(command.id)
+        }
+      }
+      if(ok){
+        const next=completePaperHistory(historyRef.current,direction)
+        historyRef.current=next;setHistory(next)
+        setNotice(direction==='undo'?'ย้อนการแก้ไขแล้ว':'ทำซ้ำการแก้ไขแล้ว')
+        emitPaperCue('undo')
+      }else{
+        setNotice('ไม่สามารถย้อนการแก้ไขได้ ข้อมูลอาจเปลี่ยนจากอุปกรณ์อื่น กรุณาโหลดข้อมูลล่าสุด')
+        setSaveFailed(true)
       }
     }catch{
-      if(revert)setItems(prev=>prev.map(item=>item.id===revert.id?revert:item))
-      setNotice('การเชื่อมต่อขัดข้อง ยังไม่ได้บันทึก โปรดลองอีกครั้ง')
+      setNotice('เชื่อมต่อไม่ได้ ไม่ได้เปลี่ยนข้อมูลที่บันทึกไว้')
+      setSaveFailed(true)
     }finally{locked.current=false;setBusy(false)}
   }
 
   function patchSelected(changes:Partial<EditorElement>){
     if(!editable||!selected||locked.current)return
-    setItems(prev=>prev.map(item=>item.id===selected.id?{...item,...changes}:item))
-    setDirty(true);setNotice('มีการเปลี่ยนแปลงที่ยังไม่บันทึก')
+    const next={...selected,...changes}
+    draftEdits.current.set(selected.id,next)
+    setItems(prev=>prev.map(item=>item.id===next.id?next:item))
+    setDirty(true);setSaveFailed(false)
+    setNotice('กำลังเตรียมบันทึกอัตโนมัติ…')
+    scheduleAutosave()
   }
   function patchText(changes:Partial<EditorText>){
     if(!selectedText)return
@@ -157,7 +321,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
 
   function newText(x:number,y:number) {
-    if(!editable||locked.current)return
+    if(!editable||locked.current||draftEdits.current.size>0)return
     const element:EditorElement={
       id:crypto.randomUUID(),book_id:bookId,page_id:page.id,
       element_type:'text',payload:{...textDefault,color:penColor},
@@ -171,6 +335,11 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
 
   function begin(event:PointerEvent<HTMLDivElement>){
     if(!editable||locked.current||event.button>0||!canvas.current)return
+    if(draftEdits.current.size>0){
+      setNotice('กำลังบันทึกการแก้ไขก่อนใช้เครื่องมือใหม่')
+      if(!saveFailed)void flushDrafts()
+      return
+    }
     const stampHit=(event.target as Element).closest<HTMLElement>('[data-living-stamp-id]')
     const mark=marks.find(item=>item.id===stampHit?.dataset.livingStampId)
     if(tool==='select'&&mark){
@@ -310,27 +479,43 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
   async function remove(item:EditorElement){
     if(!editable||locked.current||item.version===0)return
+    if(draftEdits.current.size>0){
+      setNotice('กรุณาบันทึกการแก้ไขก่อนลบวัตถุ')
+      return
+    }
     locked.current=true;setBusy(true);setNotice('กำลังลบ…')
     try{
-      const result=item.element_type==='image'
-        ? await deleteLivingPhoto({
-          spaceId,bookId,pageId:page.id,elementId:item.id,
-          expectedVersion:item.version,
-        })
-        : await deleteLivingElement({
-          spaceId,bookId,pageId:page.id,elementId:item.id,
-          expectedVersion:item.version,
-        })
-      if(result.ok) {
-        setItems(prev=>prev.filter(e=>e.id!==item.id))
-        setSelectedId(null);setDirty(false);setNotice('ลบวัตถุจากหน้ากระดาษแล้ว')
-      }else{setNotice('message' in result?result.message:(result.error??'ไม่สามารถลบวัตถุ'));if(result.conflict)router.refresh()}
+      // M05 keeps a private image file during soft deletion so Undo can restore it.
+      // This never removes a real stamp or its historical transaction.
+      const result=await deleteLivingElement({
+        spaceId,bookId,pageId:page.id,elementId:item.id,
+        expectedVersion:item.version,
+      })
+      if(result.ok&&result.data){
+        deletedVersions.current.set(item.id,result.data.version)
+        savedRef.current.delete(item.id)
+        pushHistory(item,null)
+        setItems(prev=>prev.filter(existing=>existing.id!==item.id))
+        setSelectedId(null);setDirty(false);setNotice('นำวัตถุออกจากหน้าแล้ว (Undo เพื่อคืนค่า)')
+        emitPaperCue('write')
+      }else{
+        setNotice(result.error??'ลบวัตถุไม่สำเร็จ')
+        if(result.conflict)setSaveFailed(true)
+      }
     }catch{setNotice('การเชื่อมต่อขัดข้อง ไม่สามารถลบวัตถุ')}
     finally{locked.current=false;setBusy(false)}
   }
   function handleKey(event:KeyboardEvent<HTMLDivElement>){
     if(!editable||locked.current)return
     if((event.target as HTMLElement).closest('textarea,input,select'))return
+    if((event.ctrlKey||event.metaKey)&&!event.altKey){
+      const key=event.key.toLowerCase()
+      if(key==='z'||key==='y'){
+        event.preventDefault()
+        void undoRedo(key==='y'||event.shiftKey?'redo':'undo')
+        return
+      }
+    }
     const focused=(event.target as Element).closest<HTMLElement>('[data-editor-id]')
     if((event.key==='Enter'||event.key===' ')&&focused){
       event.preventDefault()
@@ -370,6 +555,19 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       {editable&&<LivingPhotoUpload spaceId={spaceId} bookId={bookId}
         pageId={page.id} disabled={busy}
         onDone={()=>{setSelectedId(null);router.refresh()}}/>}
+      {editable&&<div className="living-editor-history-controls" role="group"
+        aria-label="ย้อนการแก้ไขกระดาษ">
+        <button type="button" className="button button--secondary"
+          disabled={busy||dirty||history.undo.length===0}
+          onClick={()=>void undoRedo('undo')}>↶ Undo</button>
+        <button type="button" className="button button--secondary"
+          disabled={busy||dirty||history.redo.length===0}
+          onClick={()=>void undoRedo('redo')}>↷ Redo</button>
+        {dirty&&<button type="button" className="button button--primary" disabled={busy}
+          onClick={()=>{setSaveFailed(false);void flushDrafts()}}>
+          {busy?'กำลังบันทึก…':saveFailed?'ลองบันทึกอีกครั้ง':'บันทึกตอนนี้'}
+        </button>}
+      </div>}
       <div className="living-editor-zoom" role="group" aria-label="ขยายและเลื่อนหน้ากระดาษ">
         <button type="button" className="button button--secondary" disabled={zoom<=.6}
           onClick={()=>setZoom(prev=>clamp(Math.round((prev-.1)*10)/10,.6,1.8))}>−</button>
@@ -498,7 +696,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         <button type="button" className="button button--secondary" disabled={busy||bottom<=-1000000}
           onClick={()=>patchSelected({z_index:bottom-1})}>ส่งไปด้านหลัง</button>
         <button type="button" className="button button--primary" disabled={busy||!dirty}
-          onClick={()=>void saveObject(selected)}>
+          onClick={()=>{setSaveFailed(false);void flushDrafts()}}>
           {busy?'กำลังบันทึก…':'บันทึกการแก้ไข'}
         </button>
         <button type="button" className="button button--secondary" disabled={busy}
@@ -513,8 +711,13 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       onComplete={()=>{setStampPoint(null);setSelectedStampId(null);router.refresh()}}/>
     {editable&&<p className="living-editor-hint">
       เลือกเครื่องมือแล้วแตะบนกระดาษ · ปากกาบันทึกเป็นเส้นเวกเตอร์ · ลากเพื่อย้ายวัตถุ
-      · ใช้ลูกศรเพื่อขยับตำแหน่ง · แก้ไขคุณสมบัติแล้วกดบันทึก
+      · ใช้ลูกศรเพื่อขยับตำแหน่ง · หยุดแก้ไขเพื่อบันทึกอัตโนมัติ
+      · Ctrl/Cmd+Z ย้อน และ Ctrl/Cmd+Shift+Z ทำซ้ำ
     </p>}
     {notice&&<p className="living-editor-feedback" role="status">{notice}</p>}
+    {saveFailed&&<p role="alert" className="living-editor-save-warning">
+      บันทึกไม่สำเร็จ: ข้อมูลที่ยังไม่บันทึกยังอยู่บนหน้านี้ โปรดลองบันทึกอีกครั้ง
+      หรือสำรองข้อความก่อนโหลดหน้านี้ใหม่
+    </p>}
   </section>
 }
