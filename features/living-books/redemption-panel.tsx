@@ -52,8 +52,7 @@ export function LivingRedemptionPanel({
   const completed=history.filter(item=>item.status!=='requested')
   const sendable=canRequest&&isActive&&max>0&&requestedQuantity>=1&&
     requestedQuantity<=max&&Number.isSafeInteger(requestedQuantity)&&
-    (card ? card.reward_title.trim().length>0 : reward.trim().length>0)&&
-    requestedReward.trim().length<=2000&&!!key
+    requestedReward.trim().length>0&&requestedReward.trim().length<=2000&&!!key
 
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault()
