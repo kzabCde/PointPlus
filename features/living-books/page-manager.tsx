@@ -5,6 +5,7 @@ import {useEffect,useRef,useState,type MouseEvent,type TouchEvent} from 'react'
 import {useRouter} from 'next/navigation'
 import {AddLivingBookPageForm} from './forms'
 import {reorderLivingPages,updateLivingPageSettings} from './editor-actions'
+import {reorderPageIds} from './stamp-gesture'
 import {orderedPageIds,backgrounds,
   type LivingEditorPage,type PaperBackground} from './editor-model'
 import {useLivingEditorStudio} from './editor-studio'
@@ -32,6 +33,8 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
   const savingRef=useRef(false)
   const retryBlocked=useRef(false)
   const swipeStart=useRef<{x:number;y:number}|null>(null)
+  const draggedPage=useRef<string|null>(null)
+  const pageTurnPending=useRef(false)
   const base='/s/'+spaceId+'/stamp-books/living/'+bookId
   const unsaved=title!==savedRef.current.title||background!==savedRef.current.background
 
@@ -44,6 +47,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
     setStart(Math.floor(current/windowSize)*windowSize)
     setMessage('')
     setOverviewOpen(false)
+    pageTurnPending.current=false
     studio?.setPageUnsaved(false)
   // All setters are stable; reset only after server page version or identity changes.
   },[page.id,page.version,page.title,page.background_style,current])
@@ -119,8 +123,32 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
     if(!canNavigate())event.preventDefault()
   }
   function go(index:number){
-    if(!Number.isSafeInteger(index)||index<0||index>=pages.length||!canNavigate())return
+    if(pageTurnPending.current||!Number.isSafeInteger(index)||index<0||
+      index>=pages.length||index===current||!canNavigate())return
+    pageTurnPending.current=true
     router.push(base+'?page='+pages[index].id)
+  }
+  useEffect(()=>{
+    const turn=(event:Event)=>{
+      const custom=event as CustomEvent<{pageId:string;direction:-1|1}>
+      if(custom.detail?.pageId!==page.id||
+        ![-1,1].includes(custom.detail?.direction))return
+      go(current+custom.detail.direction)
+    }
+    window.addEventListener('pointplus:living-page-turn',turn)
+    return ()=>window.removeEventListener('pointplus:living-page-turn',turn)
+  },[current,page.id,unsaved,busy,pages,studio?.paperUnsaved,studio?.pageUnsaved])
+  async function movePage(fromId:string,toId:string){
+    if(!editable||busy||!canNavigate())return
+    const ids=reorderPageIds(pages.map(p=>p.id),fromId,toId)
+    if(!ids)return
+    setBusy(true);setMessage('')
+    try{
+      const result=await reorderLivingPages({spaceId,bookId,pageIds:ids})
+      setMessage(result.ok?'จัดลำดับหน้าสมุดแล้ว':result.error??'จัดเรียงหน้าไม่สำเร็จ')
+      if(result.ok||result.conflict)router.refresh()
+    }catch{setMessage('เชื่อมต่อไม่ได้ ลำดับหน้ายังไม่เปลี่ยน')}
+    finally{setBusy(false)}
   }
   async function reorder(direction:-1|1){
     if(!editable||busy||!canNavigate())return
@@ -206,7 +234,27 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
     </div>
     <nav aria-label="ภาพย่อหน้าสมุด" className="living-page-thumbnails">
       {windowed.map((p,i)=><Link href={base+'?page='+p.id} key={p.id}
-        onClick={handleLink}
+        onClick={handleLink} draggable={editable&&!busy&&!unsaved}
+        onDragStart={event=>{
+          if(!editable||busy||unsaved){event.preventDefault();return}
+          draggedPage.current=p.id
+          event.dataTransfer.effectAllowed='move'
+          event.dataTransfer.setData('text/plain',p.id)
+        }}
+        onDragOver={event=>{
+          if(editable&&draggedPage.current&&!busy){
+            event.preventDefault();event.dataTransfer.dropEffect='move'
+          }
+        }}
+        onDrop={event=>{
+          event.preventDefault()
+          const from=draggedPage.current
+          draggedPage.current=null
+          if(from&&from!==p.id)void movePage(from,p.id)
+        }}
+        onDragEnd={()=>{draggedPage.current=null}}
+        aria-label={'หน้า '+(start+i+1)+' '+(p.title??'')+
+          (editable?' ลากเพื่อเปลี่ยนลำดับ หรือใช้ปุ่มเลื่อนหน้า':'')}
         aria-current={p.id===page.id?'page':undefined}
         className="living-page-thumbnail" data-background={p.background_style}>
         <span>{start+i+1}</span><small>{p.title||'หน้ากระดาษ'}</small>
