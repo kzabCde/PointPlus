@@ -7,8 +7,10 @@ import type { Participant, Membership } from '@/features/spaces/data'
 import { BookCover } from '@/features/stamp-books/presentation'
 import { CreateCoupleStampBookForm, CreateStampBookForm } from '@/features/stamp-books/forms'
 import {
-  createLivingBookAction,addLivingBookPageAction,livingIdle,
+  createLivingBookAction,addLivingBookPageAction, type LivingActionState,
 } from './actions'
+
+const livingIdle: LivingActionState={status:'idle',message:''}
 
 type CreationProps = {
   spaceId:string;userId:string;kind:string;participants:Participant[];members:Membership[]
