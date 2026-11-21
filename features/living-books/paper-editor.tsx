@@ -74,7 +74,7 @@ function PaperObject({item,selected,editable,photoSrc,editingText,onEditText,onT
       aria-label={editable?'เลือกข้อความเพื่อแก้ไข: '+p.text.slice(0,60):undefined}
       onDoubleClick={()=>{if(editable)onEditText(item.id)}}
       onTouchEnd={event=>{
-        if(!editable)return
+        if(!editable||(event.target as Element).closest('[data-editor-handle]'))return
         const node=event.currentTarget as HTMLElement & {dataset:DOMStringMap}
         const last=Number(node.dataset.lastTap??0)
         const now=Date.now()
@@ -242,6 +242,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     // A draft must use the latest confirmed version, never a stale UI version.
     const item={...element,version:previous?.version??element.version}
     locked.current=true;setBusy(true);setNotice('กำลังบันทึก…')
+    let writeSucceeded=false
     try{
       const result=item.element_type==='image'
         ? await transformLivingPhoto({
@@ -270,6 +271,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         setSaveFailed(false)
         setNotice('บันทึกลงสมุดแล้ว')
         emitPaperCue('write')
+        writeSucceeded=true
         return true
       }
       draftEdits.current.set(item.id,item)
@@ -287,6 +289,9 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       return false
     }finally{
       locked.current=false;setBusy(false)
+      // If typing continued during an in-flight write, schedule its newer draft.
+      // Do not automatically retry failed saves in a loop; the retry UI handles them.
+      if(writeSucceeded&&draftEdits.current.size>0)scheduleAutosave()
     }
   }
 
@@ -862,7 +867,12 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           role="toolbar" aria-label={'แก้ไข'+(selected.element_type==='text'?'ข้อความ':
             selected.element_type==='image'?'ภาพ':'เส้นวาด')+'ที่เลือก'}
           onPointerDown={event=>event.stopPropagation()}
-          onKeyDown={event=>event.stopPropagation()}
+          onKeyDown={event=>{
+            event.stopPropagation()
+            if(event.key==='Escape'){
+              setSelectedId(null);setAdvancedOpen(false)
+            }
+          }}
           style={{
             left:Math.min(.67,Math.max(.02,selected.position_x))*100+'%',
             top:Math.max(.012,selected.position_y-.085)*100+'%',
