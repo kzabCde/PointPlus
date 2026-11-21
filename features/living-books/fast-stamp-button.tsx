@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import {useEffect,useRef,useState,type FormEvent} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {pointPlusStamps} from '@/lib/point-plus/assets'
 import {loadFastStampOptions,submitFastStamp,
   type FastStampCommand,type FastStampOptions} from './fast-stamp-actions'
@@ -99,8 +99,7 @@ export function FastStampButton({spaceId,bookId,title}:{
     }finally{setLoading(false)}
   }
 
-  async function send(event:FormEvent<HTMLFormElement>){
-    event.preventDefault()
+  async function send(){
     if(lock.current||loading||(!options&&!intent))return
     let command=intent
     if(!command){
@@ -155,7 +154,7 @@ export function FastStampButton({spaceId,bookId,title}:{
             disabled={busy} onClick={close} aria-label="ปิดหน้าต่าง">ปิด</button>
         </header>
         {loading&&<p role="status">กำลังเตรียมช่องแสตมป์…</p>}
-        {options&&<form onSubmit={event=>void send(event)} className="fast-stamp-form">
+        {options&&<form onSubmit={event=>{event.preventDefault();void send()}} className="fast-stamp-form">
           <fieldset disabled={busy||Boolean(intent)}>
             <legend>เลือกลายแสตมป์</legend>
             <div className="fast-stamp-artworks">
@@ -198,7 +197,7 @@ export function FastStampButton({spaceId,bookId,title}:{
           </div>
         </form>}
         {!options&&intent&&<button className="button button--primary" type="button"
-          disabled={busy} onClick={()=>void send({preventDefault(){} } as FormEvent<HTMLFormElement>)}>
+          disabled={busy} onClick={()=>void send()}>
           {busy?'กำลังตรวจสอบ…':'ลองส่งคำขอเดิม'}
         </button>}
         {feedback&&<p className="fast-stamp-feedback" role="status">{feedback}</p>}
