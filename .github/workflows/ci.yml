@@ -65,7 +65,7 @@ jobs:
         run: npm run build
 
   verify-living-migrations:
-    name: Living M01–M03 PostgreSQL migrations and RLS tests
+    name: Living M01–M04 PostgreSQL migrations and RLS tests
     if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3'
     runs-on: ubuntu-latest
     services:
@@ -105,3 +105,5 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/18_living_stampbook_v3_m03_photos_stamps.sql
       - name: Verify private photos, real stamp permissions, idempotency and peel history
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m03-assertions.sql
+      - name: Apply M04 flexible redemption migration on isolated database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/19_living_stampbook_v3_m04_redemptions.sql
