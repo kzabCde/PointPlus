@@ -10,7 +10,7 @@ import {emitPaperCue} from './paper-sound'
 import {appendPaperHistory,emptyPaperHistory,peekPaperHistory,
   completePaperHistory,samePaperDecoration,type PaperHistory} from './paper-history'
 import {deleteLivingPhoto,transformLivingPhoto,transformLivingStamp} from './m03-actions'
-import {LivingStampOverlay,LivingStampTools,LivingPhotoUpload,preparePhotoForUpload} from './m03-tools'
+import {LivingStampOverlay,LivingStampTools,preparePhotoForUpload} from './m03-tools'
 import {uploadLivingPhoto} from './m03-actions'
 import {moveDecoration,resizeDecoration,rotateDecoration,pinchDecoration,
   type ResizeCorner} from './direct-manipulation'
@@ -239,6 +239,18 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     window.addEventListener('beforeunload',beforeUnload)
     return ()=>window.removeEventListener('beforeunload',beforeUnload)
   },[dirty,busy])
+
+  useEffect(()=>{
+    if(!editable)return
+    const onSave=(event:KeyboardEvent)=>{
+      if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){
+        event.preventDefault()
+        if(dirty&&!busy)void flushDrafts()
+      }
+    }
+    window.addEventListener('keydown',onSave)
+    return ()=>window.removeEventListener('keydown',onSave)
+  },[editable,dirty,busy])
 
   function pushHistory(before:EditorElement|null,after:EditorElement|null){
     if(samePaperDecoration(before,after))return
@@ -804,6 +816,21 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const top=Math.max(0,...items.map(e=>e.z_index))
   const bottom=Math.min(0,...items.map(e=>e.z_index))
   return <section className="living-editor" aria-label="กระดาษและเครื่องมือสมุดความทรงจำ">
+    {editable&&(dirty||busy||saveFailed)&&<div className="living-reader-save-strip"
+      role="group" aria-label="บันทึกการแก้ไขกระดาษ">
+      <span role="status">{busy?'กำลังบันทึก…':
+        saveFailed?'บันทึกไม่สำเร็จ ยังเก็บฉบับร่างไว้':
+        'มีการแก้ไขที่ยังไม่ได้บันทึก'}</span>
+      <button type="button" className="living-reader-save-button"
+        disabled={busy||!dirty}
+        onClick={()=>{setSaveFailed(false);void flushDrafts()}}>
+        {busy?'กำลังบันทึก…':'บันทึก'}
+      </button>
+      {dirty&&<button type="button" className="living-reader-discard-button"
+        disabled={busy} onClick={discardDrafts}>
+        ทิ้งการแก้ไข
+      </button>}
+    </div>}
     <div className="living-reader-tool-entry">
       <button type="button" className="living-reader-add-button"
         aria-controls="living-reader-editor-tools" aria-expanded={toolsOpen}
@@ -860,9 +887,20 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         onClick={()=>{setStampPanelOpen(true);setToolsOpen(false)}}>
         แสตมป์และคำขอ {requests.length>0?'('+requests.length+')':''}
       </button>}
-      {editable&&<LivingPhotoUpload spaceId={spaceId} bookId={bookId}
-        pageId={page.id} disabled={busy}
-        onDone={()=>{setSelectedId(null);router.refresh()}}/>}
+      {editable&&<label className="living-reader-photo-picker">
+        <span>＋ รูปภาพ</span>
+        <input type="file" accept="image/png,image/jpeg,image/webp"
+          aria-label="เลือกรูปภาพเพื่อเก็บไว้ในฉบับร่าง" disabled={busy}
+          onChange={event=>{
+            const photo=event.currentTarget.files?.[0]
+            if(photo)void queuePhoto(photo)
+            event.currentTarget.value=''
+          }}/>
+      </label>}
+      {queuedPhotoNames.length>0&&<div className="living-reader-pending-photos" role="status">
+        รูปภาพรอบันทึก {queuedPhotoNames.length} รูป
+        <small>{queuedPhotoNames.slice(0,2).join(' · ')}</small>
+      </div>}
       {editable&&<div className="living-editor-history-controls" role="group"
         aria-label="ย้อนการแก้ไขกระดาษ">
         <button type="button" className="button button--secondary"
@@ -871,10 +909,6 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         <button type="button" className="button button--secondary"
           disabled={busy||dirty||history.redo.length===0}
           onClick={()=>void undoRedo('redo')}>↷ Redo</button>
-        {dirty&&<button type="button" className="button button--primary" disabled={busy}
-          onClick={()=>{setSaveFailed(false);void flushDrafts()}}>
-          {busy?'กำลังบันทึก…':saveFailed?'ลองบันทึกอีกครั้ง':'บันทึกตอนนี้'}
-        </button>}
       </div>}
       <div className="living-editor-zoom" role="group" aria-label="ขยายและเลื่อนหน้ากระดาษ">
         <button type="button" className="button button--secondary" disabled={zoom<=.6}
@@ -1187,10 +1221,6 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           onClick={()=>patchSelected({z_index:top+1})}>นำมาด้านหน้า</button>
         <button type="button" className="button button--secondary" disabled={busy||bottom<=-1000000}
           onClick={()=>patchSelected({z_index:bottom-1})}>ส่งไปด้านหลัง</button>
-        <button type="button" className="button button--primary" disabled={busy||!dirty}
-          onClick={()=>{setSaveFailed(false);void flushDrafts()}}>
-          {busy?'กำลังบันทึก…':'บันทึกการแก้ไข'}
-        </button>
         <button type="button" className="button button--secondary" disabled={busy}
           onClick={()=>{if(window.confirm('ลบวัตถุนี้ออกจากหน้า?'))void remove(selected)}}>ลบวัตถุ</button>
       </div>
