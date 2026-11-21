@@ -98,14 +98,16 @@ test('selected object reveals compact contextual toolbar; detailed inspector sta
  assert.match(editor,/className="living-drawing-toolbar"/)
  assert.match(editor,/aria-label="ความหนาเส้น"/)
 })
-test('saves only complete gestures, and keeps autosave, undo and private photo upload',()=>{
+test('stages complete gestures locally and persists only after explicit Save; stamp ledger stays separate',()=>{
  for(const marker of [
-  'saveLivingElement(', 'transformLivingPhoto(', 'saveObject(g.next,g.original)',
-  'saveObject(ended.next,ended.original)','draftEdits.current.set',
-  'scheduleAutosave()','850)','undoRedo(','flushDrafts(',
+  'saveLivingElement(', 'transformLivingPhoto(', 'stageObject(g.next)',
+  'stageObject(ended.next)','stageObject(element)','draftEdits.current.set',
+  'stageObject(next)','undoRedo(','flushDrafts(',
   'preparePhotoForUpload(file)','uploadLivingPhoto(form)',
+  'pendingPhotos.current.push','living-reader-save-strip',
   'className="living-editor-save-warning"','role="toolbar"'
- ])assert.ok(editor.includes(marker),'Lost M05 interaction: '+marker)
+ ])assert.ok(editor.includes(marker),'Lost paper/ledger interaction: '+marker)
+ assert.doesNotMatch(editor,/scheduleAutosave\(|autosaveTimer|setTimeout\(\(\)=>\{void flushDrafts/)
  assert.doesNotMatch(read('features/living-books/direct-manipulation.ts'),
   /living_stamp_marks|pointplus_give_living_stamp|pointplus_request_living_stamp_redemption/)
 })

@@ -58,7 +58,7 @@ test('Paper tools remain mounted yet concealed until the single Add action',()=>
   assert.match(editor,/className="living-reader-add-button"/)
   assert.match(editor,/className="living-reader-editor-tools"/)
   assert.match(editor,/hidden=\{!toolsOpen\}/)
-  assert.match(editor,/LivingPhotoUpload/)
+  assert.match(editor,/className="living-reader-photo-picker"/)
   assert.match(editor,/setTool\(item\.tool\)/)
   assert.match(editor,/setTool\('stamp'\)/)
   assert.match(editor,/className="living-editor-history-controls"/)
@@ -79,7 +79,7 @@ test('Stamp giver is not incorrectly forced to be paper owner',()=>{
 test('UX01 preserves optimistic editing, private media and server-authorized stamp actions',()=>{
   for(const snippet of [
     'saveLivingElement(','restoreLivingElement(','deleteLivingElement(',
-    'transformLivingPhoto(','transformLivingStamp(','LivingPhotoUpload',
+    'transformLivingPhoto(','transformLivingStamp(','queuePhoto(',
     'LivingStampTools','undoRedo(','flushDrafts(','setDirty(true)',
   ])assert.ok(editor.includes(snippet),'Missing important editor contract: '+snippet)
   assert.match(editor,/window\.addEventListener\('beforeunload'/)

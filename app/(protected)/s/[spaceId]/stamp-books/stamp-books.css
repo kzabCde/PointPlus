@@ -1942,3 +1942,163 @@
   .living-card-slot{transition:none;}
   .living-card-slot:not(:disabled):hover{transform:none;}
 }
+
+
+/* Compact notebook v4: Goodnotes/Notability-inspired paper-first layout.
+ * All tool and page menus live in the normal document flow; they never cover
+ * or intercept the writing canvas. Manual-save strip appears only if dirty.
+ */
+.living-reader .living-reader-header{
+  padding:2px 2px 6px;gap:5px;min-height:46px;
+}
+.living-reader .living-reader-kicker{display:none;}
+.living-reader .living-reader-heading h1{
+  font-size:clamp(16px,2vw,22px);line-height:1.25;
+}
+.living-reader .living-reader-actions{gap:1px;}
+.living-reader .living-reader-balance{
+  padding:0 9px;min-width:44px;min-height:44px;
+  font-size:13px;box-shadow:none!important;
+}
+.living-reader .living-reader-focus-toggle{
+  display:inline-grid;place-items:center;min-width:44px;min-height:44px;
+  border:0;border-radius:12px;background:transparent;color:var(--reader-ink);
+  cursor:pointer;font-size:20px;
+}
+.living-reader .living-reader-focus-toggle[aria-pressed="true"]{
+  background:#f4e5d9;color:#9b5850;
+}
+.living-reader .living-page-controls{gap:2px;margin:0 auto 3px;}
+.living-reader .living-page-controls > .button{font-size:20px;}
+.living-reader .living-reader-page-trigger{
+  padding:0 12px;font-size:12px;min-height:40px;
+}
+.living-reader .living-reader-page-overview{
+  position:relative;z-index:4;top:auto;left:auto;right:auto;
+  bottom:auto;width:min(100%,840px);margin:10px auto 8px;
+  max-height:min(60dvh,600px);overflow:auto;
+  border-radius:12px;padding:12px;box-shadow:0 8px 20px #49322518;
+}
+.living-reader .living-editor{
+  gap:4px;position:relative;z-index:3;
+}
+.living-reader .living-reader-tool-entry{
+  position:relative;top:auto;right:auto;left:auto;bottom:auto;
+  display:flex;flex-direction:column;align-items:flex-end;
+  width:min(100%,1100px);margin:0 auto;padding:0 3px;
+  z-index:25;
+}
+.living-reader .living-reader-add-button{
+  width:44px;min-width:44px;min-height:44px;
+  padding:2px;border-radius:12px;font-size:22px;
+  box-shadow:none;
+}
+.living-reader .living-reader-add-label{display:none;}
+.living-reader .living-reader-editor-tools{
+  position:relative;top:auto;right:auto;left:auto;bottom:auto;
+  width:min(100%,620px);max-height:min(48dvh,410px);
+  overflow:auto;margin:7px 0 3px;
+  padding:10px;border-radius:12px;box-shadow:0 6px 18px #4932251b;
+}
+.living-reader .living-reader-editor-tools .living-editor-toolbar{
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+}
+.living-reader .living-reader-editor-tools .living-editor-toolset{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  width:100%;gap:5px;
+}
+.living-reader .living-reader-editor-tools .living-editor-toolset button{
+  min-height:40px;font-size:12px;padding:5px 8px;
+}
+.living-reader .living-reader-editor-tools .living-editor-zoom{
+  margin:0;padding:0;border:0;
+}
+.living-reader .living-editor-viewport{
+  width:100%;max-width:1100px;max-height:min(90dvh,1200px);
+  padding:clamp(2px,.7vw,7px);margin:0 auto;
+  background:transparent;border:0;border-radius:0;
+  box-shadow:none;overflow:auto;
+}
+.living-reader .living-editor-paper{
+  width:100%;max-width:1060px;
+  box-shadow:0 3px 14px #50362a1c;
+}
+.living-reader .living-reader-save-strip{
+  display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;
+  gap:8px;width:min(100%,1100px);margin:0 auto 2px;padding:3px 6px;
+  border:1px solid #dfc3ad;border-radius:10px;
+  background:#fff9eede;font-size:12px;color:#77594c;
+}
+.living-reader .living-reader-save-strip > span{
+  flex:1;min-width:80px;line-height:1.4;
+}
+.living-reader .living-reader-save-button{
+  min-height:42px;padding:6px 18px;border:0;border-radius:9px;
+  background:#a46062;color:white;font-size:13px;font-weight:800;
+  cursor:pointer;
+}
+.living-reader .living-reader-save-button:disabled{opacity:.65;}
+.living-reader .living-reader-discard-button{
+  min-height:42px;border:0;background:transparent;
+  color:#8a6660;padding:4px 7px;cursor:pointer;font-size:12px;
+}
+.living-reader .living-reader-photo-picker{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  min-height:42px;padding:5px 11px;border:1px solid #e1c7ba;
+  border-radius:8px;cursor:pointer;font-size:12px;background:#fffaf5;
+}
+.living-reader .living-reader-photo-picker input{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.living-reader .living-reader-photo-picker:focus-within{
+  outline:3px solid var(--action);outline-offset:3px;
+}
+.living-reader .living-reader-pending-photos{
+  font-size:12px;padding:6px 8px;border-radius:8px;background:#f3e7dd;
+  display:grid;gap:2px;
+}
+.living-reader .living-reader-pending-photos small{
+  font-size:11px;color:#8a7167;overflow-wrap:anywhere;
+}
+.living-reader .living-drawing-toolbar{
+  position:relative;top:auto;right:auto;left:auto;
+  width:fit-content;max-width:100%;margin:0 4px 0 auto;
+  padding:6px 9px;box-shadow:none;border-radius:10px;
+}
+.living-reader .living-reader-mode-chip{
+  min-height:38px;padding:4px 10px;font-size:12px;
+}
+.living-reader--focus .living-page-manager,
+.living-reader--focus .living-reader-tool-entry,
+.living-reader--focus .living-drawing-toolbar,
+.living-reader--focus .living-reader-editor-help{
+  display:none!important;
+}
+.living-reader--focus .living-editor-viewport{
+  max-height:min(94dvh,1400px);
+}
+@media(max-width:680px){
+  .living-reader .living-reader-header{padding:0 0 3px;min-height:44px;}
+  .living-reader .living-reader-heading h1{font-size:17px;}
+  .living-reader .living-editor-viewport{
+    padding:0;max-height:88dvh;border-radius:0;
+  }
+  .living-reader .living-reader-tool-entry{padding:0;}
+  .living-reader .living-reader-editor-tools{
+    width:100%;max-height:43dvh;margin:4px 0;
+    padding:7px;border-radius:10px;
+  }
+  .living-reader .living-reader-page-overview{
+    position:relative;top:auto;bottom:auto;right:auto;left:auto;
+    margin:5px auto;max-height:50dvh;width:100%;
+    border-radius:10px;
+  }
+  .living-reader .living-reader-save-strip{padding:3px 5px;gap:4px;}
+  .living-reader .living-reader-save-strip > span{font-size:11px;}
+  .living-reader .living-reader-save-button{padding:5px 12px;}
+  .living-reader .living-editor-paper{box-shadow:0 2px 7px #50362a1b;}
+}
+@media(prefers-reduced-motion:reduce){
+  .living-reader .living-reader-editor-tools,
+  .living-reader .living-reader-save-strip{animation:none!important;transition:none!important;}
+}
