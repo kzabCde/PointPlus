@@ -397,3 +397,96 @@
 @media(prefers-reduced-motion:reduce) {
  .living-real-stamp,.living-paper-object--image {transition:none!important;animation:none!important;}
 }
+
+
+/* M04 — redeemed stamps remain on paper with ink damage; pending claims keep their colour. */
+.living-real-stamp[data-used="true"] .living-real-stamp__image {
+  opacity:.5;filter:grayscale(.75) sepia(.3) contrast(.8);
+}
+.living-real-stamp[data-reserved="true"] .living-real-stamp__image {
+  opacity:.65;filter:sepia(.25) saturate(.7);
+}
+.living-real-stamp__used {
+  position:absolute;top:45%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);
+  display:block;white-space:nowrap;border:2px dashed #a84e55;
+  padding:1px 4px;background:#f7e4d6e6;color:#a44e54;
+  font-size:clamp(7px,1.4vw,14px);font-weight:900;letter-spacing:.04em;
+  text-shadow:0 1px #fff5;
+}
+.living-real-stamp__reserved {
+  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  display:block;white-space:nowrap;border:1px solid #b69b7f;
+  padding:1px 3px;border-radius:3px;background:#fff6e2eb;color:#896d59;
+  font-size:clamp(6px,1vw,10px);font-weight:800;
+}
+.living-redemption-panel {
+  display:grid;gap:18px;padding:clamp(16px,3vw,28px);border:1px solid #e0c7b5;
+  border-radius:16px;background:var(--paper);
+}
+.living-redemption-heading h3 {margin:5px 0;font-size:clamp(18px,2.4vw,26px);}
+.living-redemption-heading p {margin:0;color:var(--muted);line-height:1.65;}
+.living-redemption-eyebrow {color:#a46e67;letter-spacing:.15em;font-size:11px;font-weight:800;}
+.living-redemption-balances {
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;
+}
+.living-redemption-balance {
+  border:1px solid var(--line);border-radius:9px;
+  background:#fffaf3;padding:10px;display:grid;gap:4px;text-align:center;
+}
+.living-redemption-balance strong {font-size:clamp(18px,2vw,27px);font-variant-numeric:tabular-nums;}
+.living-redemption-balance span {color:var(--muted);font-size:12px;}
+.living-redemption-request {
+  display:grid;grid-template-columns:minmax(0,.35fr) minmax(0,1fr);
+  gap:12px;border-top:1px solid var(--line);padding-top:18px;max-width:780px;
+}
+.living-redemption-request h4 {grid-column:1/-1;margin:0;font-size:17px;}
+.living-redemption-request label {display:grid;gap:8px;font-weight:650;font-size:13px;align-content:start;}
+.living-redemption-request input[type="number"]{max-width:140px;font-variant-numeric:tabular-nums;}
+.living-redemption-request textarea {min-height:100px;}
+.living-redemption-preview {grid-column:1/-1;border:1px dashed #d1b6a7;
+  border-radius:9px;padding:12px;display:grid;gap:10px;background:#fff9ef;}
+.living-redemption-preview strong{font-size:13px;}
+.living-redemption-preview small{color:var(--muted);line-height:1.5;}
+.living-redemption-preview-art,.living-redemption-history-stamps{
+  display:flex;align-items:center;flex-wrap:wrap;gap:5px;
+}
+.living-redemption-preview-art img,.living-redemption-history-stamps img{
+  object-fit:contain;width:44px;height:44px;
+}
+.living-redemption-history-stamps img{width:34px;height:34px;opacity:.78;}
+.living-redemption-request>button{justify-self:start;grid-column:1/-1;}
+.living-redemption-note,.living-redemption-feedback,.living-redemption-receipt{
+  margin:0;line-height:1.6;font-size:13px;
+}
+.living-redemption-note{grid-column:1/-1;color:var(--muted);}
+.living-redemption-feedback{color:var(--action);}
+.living-redemption-receipt{color:#886a5b;}
+.living-redemption-history{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:16px;}
+.living-redemption-history>h4{margin:0;}
+.living-redemption-empty{color:var(--muted);margin:0;}
+.living-redemption-history-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.living-redemption-history-entry{display:grid;align-content:start;gap:8px;
+  border:1px solid var(--line);border-radius:12px;padding:15px;background:#fffaf5;}
+.living-redemption-history-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.living-redemption-history-top strong{font-size:17px;}
+.living-redemption-history-top span{font-size:12px;font-weight:750;color:#8b726b;}
+.living-redemption-history-entry[data-redemption-status="fulfilled"] .living-redemption-history-top span{color:#966466;}
+.living-redemption-history-entry[data-redemption-status="canceled"]{opacity:.7;}
+.living-redemption-history-reward{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;}
+.living-redemption-history-entry time{font-size:12px;color:var(--muted);}
+.living-redemption-history-stamp-used,.living-redemption-history-refund{font-size:12px;color:#906c64;margin:0;}
+.living-redemption-history-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.living-redemption-history-actions .button{font-size:12px;min-height:40px;padding:8px 10px;}
+@media(max-width:700px){
+ .living-redemption-balances{grid-template-columns:repeat(3,minmax(0,1fr));}
+ .living-redemption-history-list{grid-template-columns:1fr;}
+}
+@media(max-width:500px){
+ .living-redemption-request{grid-template-columns:1fr;}
+ .living-redemption-request h4,.living-redemption-preview,
+ .living-redemption-request>button,.living-redemption-note{grid-column:1;}
+ .living-redemption-balances{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(prefers-reduced-motion:reduce){
+ .living-real-stamp[data-used="true"]{animation:none;transition:none;}
+}
