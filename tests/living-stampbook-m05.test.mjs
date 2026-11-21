@@ -78,11 +78,13 @@ test('only decorative text, vector drawing and images are reversible, not stamp 
   assert.doesNotMatch(sql,/living_stamp_marks\s+SET|living_stamp_redemptions\s+SET|UPDATE public\.living_stamp_/)
   assert.match(read('features/living-books/editor-actions.ts'),/pointplus_restore_living_book_element/)
 })
-test('Autosave never silently drops a local draft or overwrites other devices',()=>{
+test('manual Save retains local drafts and never overwrites other devices silently',()=>{
   assert.match(code,/draftEdits=useRef\(new Map/)
   assert.match(code,/savedRef=useRef\(new Map/)
-  assert.match(code,/setTimeout\(\(\)=>\{/)
-  assert.match(code,/850\)/)
+  assert.match(code,/function stageObject\(/)
+  assert.match(code,/function discardDrafts\(/)
+  assert.match(code,/className="living-reader-save-strip"/)
+  assert.doesNotMatch(code,/scheduleAutosave|autosaveTimer/)
   assert.match(code,/async function flushDrafts/)
   assert.match(code,/draftEdits\.current\.set\(item\.id,item\)/)
   assert.match(code,/setDirty\(true\);setSaveFailed\(true\)/)
@@ -95,8 +97,9 @@ test('Autosave never silently drops a local draft or overwrites other devices',(
   assert.match(code,/key==='y'\|\|event\.shiftKey/)
   assert.match(code,/Ctrl\/Cmd\+Z/)
 })
-test('Pages save themselves, and navigation refuses a pending editor or page write',()=>{
-  assert.match(pageManager,/setTimeout\(\(\)=>\{void savePage\(\)\},850\)/)
+test('Pages require explicit Save and navigation refuses pending paper or page drafts',()=>{
+  assert.doesNotMatch(pageManager,/setTimeout\(\(\)=>\{void savePage\(\)\},850\)/)
+  assert.match(pageManager,/onClick=\{\(\)=>void savePage\(\)\}/)
   assert.match(pageManager,/expectedVersion:expected/)
   assert.match(pageManager,/savingRef\.current\|\|unsaved\|\|studio\?\.paperUnsaved/)
   assert.match(pageManager,/onClick=\{handleLink\}/)
