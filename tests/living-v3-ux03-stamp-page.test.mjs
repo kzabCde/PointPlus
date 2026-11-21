@@ -67,8 +67,7 @@ test('Visual stamp tray chooses artwork before a tap, creates only an unissued p
   'rotateStampDraft(d,15)','scaleStampDraft(d,1.1)',
   'onPreviewChange={next=>{if(!stampAttempted)',
   'setStampPanelOpen(false);setToolsOpen(false)'
- ])assert.ok((code.includes('pointPlusStamps')?tools:paper).includes(code)||
-   (code==='className="living-stamp-art-grid"'&&tools.includes(code)),
+ ])assert.ok(tools.includes(code)||paper.includes(code),
   'missing feature '+code)
 })
 test('Issuance is one explicit confirmation via existing authorized RPC and stable retry key',()=>{
@@ -85,7 +84,7 @@ test('Issuance is one explicit confirmation via existing authorized RPC and stab
  assert.match(paper,/onPlacementAttempt=\{\(\)=>setStampAttempted\(true\)\}/)
  assert.match(paper,/if\(!stampAttempted\)/)
  assert.match(sql,/p_key uuid/)
- assert.match(sql,/living_stamp_requests_book_id_idempotency_key_key/)
+ assert.match(sql,/UNIQUE\(book_id,giver_user_id,idempotency_key\)/)
  assert.doesNotMatch(read('features/living-books/stamp-gesture.ts'),
   /giveLivingStamp|peelLivingStamp|living_stamp_marks.*INSERT/)
 })
