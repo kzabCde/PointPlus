@@ -604,6 +604,15 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         <span aria-hidden="true">{editable||canGive?'＋':'⌕'}</span>
         <span className="living-reader-add-label">{editable||canGive?'เพิ่ม':'ดู'}</span>
       </button>
+      {tool!=='select'&&!toolsOpen&&<button type="button"
+        className="living-reader-mode-chip"
+        aria-label={'ออกจากโหมด '+(toolLabels.find(item=>item.tool===tool)?.label??tool)}
+        onClick={()=>{
+          setTool('select');setStampPoint(null);setSelectedStampId(null)
+          setStampPanelOpen(false)
+        }}>
+        {toolLabels.find(item=>item.tool===tool)?.label??tool} <span aria-hidden="true">×</span>
+      </button>}
       <div id="living-reader-editor-tools" className="living-reader-editor-tools"
         hidden={!toolsOpen}>
         <div className="living-reader-editor-tools-heading">
@@ -803,7 +812,10 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       pending={requests} pages={pages} canGive={canGive}
       canEdit={editable} canReview={canReview} userId={userId}
       onCancelPlacement={()=>{setStampPoint(null);setTool('select');setStampPanelOpen(false)}}
-      onComplete={()=>{setStampPoint(null);setSelectedStampId(null);setStampPanelOpen(false);router.refresh()}}/>
+      onComplete={()=>{
+        setStampPoint(null);setSelectedStampId(null);setStampPanelOpen(false)
+        setTool('select');router.refresh()
+      }}/> 
     </div>
     {editable&&<details className="living-reader-editor-help">
       <summary>วิธีใช้สมุด</summary>
