@@ -75,6 +75,8 @@ jobs:
         run: node --test tests/living-v3-ux03-stamp-page.test.mjs
       - name: Verify UX04 real React reward rendering, owner/recipient controls and accessible modal
         run: node --test tests/living-v3-ux04-rewards.test.mjs
+      - name: Syntax check staged two-account UX04 browser gate (never Production)
+        run: node --check tests/e2e/living-v3-ux04-browser.mjs
       - name: Verify Server Action runtime exports (prevents client form 500)
         run: node --test tests/server-action-export-boundary.test.mjs
       - name: Typecheck
