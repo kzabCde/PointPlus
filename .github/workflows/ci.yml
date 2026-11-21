@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2, feat/restore-stamp-cards-choice, feat/tap-stamp-card-slots, feat/living-stampbook-v3, feat/living-only-retirement]
+    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2, feat/restore-stamp-cards-choice, feat/tap-stamp-card-slots, feat/living-stampbook-v3, feat/living-only-retirement, feat/living-v3-buttonless-ux]
   pull_request:
 
 permissions:
