@@ -410,18 +410,26 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       z_index:Math.min(1000000,items.reduce((n,e)=>Math.max(n,e.z_index),0)+1),
       version:0,
     }
-    void saveObject(element)
+    void saveObject(element).then(ok=>{if(ok)setEditingTextId(element.id)})
     setTool('select')
   }
 
   function begin(event:PointerEvent<HTMLDivElement>){
+    if((event.target as Element).closest('[data-inline-text], [data-context-toolbar]'))return
     if(event.pointerType==='touch'){
-      activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY})
+      const hit=(event.target as Element).closest<HTMLElement>('[data-editor-id]')
+      activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY,
+        itemId:hit?.dataset.editorId??null})
       if(activeFingers.current.size>=2){
         const [a,b]=[...activeFingers.current.values()]
-        pinch.current={startDistance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
-          initialZoom:zoom}
+        const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))
+        const sameItem=editable&&tool==='select'&&a.itemId&&a.itemId===b.itemId
+          ?items.find(item=>item.id===a.itemId):null
         cancel()
+        pinch.current=sameItem
+          ?{mode:'object',startDistance:distance,initialZoom:zoom,
+            original:sameItem,next:sameItem}
+          :{mode:'canvas',startDistance:distance,initialZoom:zoom}
         try{event.currentTarget.setPointerCapture(event.pointerId)}catch{}
         return
       }
@@ -446,6 +454,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     }
     const target=(event.target as Element).closest<HTMLElement>('[data-editor-id]')
     const element=items.find(item=>item.id===target?.dataset.editorId)
+    const handle=(event.target as Element).closest<HTMLElement>('[data-editor-handle]')
+      ?.dataset.editorHandle
     if(tool==='eraser'&&element?.element_type==='drawing') {
       setSelectedId(element.id)
       void remove(element)
@@ -465,8 +475,12 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     if(tool==='select'){
       setSelectedStampId(null)
       setSelectedId(element?.id??null)
+      if(editingTextId&&element?.id!==editingTextId)setEditingTextId(null)
       if(!element)return
-      gesture.current={mode:'move',id:event.pointerId,startX:event.clientX,
+      const resizeCorner=handle&&['nw','ne','sw','se'].includes(handle)
+        ?handle as ResizeCorner:undefined
+      gesture.current={mode:handle==='rotate'?'rotate':resizeCorner?'resize':'move',
+        corner:resizeCorner,id:event.pointerId,startX:event.clientX,
         startY:event.clientY,original:element,next:element}
     }else if(tool==='pen'){
       gesture.current={mode:'draw',id:event.pointerId,startX:event.clientX,
@@ -485,7 +499,13 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       if(pinch.current&&activeFingers.current.size>=2){
         const [a,b]=[...activeFingers.current.values()]
         const distance=Math.hypot(a.x-b.x,a.y-b.y)
-        setZoom(clamp(pinch.current.initialZoom*distance/pinch.current.startDistance,.6,2.2))
+        const factor=distance/pinch.current.startDistance
+        if(pinch.current.mode==='object'&&pinch.current.original&&canvas.current){
+          const rect=canvas.current.getBoundingClientRect()
+          const next=pinchDecoration(pinch.current.original,factor,rect)
+          pinch.current.next=next
+          setItems(prev=>prev.map(item=>item.id===next.id?next:item))
+        }else setZoom(clamp(pinch.current.initialZoom*factor,.6,2.2))
         return
       }
     }
@@ -516,19 +536,32 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       if(Math.hypot(last.x-p.x,last.y-p.y)<.0015)return
       g.points=[...g.points,p]
       setDraft(g.points)
-    }else if(g.mode==='move'&&g.original){
-      const dx=(event.clientX-g.startX)/bound.width
-      const dy=(event.clientY-g.startY)/bound.height
-      const next={...g.original,
-        position_x:clamp(g.original.position_x+dx,0,1),
-        position_y:clamp(g.original.position_y+dy,0,1)}
+    }else if(g.original&&['move','resize','rotate'].includes(g.mode)){
+      const dx=event.clientX-g.startX
+      const dy=event.clientY-g.startY
+      const next=g.mode==='resize'&&g.corner
+        ?resizeDecoration(g.original,g.corner,dx,dy,bound)
+        :g.mode==='rotate'
+          ?rotateDecoration(g.original,
+            {x:g.startX-bound.left,y:g.startY-bound.top},
+            {x:event.clientX-bound.left,y:event.clientY-bound.top},bound)
+          :moveDecoration(g.original,dx,dy,bound)
       g.next=next
       setItems(prev=>prev.map(item=>item.id===next.id?next:item))
     }
   }
   function finish(event:PointerEvent<HTMLDivElement>){
     activeFingers.current.delete(event.pointerId)
-    if(activeFingers.current.size<2)pinch.current=null
+    if(pinch.current){
+      if(activeFingers.current.size<2){
+        const ended=pinch.current
+        pinch.current=null
+        if(ended.mode==='object'&&ended.original&&ended.next&&
+          !samePaperDecoration(ended.original,ended.next))
+          void saveObject(ended.next,ended.original)
+      }
+      return
+    }
     const g=gesture.current
     if(!g||g.id!==event.pointerId)return
     gesture.current=null
@@ -550,8 +583,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         version:0,
       }
       void saveObject(element)
-    }else if(g.mode==='move'&&g.original&&g.next &&
-      (g.next.position_x!==g.original.position_x||g.next.position_y!==g.original.position_y))
+    }else if(['move','resize','rotate'].includes(g.mode)&&g.original&&g.next&&
+      !samePaperDecoration(g.next,g.original))
       void saveObject(g.next,g.original)
   }
   async function saveStampMove(mark:LivingStampMark,original:LivingStampMark){
@@ -579,10 +612,11 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
   function cancel(){
     const g=gesture.current;gesture.current=null;setDraft([])
-    // Multi-touch gesture takes over only after the current stroke/move is reverted.
-    if(activeFingers.current.size<2)pinch.current=null
-    if(g?.mode==='move'&&g.original)
-      setItems(prev=>prev.map(item=>item.id===g.original?.id?g.original:item) as EditorElement[])
+    const p=pinch.current;pinch.current=null
+    if(p?.mode==='object'&&p.original)
+      setItems(prev=>prev.map(item=>item.id===p.original?.id?p.original!:item))
+    if(g?.original&&['move','resize','rotate'].includes(g.mode))
+      setItems(prev=>prev.map(item=>item.id===g.original?.id?g.original!:item))
     if(g?.mode==='stamp-move'&&g.originalStamp)
       setMarks(prev=>prev.map(mark=>mark.id===g.originalStamp?.id?g.originalStamp!:mark))
   }
