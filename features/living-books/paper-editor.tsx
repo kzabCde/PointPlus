@@ -403,7 +403,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           onSelect={id=>{setSelectedStampId(id);setSelectedId(null)}}/>
         {stampPoint&&<span className="living-stamp-placement-preview"
           style={{left:stampPoint.x*100+'%',top:stampPoint.y*100+'%'}}
-          aria-hidden="true">✚</span>}}
+          aria-hidden="true">✚</span>}
         {draft.length>0&&<svg className="living-editor-draft" viewBox="0 0 1000 1000"
           preserveAspectRatio="none" aria-hidden="true">
           <polyline points={strokePoints(draft)} stroke={penColor}
