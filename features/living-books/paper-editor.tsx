@@ -8,7 +8,10 @@ import {emitPaperCue} from './paper-sound'
 import {appendPaperHistory,emptyPaperHistory,peekPaperHistory,
   completePaperHistory,samePaperDecoration,type PaperHistory} from './paper-history'
 import {deleteLivingPhoto,transformLivingPhoto,transformLivingStamp} from './m03-actions'
-import {LivingStampOverlay,LivingStampTools,LivingPhotoUpload} from './m03-tools'
+import {LivingStampOverlay,LivingStampTools,LivingPhotoUpload,preparePhotoForUpload} from './m03-tools'
+import {uploadLivingPhoto} from './m03-actions'
+import {moveDecoration,resizeDecoration,rotateDecoration,pinchDecoration,
+  type ResizeCorner} from './direct-manipulation'
 import type {LivingStampMark,LivingStampRequest} from './stamp-model'
 import {
   clamp,isHexColor,makeStrokeElement,normalizePoint,normalizeRotation,textDefault,
@@ -23,9 +26,15 @@ type EditorProps={
   canGive:boolean;canReview:boolean;userId:string
 }
 type Gesture={
-  id:number;mode:'draw'|'move'|'hand'|'stamp-move';startX:number;startY:number
+  id:number;mode:'draw'|'move'|'hand'|'stamp-move'|'resize'|'rotate'
+  startX:number;startY:number;corner?:ResizeCorner
   points?:Point[];original?:EditorElement;next?:EditorElement
   scrollX?:number;scrollY?:number;originalStamp?:LivingStampMark;nextStamp?:LivingStampMark
+}
+type Finger={x:number;y:number;itemId:string|null}
+type PinchGesture={
+  mode:'canvas'|'object';startDistance:number;initialZoom:number
+  original?:EditorElement;next?:EditorElement
 }
 const defaultColor='#b76872'
 const toolLabels:{tool:EditorTool;label:string}[]=[
@@ -36,8 +45,10 @@ const toolLabels:{tool:EditorTool;label:string}[]=[
 const strokePoints=(points:Point[])=>points.map(p=>
   Math.round(p.x*1000)+','+Math.round(p.y*1000)).join(' ')
 
-function PaperObject({item,selected,editable,photoSrc}:{
+function PaperObject({item,selected,editable,photoSrc,editingText,onEditText,onTextChange,onFinishText}:{
   item:EditorElement;selected:boolean;editable:boolean;photoSrc?:string
+  editingText:boolean;onEditText:(id:string)=>void
+  onTextChange:(text:string)=>void;onFinishText:()=>void
 }){
   const style:CSSProperties={
     left:(item.position_x*100)+'%',top:(item.position_y*100)+'%',
@@ -45,6 +56,14 @@ function PaperObject({item,selected,editable,photoSrc}:{
     transform:'rotate('+item.rotation_deg+'deg)',opacity:item.opacity,
     zIndex:item.z_index+1000000,
   }
+  const handles=editable&&selected&&<div className="living-selection-handles"
+    aria-hidden="true">
+    {(['nw','ne','sw','se'] as const).map(corner=><span key={corner}
+      data-editor-handle={corner}
+      className={'living-selection-handle living-selection-handle--'+corner}/>)}
+    <span data-editor-handle="rotate" className="living-selection-rotate"
+      title="ลากเพื่อหมุนวัตถุ"/>
+  </div>
   if(item.element_type==='text') {
     const p=item.payload as EditorText
     const fontFamily=p.fontFamily==='serif'?'Georgia,serif':
@@ -52,11 +71,35 @@ function PaperObject({item,selected,editable,photoSrc}:{
     return <div className="living-paper-object living-paper-object--text"
       data-editor-id={item.id} data-selected={selected} style={style}
       role={editable?'button':undefined} tabIndex={editable?0:undefined}
-      aria-label={editable?'เลือกข้อความเพื่อแก้ไข: '+p.text.slice(0,60):undefined}>
-      <div className="living-paper-object__text" style={{
-        color:p.color,fontSize:p.fontSize,fontFamily,textAlign:p.align,
-        fontWeight:p.bold?'bold':'normal',fontStyle:p.italic?'italic':'normal',
-      }}>{p.text}</div>
+      aria-label={editable?'เลือกข้อความเพื่อแก้ไข: '+p.text.slice(0,60):undefined}
+      onDoubleClick={()=>{if(editable)onEditText(item.id)}}
+      onTouchEnd={event=>{
+        if(!editable)return
+        const node=event.currentTarget as HTMLElement & {dataset:DOMStringMap}
+        const last=Number(node.dataset.lastTap??0)
+        const now=Date.now()
+        if(now-last<330){onEditText(item.id);delete node.dataset.lastTap}
+        else node.dataset.lastTap=String(now)
+      }}>
+      {editingText
+        ?<textarea data-inline-text="true" className="living-paper-inline-text"
+          aria-label="แก้ไขข้อความบนกระดาษ" value={p.text}
+          maxLength={5000} onChange={event=>onTextChange(event.target.value)}
+          onBlur={onFinishText}
+          onKeyDown={event=>{
+            event.stopPropagation()
+            if(event.key==='Escape'||((event.ctrlKey||event.metaKey)&&event.key==='Enter')){
+              event.preventDefault();onFinishText()
+            }
+          }} style={{
+            color:p.color,fontSize:p.fontSize,fontFamily,textAlign:p.align,
+            fontWeight:p.bold?'bold':'normal',fontStyle:p.italic?'italic':'normal',
+          }}/>
+        :<div className="living-paper-object__text" style={{
+          color:p.color,fontSize:p.fontSize,fontFamily,textAlign:p.align,
+          fontWeight:p.bold?'bold':'normal',fontStyle:p.italic?'italic':'normal',
+        }}>{p.text}</div>}
+      {handles}
     </div>
   }
   if(item.element_type==='image'){
@@ -72,6 +115,7 @@ function PaperObject({item,selected,editable,photoSrc}:{
             left:(-100*crop.x/crop.width)+'%',top:(-100*crop.y/crop.height)+'%'}}/>
           :<span className="living-paper-object__missing">ภาพส่วนตัวหมดอายุหรือโหลดไม่ได้</span>}
       </div>
+      {handles}
     </div>
   }
   const p=item.payload as EditorDrawing
@@ -84,6 +128,7 @@ function PaperObject({item,selected,editable,photoSrc}:{
       <polyline points={strokePoints(p.points)} fill="none" stroke={p.color}
         strokeWidth={p.strokeWidth*5} strokeLinejoin="round" strokeLinecap="round"/>
     </svg>
+    {handles}
   </div>
 }
 
@@ -101,8 +146,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const canvas=useRef<HTMLDivElement>(null)
   const viewport=useRef<HTMLDivElement>(null)
   const gesture=useRef<Gesture|null>(null)
-  const activeFingers=useRef(new Map<number,{x:number;y:number}>())
-  const pinch=useRef<{startDistance:number;initialZoom:number}|null>(null)
+  const activeFingers=useRef(new Map<number,Finger>())
+  const pinch=useRef<PinchGesture|null>(null)
   const locked=useRef(false)
   const [items,setItems]=useState<EditorElement[]>(initialElements)
   const [photos,setPhotos]=useState(imageUrls)
@@ -140,10 +185,22 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const [notice,setNotice]=useState('')
   const [toolsOpen,setToolsOpen]=useState(false)
   const [stampPanelOpen,setStampPanelOpen]=useState(false)
+  const [editingTextId,setEditingTextId]=useState<string|null>(null)
+  const [advancedOpen,setAdvancedOpen]=useState(false)
+  const [dropActive,setDropActive]=useState(false)
+  const inlineTextRef=useRef<HTMLTextAreaElement|null>(null)
   const selected=items.find(item=>item.id===selectedId)
   const selectedText=selected?.element_type==='text'?selected.payload as EditorText:null
   const selectedPhoto=selected?.element_type==='image'?selected.payload as EditorImage:null
   const selectedStamp=marks.find(mark=>mark.id===selectedStampId)??null
+  useEffect(()=>{setAdvancedOpen(false)},[selectedId])
+  useEffect(()=>{
+    if(!editingTextId)return
+    const textarea=canvas.current?.querySelector<HTMLTextAreaElement>('[data-inline-text]')
+    inlineTextRef.current=textarea??null
+    textarea?.focus()
+    textarea?.select()
+  },[editingTextId])
   useEffect(()=>{
     if(!toolsOpen&&!stampPanelOpen)return
     const onEscape=(event:KeyboardEvent)=>{
