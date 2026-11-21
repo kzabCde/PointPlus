@@ -14,7 +14,10 @@ export function inspectPhoto(bytes:Uint8Array,mime:string):PhotoInfo|null{
       ascii(bytes,12,4)!=='IHDR')return null
     width=u32(bytes,16);height=u32(bytes,20)
     // APNG is deliberately rejected for predictable static scrapbook behavior.
-    if(ascii(bytes,0,bytes.length).includes('acTL'))return null
+    for(let i=24;i+3<bytes.length;i++){
+      if(bytes[i]===97&&bytes[i+1]===99&&bytes[i+2]===84&&bytes[i+3]===76)
+        return null
+    }
   }else if(mime==='image/jpeg'){
     if(bytes[0]!==255||bytes[1]!==216)return null
     let i=2
