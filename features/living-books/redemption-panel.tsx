@@ -13,7 +13,7 @@ import type {
 
 type RedemptionProps={
   spaceId:string;bookId:string;balance:StampBalance;
-  history:LivingRedemption[];candidates:RedemptionStamp[];
+  history:LivingRedemption[];pendingCount:number;candidates:RedemptionStamp[];
   associations:RedemptionAssociation[];knownStamps:RedemptionStamp[];
   canRequest:boolean;canFulfill:boolean;isActive:boolean
 }
@@ -21,7 +21,7 @@ const statusLabel:Record<LivingRedemption['status'],string>={
   requested:'รอยืนยัน',fulfilled:'แลกแล้ว',canceled:'ยกเลิกแล้ว',
 }
 export function LivingRedemptionPanel({
-  spaceId,bookId,balance,history,candidates,associations,knownStamps,
+  spaceId,bookId,balance,history,pendingCount,candidates,associations,knownStamps,
   canRequest,canFulfill,isActive,
 }:RedemptionProps){
   const router=useRouter()
@@ -192,9 +192,13 @@ export function LivingRedemptionPanel({
       <div className="living-redemption-pending-heading">
         <h4>{canFulfill?'คำขอที่รอคุณตอบรับ':'กำลังรอการยืนยัน'}</h4>
         <span className="living-redemption-pending-count">
-          {pending.length.toLocaleString('th-TH')} รายการ
+          {pendingCount.toLocaleString('th-TH')} รายการ
         </span>
       </div>
+      {pendingCount>pending.length&&<p className="living-redemption-note" role="status">
+        แสดง {pending.length.toLocaleString('th-TH')} คำขอล่าสุดจากทั้งหมด
+        {pendingCount.toLocaleString('th-TH')} รายการ
+      </p>}
       {pending.map(item=><article className="living-redemption-pending-entry"
         data-redemption-status="requested" key={item.id}>
         <div className="living-redemption-history-top">
