@@ -111,3 +111,5 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/19_living_stampbook_v3_m04_redemptions.sql
       - name: Verify partial claims, reserved/used marks and authorization
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m04-assertions.sql
+      - name: Verify concurrent redemption cannot double-spend
+        run: bash tests/sql/living-v3-m04-concurrency.sh
