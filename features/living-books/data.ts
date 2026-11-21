@@ -50,6 +50,7 @@ export async function loadLivingBookDetail(spaceId:string,bookId:string) {
 }
 
 import type { EditorElement,LivingEditorPage } from './editor-model'
+import {photoBucket,type LivingStampMark,type LivingStampRequest} from './stamp-model'
 
 /**
  * Fetch page metadata in batches instead of trusting the default PostgREST 1000-row
@@ -87,4 +88,46 @@ export async function loadLivingEditorData(spaceId:string,bookId:string,
     offset+=batch.length
   }
   return {pages,page,elements}
+}
+
+/** Load current-page ledger, including arbitrarily many marks across batches. */
+export async function loadLivingPageMedia(spaceId:string,bookId:string,pageId:string){
+  const {supabase,user}=await getSpaceContext(spaceId)
+  const marks:LivingStampMark[]=[]
+  const requests:LivingStampRequest[]=[]
+  for(let offset=0;;offset+=300){
+    const {data,error}=await supabase.from('living_stamp_marks')
+      .select('id,request_id,book_id,page_id,recipient_participant_id,giver_user_id,asset_id,note,position_x,position_y,rotation_deg,scale_factor,state,version,granted_at,peeled_at')
+      .eq('book_id',bookId).eq('page_id',pageId)
+      .order('granted_at').order('id').range(offset,offset+299)
+    if(error)throw new Error('Cannot load Living Stamp marks')
+    marks.push(...(data??[]) as LivingStampMark[])
+    if((data??[]).length<300)break
+  }
+  for(let offset=0;;offset+=300){
+    const {data,error}=await supabase.from('living_stamp_requests')
+      .select('id,page_id,book_id,recipient_participant_id,giver_user_id,asset_id,note,position_x,position_y,rotation_deg,scale_factor,status,created_at')
+      .eq('book_id',bookId).eq('page_id',pageId).eq('status','pending')
+      .order('created_at').order('id').range(offset,offset+299)
+    if(error)throw new Error('Cannot load Living Stamp requests')
+    requests.push(...(data??[]) as LivingStampRequest[])
+    if((data??[]).length<300)break
+  }
+  const [giverResult,elementResult]=await Promise.all([
+    supabase.from('living_book_givers').select('user_id')
+      .eq('book_id',bookId).eq('user_id',user.id).maybeSingle(),
+    supabase.from('living_book_elements').select('id,payload')
+      .eq('book_id',bookId).eq('page_id',pageId)
+      .eq('element_type','image').is('deleted_at',null),
+  ])
+  if(giverResult.error||elementResult.error)
+    throw new Error('Cannot load Living Book private page media')
+  const imageUrls:Record<string,string>={}
+  await Promise.all((elementResult.data??[]).map(async element=>{
+    const storagePath=element.payload?.storagePath
+    if(typeof storagePath!=='string')return
+    const signed=await supabase.storage.from(photoBucket).createSignedUrl(storagePath,20*60)
+    if(!signed.error&&signed.data?.signedUrl)imageUrls[element.id]=signed.data.signedUrl
+  }))
+  return {marks,requests,imageUrls,canGive:!!giverResult.data}
 }
