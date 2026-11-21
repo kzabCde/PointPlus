@@ -1,17 +1,22 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { loadLivingBookDetail } from '@/features/living-books/data'
-import { AddLivingBookPageForm } from '@/features/living-books/forms'
+import { loadLivingBookDetail, loadLivingEditorData } from '@/features/living-books/data'
+import { LivingPageManager } from '@/features/living-books/page-manager'
+import { LivingPaperEditor } from '@/features/living-books/paper-editor'
 import { BookCover } from '@/features/stamp-books/presentation'
 
 export const metadata: Metadata = {title:'Living Stampbook — สมุดความทรงจำ'}
 
-export default async function LivingBookPage({params}:{
+export default async function LivingBookPage({params,searchParams}:{
   params:Promise<{spaceId:string;bookId:string}>
+  searchParams:Promise<{page?:string|string[]}>
 }){
-  const {spaceId,bookId}=await params
-  const {context,book,summary,lastPage,people}=await loadLivingBookDetail(spaceId,bookId)
+  const [{spaceId,bookId},{page:requestedPage}]=await Promise.all([params,searchParams])
+  const [{context,book,summary,lastPage,people},{pages,page,elements}]=await Promise.all([
+    loadLivingBookDetail(spaceId,bookId),
+    loadLivingEditorData(spaceId,bookId,typeof requestedPage==='string'?requestedPage:undefined),
+  ])
   if(book.space_id!==spaceId)notFound()
   const recipient=people.find(p=>p.id===book.recipient_participant_id)
   const owner=context.user.id===book.owner_user_id
@@ -32,17 +37,12 @@ export default async function LivingBookPage({params}:{
       <div><span>หน้าที่เพิ่มล่าสุด</span><strong>{lastPage?.page_order??1}</strong></div>
       <div><span>สถานะ</span><strong>{book.status==='active'?'เปิดใช้งาน':book.status==='paused'?'พักใช้':'เก็บถาวร'}</strong></div>
     </div>
-    <section className="living-paper-preview" data-background={lastPage?.background_style??'cream'}
-      aria-label="กระดาษหน้าล่าสุด">
-      <span className="living-paper-preview__number">หน้า {lastPage?.page_order??1}</span>
-      <h3>{lastPage?.title||'หน้ากระดาษแห่งความทรงจำ'}</h3>
-      <p>สมุดเล่มนี้พร้อมสำหรับการตกแต่งบนกระดาษใน M02 และแสตมป์อิสระใน M03</p>
-    </section>
-    {owner && book.status==='active' && <section className="card living-book-owner-tools">
-      <h3>เพิ่มหน้ากระดาษ</h3>
-      <p className="muted">หน้าใหม่จะไม่เกิดขึ้นเอง เจ้าของสมุดเพิ่มได้ตามต้องการ</p>
-      <AddLivingBookPageForm spaceId={spaceId} bookId={bookId}/>
-    </section>}
-    {!owner && <p className="muted">คุณสามารถเปิดดูสมุดได้ การเพิ่มหน้าเป็นสิทธิ์ของผู้สร้างสมุด</p>}
+    <div className="living-workspace">
+      <LivingPageManager spaceId={spaceId} bookId={bookId} pages={pages}
+        page={page} editable={owner && book.status==='active'}/>
+      <LivingPaperEditor key={page.id} spaceId={spaceId} bookId={bookId}
+        page={page} initialElements={elements} editable={owner && book.status==='active'}/>
+    </div>
+    {!owner && <p className="muted">คุณสามารถดูความทรงจำได้ เจ้าของสมุดเท่านั้นที่เพิ่มหน้าและแก้ไขกระดาษได้</p>}
   </section>
 }
