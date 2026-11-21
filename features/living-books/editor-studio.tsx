@@ -61,6 +61,9 @@ export function LivingBookStudio({children,title,backHref,description,recipientN
         node.getClientRects().length>0)
       if(nodes.length===0){event.preventDefault();dialog.focus();return}
       const first=nodes[0],last=nodes[nodes.length-1]
+      if(!dialog.contains(document.activeElement)){
+        event.preventDefault();(event.shiftKey?last:first).focus();return
+      }
       if(event.shiftKey&&(document.activeElement===first||document.activeElement===dialog)){
         event.preventDefault();last.focus()
       }else if(!event.shiftKey&&document.activeElement===last){
@@ -137,7 +140,7 @@ export function LivingBookStudio({children,title,backHref,description,recipientN
       </header>
       <div className="living-reader-reward-overlay" hidden={!rewardsOpen}>
         <button type="button" className="living-reader-reward-backdrop"
-          aria-label="ปิดแผงแลกรางวัล" tabIndex={rewardsOpen?0:-1}
+          aria-label="ปิดแผงแลกรางวัล" tabIndex={-1}
           onClick={()=>setRewardsOpen(false)}/>
         <section id="living-reader-rewards" ref={rewardDialogRef}
           role="dialog" aria-modal="true"
