@@ -1,20 +1,82 @@
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import { loadLivingBookDetail, loadLivingEditorData,loadLivingPageMedia } from '@/features/living-books/data'
-import { LivingPageManager } from '@/features/living-books/page-manager'
-import {LivingBookStudio} from '@/features/living-books/editor-studio'
-import { LivingPaperEditor } from '@/features/living-books/paper-editor'
-import { LivingCardBoard } from '@/features/living-books/card-board'
+import type {Metadata} from 'next'
+import Link from 'next/link'
+import {notFound} from 'next/navigation'
+import {loadLivingBookDetail,loadLivingEditorData,loadLivingPageMedia} from '@/features/living-books/data'
+import {loadLivingReadPage} from '@/features/living-books/reader-data'
+import {LivingReadOnlyPage} from '@/features/living-books/read-only-page'
+import {LivingReaderRewards} from '@/features/living-books/read-rewards'
 import {loadLivingRedemptionOverview} from '@/features/living-books/redemption-data'
-import {LivingRewardsOnDemand} from '@/features/living-books/rewards-on-demand'
 
-export const metadata: Metadata = {title:'สมุดความทรงจำ'}
+export const metadata:Metadata={title:'สมุดความทรงจำ'}
 
 export default async function LivingBookPage({params,searchParams}:{
   params:Promise<{spaceId:string;bookId:string}>
-  searchParams:Promise<{page?:string|string[]}>
+  searchParams:Promise<{page?:string|string[];mode?:string|string[]}>
 }){
-  const [{spaceId,bookId},{page:requestedPage}]=await Promise.all([params,searchParams])
+  const [{spaceId,bookId},{page:requestedPage,mode}]=await Promise.all([params,searchParams])
+  const requested=typeof requestedPage==='string'?requestedPage:undefined
+
+  // Reading is default. The full editor code is dynamically imported ONLY
+  // when a user deliberately enters ?mode=edit.
+  if(mode!=='edit'){
+    const [{context,book,people},{page,elements,previous,next,pageNumber,pageCount},
+      {balance,pendingCount}]=await Promise.all([
+      loadLivingBookDetail(spaceId,bookId),
+      loadLivingReadPage(spaceId,bookId,requested),
+      loadLivingRedemptionOverview(spaceId,bookId),
+    ])
+    if(book.space_id!==spaceId)notFound()
+    const {marks,requests,imageUrls,canGive}=await loadLivingPageMedia(
+      spaceId,bookId,page.id,elements)
+    const recipient=people.find(p=>p.id===book.recipient_participant_id)
+    const owner=context.user.id===book.owner_user_id
+    const canReview=Boolean(recipient?.user_id===context.user.id||
+      (!recipient?.user_id&&['owner','admin'].includes(context.member.role)))&&!owner
+    const isRecipient=Boolean(recipient?.user_id===context.user.id||
+      (!recipient?.user_id&&recipient?.kind==='child'&&
+        recipient?.guardian_user_id===context.user.id))&&!owner
+    const base='/s/'+spaceId+'/stamp-books/living/'+bookId
+    const canUseWorkspace=book.status==='active'&&(owner||canReview||canGive)
+    return <section className="stamp-book-page living-book-detail living-reading-page">
+      <header className="living-reading-header">
+        <Link className="living-reader-back" href={'/s/'+spaceId+'/stamp-books'}
+          aria-label="กลับไปหน้ารวมสมุด">←</Link>
+        <div className="living-reading-title">
+          <small>POINT+ / OUR STORY</small>
+          <h1>{book.title}</h1>
+          {recipient&&<p>สำหรับ {recipient.display_name}</p>}
+        </div>
+        {canUseWorkspace&&<Link className="button button--secondary"
+          prefetch={false} href={base+'?mode=edit&page='+page.id}>
+          {owner&&!book.card?'ตกแต่งสมุด':'จัดการแสตมป์'}
+        </Link>}
+      </header>
+      {book.status!=='active'&&<p className="living-reader-status" role="status">
+        {book.status==='paused'?'สมุดพักใช้งานชั่วคราว':'สมุดเก็บเป็นความทรงจำแล้ว'}
+      </p>}
+      <LivingReaderRewards spaceId={spaceId} bookId={bookId}
+        availableStamps={balance.available} pendingRewards={pendingCount}
+        canRequest={isRecipient} canFulfill={owner}
+        isActive={book.status==='active'} card={book.card??null}/>
+      <LivingReadOnlyPage spaceId={spaceId} bookId={bookId}
+        page={page} elements={elements} marks={marks} requests={requests}
+        imageUrls={imageUrls} card={book.card??null} previous={previous}
+        next={next} pageNumber={pageNumber} pageCount={pageCount}/>
+    </section>
+  }
+
+  // Preserve the original editor, cards, approval tools, manual paper Save and
+  // reward modal, but avoid loading these client bundles in ordinary read mode.
+  const [
+    {LivingPageManager},{LivingBookStudio},{LivingPaperEditor},
+    {LivingCardBoard},{LivingRewardsOnDemand},
+  ]=await Promise.all([
+    import('@/features/living-books/page-manager'),
+    import('@/features/living-books/editor-studio'),
+    import('@/features/living-books/paper-editor'),
+    import('@/features/living-books/card-board'),
+    import('@/features/living-books/rewards-on-demand'),
+  ])
   const [{context,book,people},{pages,page,elements}]=await Promise.all([
     loadLivingBookDetail(spaceId,bookId),
     loadLivingEditorData(spaceId,bookId,typeof requestedPage==='string'?requestedPage:undefined),

@@ -85,6 +85,18 @@ jobs:
         run: node --check tests/e2e/living-v3-ux04-browser.mjs
       - name: Syntax check staging-only two-account desktop/mobile V3 card E2E
         run: node --check tests/e2e/living-v3-card-buttonless-browser.mjs
+      - name: Verify M01 Fast Stamp authorized shelf and retry-safe issue contracts
+        run: node --test tests/fast-stamp-m01.test.mjs
+      - name: Verify M02 page-only Reader, card SSR, lazy Editor and rewards
+        run: node --test tests/fast-stamp-m02-reader.test.mjs
+      - name: Verify M03 Fast Creation, immutable retries and atomic RPC contracts
+        run: node --test tests/fast-stamp-m03-creation.test.mjs
+      - name: Verify M04 performance statistics and Staging isolation guard
+        run: node --test tests/m04-performance-verification.test.mjs
+      - name: Syntax check M04 isolated two-account Staging browser harness (no credentials)
+        run: node --check tests/e2e/fast-stamp-m04-staging.mjs
+      - name: Syntax check M04 metrics CLI and Staging guard
+        run: node --check scripts/m04-performance-summary.mjs && node --check tests/e2e/m04-staging-guard.mjs
       - name: Verify Server Action runtime exports (prevents client form 500)
         run: node --test tests/server-action-export-boundary.test.mjs
       - name: Typecheck
@@ -94,7 +106,7 @@ jobs:
 
   verify-living-migrations:
     name: Living M01–M05 PostgreSQL migrations and RLS tests
-    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3' || github.head_ref == 'feat/living-v3-buttonless-integration' || github.head_ref == 'feat/living-v3-compact-manual-save' || github.head_ref == 'perf/living-v3-fast-open-clean-ui'
+    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3' || github.head_ref == 'feat/living-v3-buttonless-integration' || github.head_ref == 'feat/living-v3-compact-manual-save' || github.head_ref == 'perf/living-v3-fast-open-clean-ui' || github.head_ref == 'feat/fast-stamp-performance-m01-m04'
     runs-on: ubuntu-latest
     services:
       postgres:

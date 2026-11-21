@@ -20,19 +20,22 @@ export type LivingSummary = {
 
 export async function loadLivingBookShelf(spaceId:string) {
   const context=await getSpaceContext(spaceId)
-  const [people,response,cardResponse]=await Promise.all([
+  const [people,response,cardResponse,giverResponse]=await Promise.all([
     getSpaceParticipants(spaceId,{includeArchived:true}),
     context.supabase.from('living_books')
       .select('id,space_id,owner_user_id,recipient_participant_id,title,description,cover_asset_id,status,approval_policy,created_at')
       .eq('space_id',spaceId).order('created_at',{ascending:false}).limit(80),
     context.supabase.from('living_book_cards')
       .select('book_id,target_count,reward_title').eq('space_id',spaceId),
+    context.supabase.from('living_book_givers').select('book_id')
+      .eq('space_id',spaceId).eq('user_id',context.user.id),
   ])
-  if(response.error || cardResponse.error) throw new Error('Cannot load Living V3 collections; check card migration and RLS')
+  if(response.error || cardResponse.error || giverResponse.error) throw new Error('Cannot load Living V3 collections and giver permissions')
   const byBook=new Map((cardResponse.data??[]).map(card=>[card.book_id,card]))
   return {books:(response.data??[]).map(book=>({
     ...book,card:byBook.get(book.id)??null,
-  })) as LivingBook[],people,context}
+  })) as LivingBook[],people,context,
+    giverBookIds:(giverResponse.data??[]).map(row=>row.book_id) as string[]}
 }
 
 /** A detail page must never scan the entire Room shelf to open one known book. */

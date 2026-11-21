@@ -79,7 +79,8 @@ const playwright=await import(pathToFileURL(process.env.POINTPLUS_PLAYWRIGHT_COR
 const browser=await playwright.chromium.launch({
  executablePath:process.env.POINTPLUS_CHROMIUM||undefined,args:['--no-sandbox'],
 })
-const deep='/s/'+room+'/stamp-books/living/'+cardId
+// This gate verifies the original interactive card workspace, which M02 makes opt-in.
+const deep='/s/'+room+'/stamp-books/living/'+cardId+'?mode=edit'
 async function login(ctx,[email,password]){
  const page=await ctx.newPage()
  page.setDefaultTimeout(20000)

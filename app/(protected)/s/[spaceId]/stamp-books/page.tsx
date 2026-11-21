@@ -14,7 +14,7 @@ export default async function StampBooksPage({params,searchParams}:{
   const [{spaceId},{view}]=await Promise.all([params,searchParams])
   // Do not load the retired Stamp Book board, cycles and participants a second
   // time. Existing historical tables/routes remain untouched.
-  const {context,books,people}=await loadLivingBookShelf(spaceId)
+  const {context,books,people,giverBookIds}=await loadLivingBookShelf(spaceId)
   const canCreate=context.space.kind==='couple'||canManage(context.member.role)
   const archive=view==='archive'
   const visible=books.filter(book=>(book.status==='archived')===archive)
@@ -27,7 +27,8 @@ export default async function StampBooksPage({params,searchParams}:{
       <Link href={base+'?view=archive'} aria-current={archive?'page':undefined}>ความทรงจำ</Link>
     </nav>
     {visible.length>0
-      ?<LivingBookShelf books={visible} people={people} base={base}/>
+      ?<LivingBookShelf books={visible} people={people} base={base}
+        spaceId={spaceId} giverBookIds={giverBookIds}/>
       :<div className="card empty-state">
         <h3>{archive?'ยังไม่มีสมุดที่เก็บไว้':'ยังไม่มีสมุดหรือการ์ด'}</h3>
         {!archive&&canCreate&&<Link href={base+'/new'} className="button button--primary">
