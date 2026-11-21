@@ -32,7 +32,8 @@ The browser cannot add spendable stamps using this table; accepted element types
 
 ## Verification / known limitations
 - GitHub CI runs `tests/living-stampbook-m02.test.mjs` with permission/contract and pure geometry cases, all existing compatibility tests, TypeScript and Next.js build.
-- **No isolated Supabase migration execution or real authenticated two-user browser E2E is claimed yet.** Supabase development branch creation requires extra hourly compute cost confirmation. Production migration remains NOT APPLIED.
+- **Isolated SQL verification:** GitHub Actions runs PostgreSQL 16 in an ephemeral container, applies M01 then M02 migrations to a minimal Room/Auth fixture, and verifies 121 manually created pages, page reordering, owner-only edit/deny paths, version conflict handling, payload rejection, soft deletion, permissions and outsider RLS. This is a real PostgreSQL migration test, but it is not a fully provisioned Supabase branch or a two-account browser E2E.
+- **Remaining hosted validation:** A full Supabase Development Branch requires extra compute cost confirmation. Authenticated browser E2E and hosted Storage/RLS integration remain untested. Production migration remains NOT APPLIED.
 - M05 will add autosave/undo/redo, image/page virtualization for very large books, touch-gesture polish, E2E and cross-device recovery. M02 currently relies on explicit saves for property edits; dragging/drawing submits on pointer release.
 - The editor does not provide M03 images, stamp transformations, or flexible M04 rewards. Existing fixed-slot Stamp Card functionality is left untouched.
 
