@@ -21,7 +21,7 @@ const isReceipt=(value:unknown):value is RedemptionReceipt=>{
   const r=value as Record<string,unknown>
   return isUuid(String(r.id))&&
     ['requested','fulfilled','canceled'].includes(String(r.status))&&
-    Number.isSafeInteger(r.quantity)&&Number(r.quantity)>0&&
+    typeof r.quantity==='number'&&Number.isSafeInteger(r.quantity)&&r.quantity>0&&
     (r.mark_ids===undefined||(Array.isArray(r.mark_ids)&&r.mark_ids.every(isUuid)))
 }
 async function validContext(input:Context){
@@ -51,10 +51,15 @@ export async function requestLivingRedemption(input:Context&{
     p_book:input.bookId,p_quantity:input.quantity,
     p_reward_message:reward,p_key:input.idempotencyKey,
   })
-  if(error||!isReceipt(data)||data.status!=='requested')
+  if(error||!isReceipt(data))
     return errorReply(error,'ส่งคำขอแลกรางวัล')
   revalidatePath(url(input))
-  return {ok:true,data,message:'จองแสตมป์และส่งคำขอแลกรางวัลแล้ว รอเจ้าของสมุดยืนยัน'}
+  const message=data.status==='requested'
+    ?'จองแสตมป์และส่งคำขอแลกรางวัลแล้ว รอเจ้าของสมุดยืนยัน'
+    :data.status==='fulfilled'
+      ?'คำขอนี้ได้รับการยืนยันแล้ว แสตมป์ที่ใช้ยังคงเป็นรายการแลกแล้ว'
+      :'คำขอนี้ถูกยกเลิกไปแล้ว กรุณาสร้างคำขอใหม่'
+  return {ok:true,data,message}
 }
 export async function fulfillLivingRedemption(input:Context&{
   redemptionId:string
