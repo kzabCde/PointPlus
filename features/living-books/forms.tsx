@@ -6,8 +6,10 @@ import { pointPlusStamps } from '@/lib/point-plus/assets'
 import type { Participant } from '@/features/spaces/data'
 import { LivingBookCover } from './cover'
 import {
-  createLivingBookAction,addLivingBookPageAction,livingIdle,
+  createLivingBookAction,addLivingBookPageAction,type LivingActionState,
 } from './actions'
+
+const livingIdle:LivingActionState={status:'idle',message:''}
 
 type CreationProps = {
   spaceId:string;userId:string;kind:string;participants:Participant[]
