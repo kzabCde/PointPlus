@@ -6,6 +6,7 @@ export type LivingBook = {
   title: string; description: string | null; cover_asset_id: string | null
   status: 'active' | 'paused' | 'archived'
   approval_policy: 'direct' | 'approval_required'; created_at: string
+  card?: { target_count:number; reward_title:string } | null
 }
 export type LivingPage = {
   id:string;book_id:string;space_id:string;page_order:number;title:string|null
@@ -19,14 +20,19 @@ export type LivingSummary = {
 
 export async function loadLivingBookShelf(spaceId:string) {
   const context=await getSpaceContext(spaceId)
-  const [people,response]=await Promise.all([
+  const [people,response,cardResponse]=await Promise.all([
     getSpaceParticipants(spaceId,{includeArchived:true}),
     context.supabase.from('living_books')
       .select('id,space_id,owner_user_id,recipient_participant_id,title,description,cover_asset_id,status,approval_policy,created_at')
       .eq('space_id',spaceId).order('created_at',{ascending:false}).limit(80),
+    context.supabase.from('living_book_cards')
+      .select('book_id,target_count,reward_title').eq('space_id',spaceId),
   ])
-  if(response.error) throw new Error('Cannot load Living Books; M01 migration must be installed before enabling this feature')
-  return {books:(response.data??[]) as LivingBook[],people,context}
+  if(response.error || cardResponse.error) throw new Error('Cannot load Living V3 collections; check card migration and RLS')
+  const byBook=new Map((cardResponse.data??[]).map(card=>[card.book_id,card]))
+  return {books:(response.data??[]).map(book=>({
+    ...book,card:byBook.get(book.id)??null,
+  })) as LivingBook[],people,context}
 }
 
 export async function loadLivingBookDetail(spaceId:string,bookId:string) {
@@ -36,15 +42,17 @@ export async function loadLivingBookDetail(spaceId:string,bookId:string) {
     .eq('id',bookId).eq('space_id',spaceId).maybeSingle()
   if(error) throw new Error('Cannot load Living Book')
   if(!book) notFound()
-  const [summary,last]=await Promise.all([
+  const [summary,last,cardResult]=await Promise.all([
     context.supabase.rpc('pointplus_get_living_book_summary',{p_book:bookId}),
     context.supabase.from('living_book_pages')
       .select('id,book_id,space_id,page_order,title,background_style,version')
       .eq('book_id',bookId).eq('space_id',spaceId).order('page_order',{ascending:false}).limit(1).maybeSingle(),
+    context.supabase.from('living_book_cards')
+      .select('target_count,reward_title').eq('book_id',bookId).eq('space_id',spaceId).maybeSingle(),
   ])
-  if(summary.error || !summary.data || last.error) throw new Error('Cannot load Living Book summary')
+  if(summary.error || !summary.data || last.error || cardResult.error) throw new Error('Cannot load Living Book summary')
   return {
-    context,people:people as Participant[],book:book as LivingBook,
+    context,people:people as Participant[],book:{...book,card:cardResult.data??null} as LivingBook,
     summary:summary.data as LivingSummary,lastPage:last.data as LivingPage|null,
   }
 }

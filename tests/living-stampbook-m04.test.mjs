@@ -109,7 +109,9 @@ test('M04 transitions are final for fulfilled stamps and cancellation restores r
 test('M04 UI lets recipient choose any valid quantity, enter free text and preview stamp artwork',()=>{
   assert.match(panel,/type="number" min="1"/)
   assert.match(panel,/max=\{Math\.max\(max,1\)\}/)
-  assert.match(panel,/reward\.trim\(\)\.length>0/)
+  assert.match(panel,/requestedReward\.trim\(\)\.length>0/)
+  assert.match(panel,/requestedReward=card\?\.reward_title\?\?reward/)
+  assert.match(panel,/requestedQuantity=card\?\.target_count\?\?quantity/)
   assert.match(panel,/maxLength=\{2000\}/)
   assert.match(panel,/sample=candidates\.slice/)
   assert.match(panel,/stampArtwork\.get/)

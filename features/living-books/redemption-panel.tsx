@@ -16,13 +16,14 @@ type RedemptionProps={
   history:LivingRedemption[];candidates:RedemptionStamp[];
   associations:RedemptionAssociation[];knownStamps:RedemptionStamp[];
   canRequest:boolean;canFulfill:boolean;isActive:boolean
+  card?:{target_count:number;reward_title:string}
 }
 const statusLabel:Record<LivingRedemption['status'],string>={
   requested:'รอยืนยัน',fulfilled:'แลกแล้ว',canceled:'ยกเลิกแล้ว',
 }
 export function LivingRedemptionPanel({
   spaceId,bookId,balance,history,candidates,associations,knownStamps,
-  canRequest,canFulfill,isActive,
+  canRequest,canFulfill,isActive,card,
 }:RedemptionProps){
   const router=useRouter()
   const [quantity,setQuantity]=useState(1)
@@ -33,12 +34,14 @@ export function LivingRedemptionPanel({
   const [lastStampIds,setLastStampIds]=useState<string[]>([])
   useEffect(()=>setKey(crypto.randomUUID()),[])
   const max=balance.available
-  const count=Math.max(1,Math.min(quantity,Math.max(1,max)))
+  const requestedQuantity=card?.target_count??quantity
+  const requestedReward=card?.reward_title??reward
+  const count=Math.max(1,Math.min(requestedQuantity,Math.max(1,max)))
   const sample=candidates.slice(0,Math.min(count,12))
   const remaining=Math.max(0,count-sample.length)
-  const sendable=canRequest&&isActive&&max>0&&quantity>=1&&
-    quantity<=max&&Number.isSafeInteger(quantity)&&
-    reward.trim().length>0&&reward.trim().length<=2000&&!!key
+  const sendable=canRequest&&isActive&&max>0&&requestedQuantity>=1&&
+    requestedQuantity<=max&&Number.isSafeInteger(requestedQuantity)&&
+    requestedReward.trim().length>0&&requestedReward.trim().length<=2000&&!!key
 
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault()
@@ -46,7 +49,7 @@ export function LivingRedemptionPanel({
     setBusy('request');setFeedback('')
     try{
       const receipt=await requestLivingRedemption({
-        spaceId,bookId,quantity,rewardMessage:reward,idempotencyKey:key,
+        spaceId,bookId,quantity:requestedQuantity,rewardMessage:requestedReward,idempotencyKey:key,
       })
       setFeedback(receipt.message)
       if(receipt.ok){
@@ -77,7 +80,7 @@ export function LivingRedemptionPanel({
       <div>
         <span className="living-redemption-eyebrow">POINT+ / LIVING MEMORIES</span>
         <h3>ใช้แสตมป์แลกความทรงจำ</h3>
-        <p>คนรับแสตมป์เลือกจำนวนและเขียนข้อความรางวัลเอง สมุดไม่ปิดเมื่อแลกรางวัล</p>
+        <p>{card?'สะสมให้ครบทุกช่องก่อนแลกรางวัลที่กำหนด':'คนรับแสตมป์เลือกจำนวนและเขียนข้อความรางวัลเอง สมุดไม่ปิดเมื่อแลกรางวัล'}</p>
       </div>
     </header>
     <div className="living-redemption-balances" role="group" aria-label="ยอดแสตมป์ของสมุดทั้งหมด">
@@ -96,19 +99,20 @@ export function LivingRedemptionPanel({
     {canRequest&&isActive&&<form className="living-redemption-request"
       onSubmit={event=>void submit(event)}>
       <h4>ขอแลกรางวัล</h4>
-      <label htmlFor="living-redeem-quantity">ต้องการใช้กี่ดวง?
+      {!card&&<label htmlFor="living-redeem-quantity">ต้องการใช้กี่ดวง?
         <input id="living-redeem-quantity" name="quantity" className="input"
           type="number" min="1" max={Math.max(max,1)} step="1" required
           disabled={max===0||busy!==null} value={quantity}
           onChange={event=>setQuantity(Number(event.target.value))}/>
-      </label>
-      <label htmlFor="living-redeem-reward">อยากได้รางวัลอะไร?
+      </label>}
+      {!card&&<label htmlFor="living-redeem-reward">อยากได้รางวัลอะไร?
         <textarea id="living-redeem-reward" name="reward_message" className="input"
           rows={3} maxLength={2000} required value={reward}
           placeholder="เช่น ขอไปปิกนิกด้วยกันหนึ่งวัน"
           disabled={max===0||busy!==null}
           onChange={event=>setReward(event.target.value)}/>
-      </label>
+      </label>}
+      {card&&<p role="status">รางวัล: <strong>{card.reward_title}</strong> · ใช้ {card.target_count} ดวงเมื่อครบ</p>}
       {max===0
         ?<p role="status" className="living-redemption-note">ยังไม่มีแสตมป์พร้อมใช้ เมื่อได้รับแสตมป์ใหม่จึงขอแลกได้</p>
         :<div className="living-redemption-preview">

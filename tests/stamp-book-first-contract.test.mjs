@@ -68,8 +68,9 @@ test('new UI contains book form, 18-style picker, giver dialog, slot stamps and 
  assert.match(layout,/stamp-books/)
  assert.doesNotMatch(layout,/href=\{base\+'\/missions'\}/)
  const room=read('app/(protected)/s/[spaceId]/page.tsx')
- assert.match(room,/loadStampBookBoard/)
- assert.doesNotMatch(room,/loadRoomActivityPreview/)
+ assert.match(room,/loadLivingBookShelf/)
+ assert.doesNotMatch(room,/loadStampBookBoard|loadRoomActivityPreview/)
+ assert.match(room,/สร้างสมุดหรือการ์ด/)
 })
 
 test('old collection and Points storefront routes now redirect; legacy retirement staged, not executed',()=>{
