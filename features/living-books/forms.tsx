@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
 import type { Participant, Membership } from '@/features/spaces/data'
 import { BookCover } from '@/features/stamp-books/presentation'
-import { CreateCoupleStampBookForm, CreateStampBookForm } from '@/features/stamp-books/forms'
 import {
-  createLivingBookAction,addLivingBookPageAction, type LivingActionState,
+  createLivingBookAction,createLivingCardAction,addLivingBookPageAction, type LivingActionState,
 } from './actions'
 
 const livingIdle: LivingActionState={status:'idle',message:''}
@@ -35,17 +34,13 @@ export function CollectionCreationChoice(props:CreationProps) {
         </label>
       </div>
     </fieldset>
-    {format==='living' ? <CreateLivingBookForm {...props}/> :
-      props.kind==='couple'
-        ? <CreateCoupleStampBookForm spaceId={props.spaceId} userId={props.userId}
-            participants={props.participants} cardOnly/>
-        : <CreateStampBookForm {...props} cardOnly/>}
+    <CreateLivingBookForm key={format} {...props} format={format}/>
   </div>
 }
 
-export function CreateLivingBookForm({spaceId,userId,kind,participants}:CreationProps) {
+export function CreateLivingBookForm({spaceId,userId,kind,participants,format='living'}:CreationProps&{format?:'living'|'card'}) {
   const router=useRouter()
-  const [state,action,pending]=useActionState(createLivingBookAction,livingIdle)
+  const [state,action,pending]=useActionState(format==='card'?createLivingCardAction:createLivingBookAction,livingIdle)
   const [key,setKey]=useState('')
   const [cover,setCover]=useState(pointPlusStamps[0].id)
   useEffect(()=>{setKey(crypto.randomUUID())},[])
@@ -64,8 +59,8 @@ export function CreateLivingBookForm({spaceId,userId,kind,participants}:Creation
   return <form action={action} className="card living-creation-form">
     <input type="hidden" name="space_id" value={spaceId}/>
     <input type="hidden" name="idempotency_key" value={key}/>
-    <h3>สมุดความทรงจำเล่มใหม่</h3>
-    <p className="muted">เริ่มด้วยกระดาษหนึ่งหน้า เพิ่มหน้าด้วยตัวเองได้ ไม่มีจำนวนแสตมป์สูงสุด และไม่ปิดสมุดอัตโนมัติ</p>
+    <h3>{format==='card'?'การ์ดสะสมใบใหม่':'สมุดความทรงจำเล่มใหม่'}</h3>
+    <p className="muted">{format==='card'?'เลือกจำนวนช่องและรางวัลสำหรับผู้รับ แสตมป์แต่ละดวงจะอยู่ในช่องที่ระบุ':'เริ่มด้วยกระดาษหนึ่งหน้า เพิ่มหน้าด้วยตัวเองได้ ไม่มีจำนวนแสตมป์สูงสุด และไม่ปิดสมุดอัตโนมัติ'}</p>
     <label htmlFor="living-book-title">ชื่อสมุด</label>
     <input className="input" id="living-book-title" name="title" required
       maxLength={160} placeholder="เช่น Our Little Memories"/>
@@ -82,6 +77,14 @@ export function CreateLivingBookForm({spaceId,userId,kind,participants}:Creation
       {pointPlusStamps.map(stamp=><option key={stamp.id} value={stamp.id}>{stamp.nameTh}</option>)}
     </select>
     <BookCover assetId={cover}/>
+    {format==='card'&&<>
+      <label htmlFor="living-card-target">จำนวนช่องบนการ์ด (1–100)</label>
+      <input id="living-card-target" className="input" type="number" name="target_count"
+        min={1} max={100} step={1} defaultValue={6} required/>
+      <label htmlFor="living-card-reward">รางวัลเมื่อสะสมครบ</label>
+      <input id="living-card-reward" className="input" name="reward_title"
+        maxLength={160} placeholder="เช่น ไปปิกนิกด้วยกัน" required/>
+    </>}
     {kind==='couple'
       ? <input type="hidden" name="approval_policy" value="direct"/>
       : <label htmlFor="living-book-approval">การให้แสตมป์ในอนาคต
@@ -92,7 +95,7 @@ export function CreateLivingBookForm({spaceId,userId,kind,participants}:Creation
         </label>}
     {state.status==='error' && <p role="alert" className="form-field__error">{state.message}</p>}
     <button className="button button--primary" disabled={!key||pending||state.status==='success'} type="submit">
-      {pending?'กำลังสร้าง…':'สร้างสมุด Living'}
+      {pending?'กำลังสร้าง…':format==='card'?'สร้างการ์ดสะสม':'สร้างสมุดความทรงจำ'}
     </button>
   </form>
 }
