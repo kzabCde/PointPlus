@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
-import type { Participant, Membership } from '@/features/spaces/data'
+import type { Participant } from '@/features/spaces/data'
 import { BookCover } from '@/features/stamp-books/presentation'
 import {
   createLivingBookAction,createLivingCardAction,addLivingBookPageAction, type LivingActionState,
@@ -12,7 +12,7 @@ import {
 const livingIdle: LivingActionState={status:'idle',message:''}
 
 type CreationProps = {
-  spaceId:string;userId:string;kind:string;participants:Participant[];members:Membership[]
+  spaceId:string;userId:string;kind:string;participants:Participant[]
 }
 export function CollectionCreationChoice(props:CreationProps) {
   const [format,setFormat]=useState<'living'|'card'>('living')
@@ -24,13 +24,13 @@ export function CollectionCreationChoice(props:CreationProps) {
           <input type="radio" name="top_level_format" value="living"
             checked={format==='living'} onChange={()=>setFormat('living')}/>
           <strong>สมุดความทรงจำ</strong>
-          <span>สมุดเล่มเดียว เพิ่มหน้าเอง รับแสตมป์ไม่จำกัด และแลกบางส่วนได้ในอนาคต</span>
+          <span>เขียนเรื่องราวและเก็บแสตมป์บนกระดาษ</span>
         </label>
         <label className="stamp-format-option" data-selected={format==='card'}>
           <input type="radio" name="top_level_format" value="card"
             checked={format==='card'} onChange={()=>setFormat('card')}/>
           <strong>การ์ดสะสม</strong>
-          <span>ช่องหมายเลขแบบเดิม กดเลือกช่องแล้วแปะแสตมป์</span>
+          <span>สะสมให้ครบช่องเพื่อแลกรางวัล</span>
         </label>
       </div>
     </fieldset>
@@ -60,7 +60,6 @@ export function CreateLivingBookForm({spaceId,userId,kind,participants,format='l
     <input type="hidden" name="space_id" value={spaceId}/>
     <input type="hidden" name="idempotency_key" value={key}/>
     <h3>{format==='card'?'การ์ดสะสมใบใหม่':'สมุดความทรงจำเล่มใหม่'}</h3>
-    <p className="muted">{format==='card'?'เลือกจำนวนช่องและรางวัลสำหรับผู้รับ แสตมป์แต่ละดวงจะอยู่ในช่องที่ระบุ':'เริ่มด้วยกระดาษหนึ่งหน้า เพิ่มหน้าด้วยตัวเองได้ ไม่มีจำนวนแสตมป์สูงสุด และไม่ปิดสมุดอัตโนมัติ'}</p>
     <label htmlFor="living-book-title">ชื่อสมุด</label>
     <input className="input" id="living-book-title" name="title" required
       maxLength={160} placeholder="เช่น Our Little Memories"/>

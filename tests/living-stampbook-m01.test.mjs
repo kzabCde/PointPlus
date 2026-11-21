@@ -87,9 +87,10 @@ test('M01 collection entry remains available while V3 card creation replaces ret
   assert.match(forms,/AddLivingBookPageForm/)
   assert.match(newPage,/CollectionCreationChoice/)
   assert.match(library,/LivingBookShelf/)
-  assert.match(library,/BookShelf/)
+  assert.match(library,/LivingBookShelf/)
   assert.match(read('features/living-books/card-board.tsx'),/giveLivingStamp/)
-  assert.match(data,/pointplus_get_living_book_summary/)
+  assert.match(data,/loadLivingBookDetail/)
+  assert.doesNotMatch(data,/\.rpc\('pointplus_get_living_book_summary'/)
 })
 function mockActions({role='member',kind='couple',owner=id,status='active'}={}){
   const calls=[]

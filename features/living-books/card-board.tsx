@@ -30,7 +30,6 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
   const {columns,rows}=cardGrid(target)
   const [selected,setSelected]=useState<number|null>(null)
   const sheetRef=useRef<HTMLElement|null>(null)
-  const slotRefs=useRef(new Map<number,HTMLButtonElement>())
   const submitLock=useRef(false)
   const [asset,setAsset]=useState(pointPlusStamps[0].id)
   const [note,setNote]=useState('')
@@ -84,7 +83,6 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
     const slot=slotNumber(Number(request.position_x),Number(request.position_y),target)
     if(slot)pendingBySlot.set(slot,request)
   }
-  const occupied=marksBySlot.size+Array.from(pendingBySlot.keys()).filter(slot=>!marksBySlot.has(slot)).length
 
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault()
@@ -132,8 +130,6 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
 
   return <section className="living-card-sheet" aria-label="การ์ดสะสมแบบแตะช่อง">
     <header className="living-card-heading">
-      <span className="living-card-kicker">POINT+ / STAMP CARD</span>
-      <h2>การ์ดแห่งความทรงจำ</h2>
       <p className="living-card-progress" role="status">
         <strong>{marksBySlot.size}</strong> / {target} ดวง
       </p>
@@ -152,10 +148,7 @@ export function LivingCardBoard({spaceId,bookId,pageId,target,reward,marks,reque
           mark.state==='redeemed'?'แลกแล้ว':mark.state==='reserved'?'จองแลกแล้ว':'ได้รับแสตมป์'):
           pending?'ช่อง '+slot+': รออนุมัติ':'ช่อง '+slot+': ว่าง'
         const disabled=!canGive||!active||!!mark||!!pending||busy||attempted
-        return <button type="button" key={slot} ref={node=>{
-            if(node)slotRefs.current.set(slot,node)
-            else slotRefs.current.delete(slot)
-          }}
+        return <button type="button" key={slot}
           className="living-card-slot" data-state={mark?.state??(pending?'pending':'empty')}
           aria-label={label} aria-pressed={selected===slot}
           disabled={disabled}

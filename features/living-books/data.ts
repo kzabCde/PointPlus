@@ -35,25 +35,24 @@ export async function loadLivingBookShelf(spaceId:string) {
   })) as LivingBook[],people,context}
 }
 
+/** A detail page must never scan the entire Room shelf to open one known book. */
 export async function loadLivingBookDetail(spaceId:string,bookId:string) {
-  const {context,people}=await loadLivingBookShelf(spaceId)
-  const {data:book,error}=await context.supabase.from('living_books')
-    .select('id,space_id,owner_user_id,recipient_participant_id,title,description,cover_asset_id,status,approval_policy,created_at')
-    .eq('id',bookId).eq('space_id',spaceId).maybeSingle()
-  if(error) throw new Error('Cannot load Living Book')
-  if(!book) notFound()
-  const [summary,last,cardResult]=await Promise.all([
-    context.supabase.rpc('pointplus_get_living_book_summary',{p_book:bookId}),
-    context.supabase.from('living_book_pages')
-      .select('id,book_id,space_id,page_order,title,background_style,version')
-      .eq('book_id',bookId).eq('space_id',spaceId).order('page_order',{ascending:false}).limit(1).maybeSingle(),
+  const [context,people]=await Promise.all([
+    getSpaceContext(spaceId),
+    getSpaceParticipants(spaceId,{includeArchived:true}),
+  ])
+  const [bookResult,cardResult]=await Promise.all([
+    context.supabase.from('living_books')
+      .select('id,space_id,owner_user_id,recipient_participant_id,title,description,cover_asset_id,status,approval_policy,created_at')
+      .eq('id',bookId).eq('space_id',spaceId).maybeSingle(),
     context.supabase.from('living_book_cards')
       .select('target_count,reward_title').eq('book_id',bookId).eq('space_id',spaceId).maybeSingle(),
   ])
-  if(summary.error || !summary.data || last.error || cardResult.error) throw new Error('Cannot load Living Book summary')
+  if(bookResult.error||cardResult.error)throw new Error('Cannot load Living Book')
+  if(!bookResult.data)notFound()
   return {
-    context,people:people as Participant[],book:{...book,card:cardResult.data??null} as LivingBook,
-    summary:summary.data as LivingSummary,lastPage:last.data as LivingPage|null,
+    context,people:people as Participant[],
+    book:{...bookResult.data,card:cardResult.data??null} as LivingBook,
   }
 }
 
@@ -98,51 +97,60 @@ export async function loadLivingEditorData(spaceId:string,bookId:string,
   return {pages,page,elements}
 }
 
-/** Load current-page ledger, including arbitrarily many marks across batches. */
-export async function loadLivingPageMedia(spaceId:string,bookId:string,pageId:string){
+/**
+ * Ledger and giver checks are independent: read concurrently rather than
+ * chaining three round trips. The page decoration fetch already has photo
+ * storage paths, so never fetch the same elements a second time.
+ */
+export async function loadLivingPageMedia(spaceId:string,bookId:string,pageId:string,
+  pageElements:EditorElement[]=[]){
   const {supabase,user}=await getSpaceContext(spaceId)
-  const marks:LivingStampMark[]=[]
-  const requests:LivingStampRequest[]=[]
-  for(let offset=0;;offset+=300){
-    const {data,error}=await supabase.from('living_stamp_marks')
-      .select('id,request_id,book_id,page_id,recipient_participant_id,giver_user_id,asset_id,note,position_x,position_y,rotation_deg,scale_factor,state,version,granted_at,peeled_at,reserved_at,redeemed_at,redemption_id')
-      .eq('book_id',bookId).eq('page_id',pageId)
-      .order('granted_at').order('id').range(offset,offset+299)
-    if(error)throw new Error('Cannot load Living Stamp marks')
-    marks.push(...(data??[]) as LivingStampMark[])
-    if((data??[]).length<300)break
-  }
-  for(let offset=0;;offset+=300){
-    const {data,error}=await supabase.from('living_stamp_requests')
-      .select('id,page_id,book_id,recipient_participant_id,giver_user_id,asset_id,note,position_x,position_y,rotation_deg,scale_factor,status,created_at')
-      .eq('book_id',bookId).eq('page_id',pageId).eq('status','pending')
-      .order('created_at').order('id').range(offset,offset+299)
-    if(error)throw new Error('Cannot load Living Stamp requests')
-    requests.push(...(data??[]) as LivingStampRequest[])
-    if((data??[]).length<300)break
-  }
-  const giverResult=await supabase.from('living_book_givers').select('user_id')
+  const marksPromise=(async()=>{
+    const rows:LivingStampMark[]=[]
+    for(let offset=0;;offset+=300){
+      const {data,error}=await supabase.from('living_stamp_marks')
+        .select('id,request_id,book_id,page_id,recipient_participant_id,giver_user_id,asset_id,note,position_x,position_y,rotation_deg,scale_factor,state,version,granted_at,peeled_at,reserved_at,redeemed_at,redemption_id')
+        .eq('book_id',bookId).eq('page_id',pageId)
+        .order('granted_at').order('id').range(offset,offset+299)
+      if(error)throw new Error('Cannot load Living Stamp marks')
+      rows.push(...(data??[]) as LivingStampMark[])
+      if((data??[]).length<300)break
+    }
+    return rows
+  })()
+  const requestsPromise=(async()=>{
+    const rows:LivingStampRequest[]=[]
+    for(let offset=0;;offset+=300){
+      const {data,error}=await supabase.from('living_stamp_requests')
+        .select('id,page_id,book_id,recipient_participant_id,giver_user_id,asset_id,note,position_x,position_y,rotation_deg,scale_factor,status,created_at')
+        .eq('book_id',bookId).eq('page_id',pageId).eq('status','pending')
+        .order('created_at').order('id').range(offset,offset+299)
+      if(error)throw new Error('Cannot load Living Stamp requests')
+      rows.push(...(data??[]) as LivingStampRequest[])
+      if((data??[]).length<300)break
+    }
+    return rows
+  })()
+  const giverPromise=supabase.from('living_book_givers').select('user_id')
     .eq('book_id',bookId).eq('user_id',user.id).maybeSingle()
+  const photosPromise=(async()=>{
+    const photos=pageElements.filter(item=>item.element_type==='image')
+    const urls:Record<string,string>={}
+    // Signed photo URLs are private and expire in 20 minutes. Limit concurrent
+    // Storage calls rather than making N requests sequentially.
+    for(let index=0;index<photos.length;index+=8){
+      await Promise.all(photos.slice(index,index+8).map(async item=>{
+        const storagePath=(item.payload as {storagePath?:string}).storagePath
+        if(typeof storagePath!=='string')return
+        const signed=await supabase.storage.from(photoBucket).createSignedUrl(storagePath,20*60)
+        if(!signed.error&&signed.data?.signedUrl)urls[item.id]=signed.data.signedUrl
+      }))
+    }
+    return urls
+  })()
+  const [marks,requests,giverResult,imageUrls]=await Promise.all([
+    marksPromise,requestsPromise,giverPromise,photosPromise,
+  ])
   if(giverResult.error)throw new Error('Cannot verify Living Book stamp giver')
-  const privatePhotos:{id:string;payload:{storagePath?:string}}[]=[]
-  for(let offset=0;;offset+=200){
-    const {data,error}=await supabase.from('living_book_elements')
-      .select('id,payload').eq('book_id',bookId).eq('page_id',pageId)
-      .eq('element_type','image').is('deleted_at',null)
-      .order('id').range(offset,offset+199)
-    if(error)throw new Error('Cannot load private page photos')
-    privatePhotos.push(...(data??[]))
-    if((data??[]).length<200)break
-  }
-  // Restrict Storage requests in-flight to avoid 429s on image-heavy pages.
-  const imageUrls:Record<string,string>={}
-  for(let index=0;index<privatePhotos.length;index+=8){
-    await Promise.all(privatePhotos.slice(index,index+8).map(async element=>{
-      const storagePath=element.payload?.storagePath
-      if(typeof storagePath!=='string')return
-      const signed=await supabase.storage.from(photoBucket).createSignedUrl(storagePath,20*60)
-      if(!signed.error&&signed.data?.signedUrl)imageUrls[element.id]=signed.data.signedUrl
-    }))
-  }
   return {marks,requests,imageUrls,canGive:!!giverResult.data}
 }

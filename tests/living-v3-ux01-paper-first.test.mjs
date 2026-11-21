@@ -24,14 +24,14 @@ test('UX01 renders one paper-first workspace without permanent overview dashboar
   assert.match(studio,/className="living-reader-more"/)
   assert.doesNotMatch(studio,/className="living-studio-controls"/)
 })
-test('Balance and full redemption workflow live inside one collapsed native disclosure',()=>{
+test('Balance opens a focused reward dialog whose history loads only on demand',()=>{
   assert.match(studio,/className="living-reader-balance"/)
   assert.match(studio,/aria-haspopup="dialog" aria-expanded=\{rewardsOpen\}/)
   assert.match(studio,/role="dialog" aria-modal="true"/)
   assert.match(studio,/aria-controls="living-reader-rewards"/)
-  assert.match(studio,/\{rewardPanel\}/)
+  assert.match(studio,/\{rewardsOpen&&rewardPanel\}/)
   assert.match(studio,/aria-label=\{\`ดูยอดแสตมป์/)
-  assert.match(page,/rewardPanel=\{<LivingRedemptionPanel/)
+  assert.match(page,/rewardPanel=\{<LivingRewardsOnDemand/)
   assert.match(page,/canRequest=\{isRecipient\} canFulfill=\{owner\}/)
   assert.match(reward,/pointplus|requestLivingRedemption|fulfillLivingRedemption/)
   assert.match(studio,/usePaperSound\(\)/)

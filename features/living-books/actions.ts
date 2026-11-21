@@ -37,11 +37,11 @@ export async function createLivingBookAction(_previous:LivingActionState,form:Fo
     p_description:description||null,p_cover:cover,p_approval:approval,p_key:key,
   })
   if(error || !data || !isUuid(String(data)))
-    return fail('สร้างสมุดไม่สำเร็จ กรุณาตรวจสอบสิทธิ์และฐานข้อมูล Living Stampbook V3')
+    return fail('สร้างสมุดไม่สำเร็จ กรุณาตรวจสอบสิทธิ์แล้วลองอีกครั้ง')
 
   revalidatePath('/s/'+spaceId)
   revalidatePath('/s/'+spaceId+'/stamp-books')
-  return {status:'success',message:'สร้างสมุด Living พร้อมกระดาษหน้าแรกแล้ว',bookId:String(data)}
+  return {status:'success',message:'สร้างสมุดเรียบร้อยแล้ว',bookId:String(data)}
 }
 
 export async function createLivingCardAction(_previous:LivingActionState,form:FormData):Promise<LivingActionState> {
@@ -73,7 +73,7 @@ export async function createLivingCardAction(_previous:LivingActionState,form:Fo
   })
   if(error||!data||!isUuid(String(data))){
     if(error?.code==='42883'||error?.code==='PGRST202')
-      return fail('ระบบการ์ด V3 ยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลเพื่ออัปเดตฐานข้อมูล')
+      return fail('ยังสร้างการ์ดไม่ได้ในขณะนี้ กรุณาติดต่อผู้ดูแลระบบ')
     return fail('สร้างการ์ดไม่สำเร็จ กรุณาตรวจสอบผู้รับ สิทธิ์ และลองอีกครั้ง')
   }
   revalidatePath('/s/'+spaceId)

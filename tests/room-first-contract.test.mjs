@@ -26,7 +26,7 @@ test('R06: 18 original Stamp assets remain, but the gallery is replaced by user-
  assert.equal((lib.match(/"id": "(?:couple|family|personal)-/g)||[]).length,30)
  const col=read('app/(protected)/s/[spaceId]/collection/page.tsx')
  assert.match(col,/redirect\('\/s\/'.*stamp-books/)
- assert.match(read('app/(protected)/s/[spaceId]/stamp-books/page.tsx'),/loadStampBookBoard/)
+ assert.match(read('app/(protected)/s/[spaceId]/stamp-books/page.tsx'),/loadLivingBookShelf/)
 })
 
 test('R08: Room Home uses bounded per-Room queries and authorized Room resume',()=>{

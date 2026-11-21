@@ -69,6 +69,8 @@ jobs:
         run: node --check tests/e2e/living-v3-hosted.test.mjs
       - name: Verify Buttonless V3 card visual and ledger interaction contracts
         run: node --test tests/living-v3-card-buttonless.test.mjs
+      - name: Verify fast book open and batched versioned paper Save
+        run: node --test tests/living-v3-performance.test.mjs
       - name: Verify notebook compact UI and manual-save vs instant-stamp contracts
         run: node --test tests/living-v3-compact-manual-save.test.mjs
       - name: Verify UX01 Paper First layout and preserved interactions
@@ -92,7 +94,7 @@ jobs:
 
   verify-living-migrations:
     name: Living M01–M05 PostgreSQL migrations and RLS tests
-    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3' || github.head_ref == 'feat/living-v3-buttonless-integration' || github.head_ref == 'feat/living-v3-compact-manual-save'
+    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3' || github.head_ref == 'feat/living-v3-buttonless-integration' || github.head_ref == 'feat/living-v3-compact-manual-save' || github.head_ref == 'perf/living-v3-fast-open-clean-ui'
     runs-on: ubuntu-latest
     services:
       postgres:
