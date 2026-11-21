@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2, feat/restore-stamp-cards-choice, feat/tap-stamp-card-slots]
+    branches: [main, feat/stamp-book-first-rebuild, feat/interactive-stampbook-v2, feat/restore-stamp-cards-choice, feat/tap-stamp-card-slots, feat/living-stampbook-v3]
   pull_request:
 
 permissions:
@@ -53,7 +53,71 @@ jobs:
         run: node --test tests/stamp-card-choice.test.mjs
       - name: Verify tap-to-stamp card slots and slot RPC
         run: node --test tests/stamp-card-tap-slots.test.mjs
+      - name: Verify Living Stampbook V3 M01 foundations
+        run: node --test tests/living-stampbook-m01.test.mjs
+      - name: Verify Living Stampbook V3 M02 page editor
+        run: node --test tests/living-stampbook-m02.test.mjs
+      - name: Verify Living Stampbook V3 M03 images and real stamps
+        run: node --test tests/living-stampbook-m03.test.mjs
+      - name: Verify Living Stampbook V3 M04 flexible redemption
+        run: node --test tests/living-stampbook-m04.test.mjs
+      - name: Verify Living Stampbook V3 M05 sound, autosave, undo and mobile
+        run: node --test tests/living-stampbook-m05.test.mjs
+      - name: Syntax check isolated hosted two-account E2E (no credentials or deployment)
+        run: node --check tests/e2e/living-v3-hosted.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
         run: npm run build
+
+  verify-living-migrations:
+    name: Living M01–M05 PostgreSQL migrations and RLS tests
+    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: pointplus_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pointplus_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: test
+      PGDATABASE: pointplus_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure PostgreSQL client is available
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
+      - name: Build isolated Room/Auth fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m02-baseline.sql
+      - name: Apply M01 migration on isolated database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/16_living_stampbook_v3_m01.sql
+      - name: Apply M02 migration on isolated database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/17_living_stampbook_v3_m02_editor.sql
+      - name: Verify 100+ pages, editing, permissions and RLS
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m02-assertions.sql
+      - name: Set up isolated Storage fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m03-storage-fixture.sql
+      - name: Apply M03 migration on isolated database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/18_living_stampbook_v3_m03_photos_stamps.sql
+      - name: Verify private photos, real stamp permissions, idempotency and peel history
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m03-assertions.sql
+      - name: Apply M04 flexible redemption migration on isolated database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/19_living_stampbook_v3_m04_redemptions.sql
+      - name: Verify partial claims, reserved/used marks and authorization
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m04-assertions.sql
+      - name: Verify concurrent redemption cannot double-spend
+        run: bash tests/sql/living-v3-m04-concurrency.sh
+      - name: Apply M05 reversible paper editor migration on isolated database
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/20_living_stampbook_v3_m05_reversible_editor.sql
+      - name: Verify owner-only reversible paper edits and immutable stamp ledger
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m05-assertions.sql

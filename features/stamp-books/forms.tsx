@@ -29,8 +29,8 @@ function Result({ state }: { state: StampBookState }) {
  return <p role={error ? 'alert' : 'status'} className={'status status--' + tone}>{state.message}</p>
 }
 
-export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
- spaceId:string;userId:string;kind:string;participants:Participant[];members:Membership[]
+export function CreateStampBookForm({spaceId,userId,kind,participants,members,cardOnly=false}:{
+ spaceId:string;userId:string;kind:string;participants:Participant[];members:Membership[];cardOnly?:boolean
 }){
  const router = useRouter()
  const [state, action, pending] = useActionState(createStampBookAction, idle)
@@ -39,7 +39,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
  const [cover, setCover] = useState(pointPlusStamps[0].id)
  const [title, setTitle] = useState('')
  const [target, setTarget] = useState('6')
- const [layoutMode, setLayoutMode] = useState<'stamp_card' | 'notebook' | 'single_sheet'>('notebook')
+ const [layoutMode, setLayoutMode] = useState<'stamp_card' | 'notebook' | 'single_sheet'>(cardOnly ? 'stamp_card' : 'notebook')
  const [review, setReview] = useState<FormData | null>(null)
  const heading = useRef<HTMLHeadingElement>(null)
  const submitting = useRef(false)
@@ -125,7 +125,7 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
    </div>
    <label htmlFor="stamp-book-target">จำนวนแสตมป์ต่อรอบ</label>
    <input className="input" id="stamp-book-target" type="number" name="target_count" min={1} max={100} required value={target} onChange={e => setTarget(e.target.value)}/>
-   <fieldset className="stamp-format-picker">
+   {!cardOnly && <fieldset className="stamp-format-picker">
     <legend>รูปแบบการสะสม</legend>
     <div className="stamp-format-options">
      <label className="stamp-format-option" data-selected={layoutMode === 'stamp_card'}>
@@ -139,9 +139,9 @@ export function CreateStampBookForm({spaceId,userId,kind,participants,members}:{
       <strong>สมุดแสตมป์</strong><span>เลือกตำแหน่ง ขนาด และหมุนแสตมป์บนกระดาษเอง</span>
      </label>
     </div>
-   </fieldset>
-   <input type="hidden" name="layout_mode" value={layoutMode}/>
-   {layoutMode !== 'stamp_card' && <label htmlFor="stamp-book-layout">รูปแบบหน้าสมุด
+   </fieldset>}
+   <input type="hidden" name="layout_mode" value={cardOnly ? 'stamp_card' : layoutMode}/>
+   {!cardOnly && layoutMode !== 'stamp_card' && <label htmlFor="stamp-book-layout">รูปแบบหน้าสมุด
     <select className="input" id="stamp-book-layout" value={layoutMode}
       onChange={event => setLayoutMode(event.target.value as 'notebook' | 'single_sheet')}>
      <option value="notebook">สมุดหลายหน้า</option>
@@ -423,13 +423,13 @@ export function AddStampRewardForm({spaceId,bookId}:{
 }
 
 /** Minimal couple-specific creation: the creator always stamps the other partner. */
-export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
- spaceId:string;userId:string;participants:Participant[]
+export function CreateCoupleStampBookForm({spaceId,userId,participants,cardOnly=false}:{
+ spaceId:string;userId:string;participants:Participant[];cardOnly?:boolean
 }){
  const router=useRouter()
  const [state,action,pending]=useActionState(createStampBookAction,idle)
  const [cover,setCover]=useState(pointPlusStamps[0].id)
- const [layoutMode,setLayoutMode]=useState<'stamp_card'|'notebook'|'single_sheet'>('notebook')
+ const [layoutMode,setLayoutMode]=useState<'stamp_card'|'notebook'|'single_sheet'>(cardOnly ? 'stamp_card' : 'notebook')
  const partner=participants.find(p=>p.kind==='adult'&&p.user_id&&p.user_id!==userId&&!p.archived_at)
  useEffect(()=>{if(state.status==='success'&&state.bookId)router.push('/s/'+spaceId+'/stamp-books/'+state.bookId)},[state.status,state.bookId,router,spaceId])
  if(!partner)return <div className="card empty-state">
@@ -453,7 +453,7 @@ export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
   <select className="input" id="couple-book-target" name="target_count" defaultValue="6">
    {[4,6,8,10,12,20].map(n=><option key={n} value={n}>{n} ดวง</option>)}
   </select>
-  <fieldset className="stamp-format-picker">
+  {!cardOnly && <fieldset className="stamp-format-picker">
    <legend>เลือกประเภทการสะสม</legend>
    <div className="stamp-format-options">
     <label className="stamp-format-option" data-selected={layoutMode === 'stamp_card'}>
@@ -467,9 +467,9 @@ export function CreateCoupleStampBookForm({spaceId,userId,participants}:{
      <strong>สมุดแสตมป์</strong><span>แปะดวงบนกระดาษอย่างอิสระ</span>
     </label>
    </div>
-  </fieldset>
-  <input type="hidden" name="layout_mode" value={layoutMode}/>
-  {layoutMode !== 'stamp_card' && <label htmlFor="couple-book-layout">หน้าสมุด
+  </fieldset>}
+  <input type="hidden" name="layout_mode" value={cardOnly ? 'stamp_card' : layoutMode}/>
+  {!cardOnly && layoutMode !== 'stamp_card' && <label htmlFor="couple-book-layout">หน้าสมุด
    <select className="input" id="couple-book-layout" value={layoutMode}
     onChange={event => setLayoutMode(event.target.value as 'notebook'|'single_sheet')}>
     <option value="notebook">สมุดหลายหน้า</option>

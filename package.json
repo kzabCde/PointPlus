@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:foundation": "node --test tests/foundation.test.mjs"
+    "test:foundation": "node --test tests/foundation.test.mjs",
+    "test:e2e:living": "node --test tests/e2e/living-v3-hosted.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
