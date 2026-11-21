@@ -7,7 +7,7 @@ import {LivingBookStudio} from '@/features/living-books/editor-studio'
 import { LivingPaperEditor } from '@/features/living-books/paper-editor'
 import {loadLivingRedemptionData} from '@/features/living-books/redemption-data'
 import {LivingRedemptionPanel} from '@/features/living-books/redemption-panel'
-import { BookCover } from '@/features/stamp-books/presentation'
+import { LivingBookCover } from '@/features/living-books/cover'
 
 export const metadata: Metadata = {title:'Living Stampbook — สมุดความทรงจำ'}
 
@@ -35,7 +35,7 @@ export default async function LivingBookPage({params,searchParams}:{
   return <section className="stamp-book-page living-book-detail">
     <Link className="text-link" href={'/s/'+spaceId+'/stamp-books'}>← กลับไปการสะสม</Link>
     <header className="stamp-book-detail-head">
-      <BookCover assetId={book.cover_asset_id}/>
+      <LivingBookCover assetId={book.cover_asset_id}/>
       <div className="stamp-book-detail-head__text">
         <span className="stamp-collection-type">Living Stampbook</span>
         <h2>{book.title}</h2>
