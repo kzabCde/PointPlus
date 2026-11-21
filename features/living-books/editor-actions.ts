@@ -29,17 +29,20 @@ function isVersioned(data:unknown):data is {id:string;version:number} {
 }
 type PageReply={id:string;version:number;title:string|null;background_style:PaperBackground}
 function isPageReply(data:unknown):data is PageReply {
-  return isVersioned(data)&&isRecord(data)&&
-    (data.title===null||typeof data.title==='string')&&
-    backgrounds.includes(data.background_style as PaperBackground)
+  if(!isVersioned(data))return false
+  const value=data as Record<string,unknown>
+  return (value.title===null||typeof value.title==='string')&&
+    backgrounds.includes(value.background_style as PaperBackground)
 }
 type ElementReply={id:string;version:number;updated_at:string}
 function isElementReply(data:unknown):data is ElementReply {
-  return isVersioned(data)&&isRecord(data)&&typeof data.updated_at==='string'
+  if(!isVersioned(data))return false
+  return typeof (data as Record<string,unknown>).updated_at==='string'
 }
 type DeleteReply={id:string;version:number;deleted:boolean}
 function isDeleteReply(data:unknown):data is DeleteReply {
-  return isVersioned(data)&&isRecord(data)&&data.deleted===true
+  if(!isVersioned(data))return false
+  return (data as Record<string,unknown>).deleted===true
 }
 function isCount(data:unknown):data is number {
   return typeof data==='number'&&Number.isSafeInteger(data)&&data>=0
