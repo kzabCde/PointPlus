@@ -1,14 +1,19 @@
 export type PaperBackground = 'cream' | 'white' | 'lined' | 'grid' | 'kraft'
-export type EditorTool = 'select' | 'text' | 'pen' | 'eraser' | 'hand'
+export type EditorTool = 'select' | 'text' | 'pen' | 'eraser' | 'hand' | 'stamp'
 export type Point = {x:number;y:number}
 export type EditorText = {
   text:string;fontSize:number;color:string;fontFamily:'sans'|'serif'|'mono'
   align:'left'|'center'|'right';bold:boolean;italic:boolean
 }
 export type EditorDrawing = {points:Point[];strokeWidth:number;color:string}
-export type EditorPayload = EditorText | EditorDrawing
+export type EditorImage = {
+  storagePath:string;mime:'image/png'|'image/jpeg'|'image/webp';
+  pixelWidth:number;pixelHeight:number;
+  crop:{x:number;y:number;width:number;height:number}
+}
+export type EditorPayload = EditorText | EditorDrawing | EditorImage
 export type EditorElement = {
-  id:string;book_id:string;page_id:string;element_type:'text'|'drawing'
+  id:string;book_id:string;page_id:string;element_type:'text'|'drawing'|'image'
   payload:EditorPayload;position_x:number;position_y:number;width:number;height:number
   rotation_deg:number;opacity:number;z_index:number;version:number
 }
