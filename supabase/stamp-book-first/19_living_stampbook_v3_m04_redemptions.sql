@@ -165,11 +165,11 @@ BEGIN
  WHERE p.id=v_book.recipient_participant_id AND p.space_id=v_book.space_id
    AND p.archived_at IS NULL;
  IF NOT FOUND OR v_uid=v_book.owner_user_id
-   OR NOT (
+   OR NOT COALESCE((
      v_recipient.user_id=v_uid
      OR (v_recipient.user_id IS NULL AND v_recipient.kind='child'
          AND v_recipient.guardian_user_id=v_uid)
-   )
+   ),false)
  THEN RAISE EXCEPTION 'Only the receiving partner or child guardian can redeem'
    USING ERRCODE='42501'; END IF;
 
