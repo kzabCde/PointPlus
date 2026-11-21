@@ -789,8 +789,15 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       </button>
       {tool!=='select'&&tool!=='pen'&&tool!=='eraser'&&!toolsOpen&&<button type="button"
         className="living-reader-mode-chip"
-        aria-label={'ออกจากโหมด '+(toolLabels.find(item=>item.tool===tool)?.label??tool)}
+        aria-label={stampAttempted&&tool==='stamp'
+          ?'กลับไปตรวจสอบคำขอแสตมป์ที่อาจส่งสำเร็จแล้ว':
+          'ออกจากโหมด '+(toolLabels.find(item=>item.tool===tool)?.label??tool)}
         onClick={()=>{
+          if(stampAttempted&&tool==='stamp'){
+            setStampPanelOpen(true)
+            setNotice('กรุณาลองยืนยันด้วยรหัสเดิม หรือตรวจสอบยอดก่อนยกเลิก')
+            return
+          }
           setTool('select');setStampPoint(null);setStampPreview(null)
           setStampAttempted(false);setSelectedStampId(null)
           setStampPanelOpen(false)
