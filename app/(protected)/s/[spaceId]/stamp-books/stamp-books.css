@@ -348,3 +348,52 @@
 @media (prefers-reduced-motion: reduce) {
   .living-editor-paper, .living-page-thumbnail, .living-paper-object { animation: none; transition: none; }
 }
+
+
+/* M03 — tactile paper photos and immutable real stamp marks */
+.living-paper-object--image { padding: 0; border: 5px solid #fffaf3; background: #fffaf3; box-shadow: 2px 4px 9px #503c3550; overflow: hidden; cursor: move; }
+.living-paper-object__photo-frame { position: relative; width:100%;height:100%;overflow:hidden; }
+.living-paper-object__photo-frame img { max-width:none;max-height:none;object-fit:fill;pointer-events:none; }
+.living-paper-object__missing { padding: 8px; font-size: 11px; color:#8a5e59;display:block; }
+.living-photo-crop { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px; }
+.living-photo-crop legend { font-size:12px; font-weight:700; padding:0 4px; }
+.living-m03-upload { display:flex;flex-wrap:wrap;align-items:center;gap:8px; }
+.living-m03-upload label { cursor:pointer;font-size:12px;min-height:40px;display:inline-flex;align-items:center; }
+.living-m03-upload__input { width:1px;height:1px;opacity:0;position:absolute;overflow:hidden;clip-path:inset(50%); }
+.living-m03-upload label:focus-within { outline: 2px solid var(--action); outline-offset:2px; }
+.living-m03-upload p {font-size:12px;margin:0;color:var(--muted);}
+.living-real-stamp {
+ position:absolute; z-index:2000001; padding:0;min-width:15px; aspect-ratio:1; 
+ border:0; background:transparent; display:grid;place-items:center;gap:0;
+ cursor:grab; touch-action:none; transform-origin:center;
+}
+.living-real-stamp:focus-visible {outline:3px solid var(--action);outline-offset:3px;}
+.living-real-stamp[aria-pressed="true"] {filter:drop-shadow(0 0 5px #e08069);}
+.living-real-stamp:disabled {cursor:default;}
+.living-real-stamp__image,.living-real-stamp img {width:100%;height:auto;object-fit:contain;pointer-events:none;filter:drop-shadow(1px 3px 2px #87595555);}
+.living-real-stamp[data-peeled="true"] .living-real-stamp__image {opacity:.16;filter:grayscale(1);}
+.living-real-stamp__trace {font-size:clamp(6px,1vw,12px);font-weight:800;color:#aa7770;border:1px dashed #ac837c;border-radius:4px;background:#fff4dcbc;padding:1px 2px;transform:rotate(-8deg);position:absolute;white-space:nowrap;}
+.living-real-stamp--pending {opacity:.4;cursor:default;pointer-events:none;filter:grayscale(.6);}
+.living-real-stamp--pending span {font-size:clamp(7px,1vw,12px);white-space:nowrap;background:#fff5ddc0;color:#85655c;border-radius:3px;padding:2px 3px;}
+.living-stamp-placement-preview { position:absolute;z-index:2000003;transform:translate(-50%,-50%);color:#c76b6b;font-size:26px;pointer-events:none;filter:drop-shadow(0 1px 1px white); }
+.living-stamp-toolbox { display:grid;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:15px;}
+.living-stamp-toolbox header h3,.living-stamp-toolbox h4 {margin:0;}
+.living-stamp-toolbox header p {margin:4px 0 0;color:var(--muted);font-size:13px;}
+.living-stamp-form,.living-stamp-inspector { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;border-top:1px solid var(--line);padding-top:12px; }
+.living-stamp-form h4,.living-stamp-inspector h4,.living-stamp-inspector>p,.living-stamp-form>p {grid-column:1/-1;}
+.living-stamp-form label,.living-stamp-inspector label {display:grid;gap:5px;font-size:12px;font-weight:700;}
+.living-stamp-form input[type="range"],.living-stamp-inspector input[type="range"] {width:100%;accent-color:var(--action);min-height:26px;}
+.living-m03-actions {grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.living-m03-peel-confirm {display:flex!important;flex-direction:row!important;gap:7px!important;align-items:center;}
+.living-stamp-pending {display:grid;gap:8px;border-top:1px solid var(--line);padding-top:12px;}
+.living-stamp-pending__item {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:8px;background:var(--paper);border:1px solid var(--line);border-radius:8px;}
+.living-stamp-pending__item>div {display:flex;flex-wrap:wrap;gap:6px;}
+.living-stamp-pending__item button {min-height:40px;font-size:12px;}
+.living-m03-feedback {margin:0;color:var(--action);font-size:13px;}
+@media(max-width:560px) {
+ .living-photo-crop,.living-stamp-form,.living-stamp-inspector {grid-template-columns:1fr;}
+ .living-stamp-form h4,.living-stamp-inspector h4,.living-stamp-inspector>p,.living-stamp-form>p,.living-m03-actions {grid-column:1;}
+}
+@media(prefers-reduced-motion:reduce) {
+ .living-real-stamp,.living-paper-object--image {transition:none!important;animation:none!important;}
+}
