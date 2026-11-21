@@ -78,7 +78,7 @@ CREATE TABLE public.living_book_elements (
   height numeric NOT NULL CHECK (height BETWEEN 0.005 AND 1),
   rotation_deg numeric NOT NULL DEFAULT 0 CHECK (rotation_deg BETWEEN -180 AND 180),
   opacity numeric NOT NULL DEFAULT 1 CHECK (opacity BETWEEN 0.05 AND 1),
-  z_index integer NOT NULL DEFAULT 0 CHECK (z_index BETWEEN 0 AND 1000000),
+  z_index integer NOT NULL DEFAULT 0 CHECK (z_index BETWEEN -1000000 AND 1000000),
   created_by uuid NOT NULL REFERENCES auth.users(id),
   version bigint NOT NULL DEFAULT 1 CHECK (version >= 1),
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -164,7 +164,7 @@ BEGIN
      OR p_height IS NULL OR p_height NOT BETWEEN 0.005 AND 1
      OR p_rotation IS NULL OR p_rotation NOT BETWEEN -180 AND 180
      OR p_opacity IS NULL OR p_opacity NOT BETWEEN 0.05 AND 1
-     OR p_z IS NULL OR p_z NOT BETWEEN 0 AND 1000000
+     OR p_z IS NULL OR p_z NOT BETWEEN -1000000 AND 1000000
   THEN RAISE EXCEPTION 'Invalid paper element' USING ERRCODE='22023'; END IF;
 
   SELECT * INTO v_book FROM public.living_books WHERE id=p_book FOR UPDATE;
