@@ -100,7 +100,8 @@ const browser=await pw.chromium.launch({
  executablePath:process.env.POINTPLUS_CHROMIUM||undefined,
  args:['--no-sandbox'],
 })
-const deep='/s/'+room+'/stamp-books/living/'+book
+// This gate verifies the original rewards dialog in Editor mode; M02 defaults to Reader.
+const deep='/s/'+room+'/stamp-books/living/'+book+'?mode=edit'
 async function login(context,[email,password]){
  const page=await context.newPage()
  page.setDefaultTimeout(20000)
