@@ -490,3 +490,97 @@
 @media(prefers-reduced-motion:reduce){
  .living-real-stamp[data-used="true"]{animation:none;transition:none;}
 }
+
+
+/* M05 — paper foley settings, book-opening and stamp physics. */
+.living-studio-controls {
+  grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;padding:10px 14px;
+  border:1px solid var(--line);border-radius:12px;
+  background:linear-gradient(135deg,#fff8f0,#fff2e7);
+}
+.living-studio-controls span{font-size:12px;color:var(--muted);line-height:1.6;}
+.living-studio-controls button{
+  min-height:44px;padding:8px 12px;
+}
+.living-studio-controls button[aria-pressed="true"]{
+  border-color:#c88c7d;background:#fff3ed;
+}
+.living-editor-paper {
+  transform-origin:left center;
+  animation:living-book-paper-reveal .52s cubic-bezier(.14,.9,.28,1) both;
+  will-change:transform,opacity;
+}
+@keyframes living-book-paper-reveal {
+  from { opacity:.44;transform:perspective(1100px) rotateY(-11deg) translateX(9px); }
+  58% {opacity:1;transform:perspective(1100px) rotateY(2.3deg) translateX(-2px);}
+  to {opacity:1;transform:perspective(1100px) rotateY(0) translateX(0);}
+}
+.living-real-stamp[data-stamp-fresh="true"]{
+  animation:living-stamp-impact .34s cubic-bezier(.2,1.4,.3,1);
+}
+@keyframes living-stamp-impact {
+  0%{opacity:.08;filter:blur(2px);scale:1.5;}
+  64%{opacity:1;filter:blur(0);scale:.91;}
+  100%{scale:1;}
+}
+.living-real-stamp[data-peeled="true"] .living-real-stamp__trace{
+  animation:living-stamp-ink-left .32s ease-out both;
+}
+@keyframes living-stamp-ink-left {
+  0%{opacity:.12;rotate:8deg;}
+  100%{opacity:1;rotate:0;}
+}
+.living-real-stamp[data-used="true"] .living-real-stamp__used{
+  animation:living-redeemed-mark .35s cubic-bezier(.2,.75,.35,1) both;
+}
+@keyframes living-redeemed-mark {
+  from{opacity:.15;scale:1.36;filter:blur(2px);}
+  to{opacity:1;scale:1;filter:blur(0);}
+}
+.living-page-window-actions {
+  display:flex;align-items:center;justify-content:space-between;
+  gap:7px;flex-wrap:wrap;
+}
+.living-page-window-actions .button{min-height:40px;padding:7px 9px;font-size:11px;}
+.living-page-window-actions small{color:var(--muted);font-variant-numeric:tabular-nums;}
+.living-page-jump__row {display:flex;gap:8px;align-items:center;}
+.living-page-jump__row input{width:min(110px,45%);}
+.living-page-jump__row button{min-height:44px;}
+.living-editor-history-controls{
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+}
+.living-editor-history-controls .button{min-height:44px;font-size:12px;padding:8px 11px;}
+.living-editor-save-warning{
+  margin:0;padding:10px 12px;border:1px solid #e4a593;
+  background:#fff5ed;border-radius:9px;color:#905348;
+  font-size:13px;line-height:1.65;
+}
+.living-editor-toolset button,.living-editor-layer-actions button,
+.living-stamp-form button,.living-redemption-request button{
+  min-height:44px;
+}
+.living-editor-paper[data-tool="hand"]{cursor:grab;}
+.living-editor-paper[data-tool="hand"]:active{cursor:grabbing;}
+@media(max-width:560px){
+  .living-studio-controls{padding:10px;}
+  .living-studio-controls button{width:100%;}
+  .living-editor-toolset{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+  .living-editor-toolset .button{
+    width:100%;font-size:11px;padding:7px 4px;min-height:46px;
+  }
+  .living-editor-pen-settings{width:100%;justify-content:space-between;}
+  .living-editor-zoom button{min-height:44px;min-width:44px;}
+  .living-editor-viewport{overscroll-behavior:contain;}
+  .living-page-controls .button{min-height:44px;}
+  .living-page-window-actions .button{min-height:44px;}
+  .living-editor-history-controls{flex:1 1 100%;}
+}
+@media(prefers-reduced-motion:reduce){
+  .living-editor-paper,
+  .living-real-stamp[data-stamp-fresh="true"],
+  .living-real-stamp[data-peeled="true"] .living-real-stamp__trace,
+  .living-real-stamp[data-used="true"] .living-real-stamp__used{
+    animation:none!important;transition:none!important;
+  }
+}
