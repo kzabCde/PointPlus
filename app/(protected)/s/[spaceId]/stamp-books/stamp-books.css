@@ -1856,3 +1856,89 @@
     animation:none!important;transition:none!important;
   }
 }
+
+
+/* V3 fixed-slot card: slots are the interactive paper, not a permanent button toolbar. */
+.living-card-sheet{
+  width:min(100%,740px);margin:12px auto 30px;
+  padding:clamp(18px,4vw,42px);
+  border:1px solid #dec4b0;border-radius:5px 16px 12px 5px;
+  background:linear-gradient(130deg,#fffaf0 0%,#f6ebdc 100%);
+  box-shadow:0 18px 45px #4c30251c,inset 4px 0 #dfcaba;
+  color:#49352d;
+}
+.living-card-heading{text-align:center;margin-bottom:26px;display:grid;gap:5px;}
+.living-card-kicker{font-size:10px;letter-spacing:.2em;color:#8f7566;font-weight:700;}
+.living-card-heading h2{font-family:Georgia,serif;font-size:clamp(24px,4vw,34px);margin:5px 0;}
+.living-card-progress{margin:5px 0;color:#775b50;font-variant-numeric:tabular-nums;}
+.living-card-progress strong{font-size:23px;color:#a55c63;}
+.living-card-reward{font-size:14px;margin:0;}
+.living-card-hint{font-size:12px;color:#876f66;margin:10px 0 0;}
+.living-card-slots{display:grid;gap:clamp(5px,1.6vw,13px);}
+.living-card-slot{
+  position:relative;min-width:0;aspect-ratio:.85;min-height:64px;
+  border:1px dashed #c9a994;border-radius:5px;
+  background:#fffdf67a;display:flex;align-items:center;
+  justify-content:center;flex-direction:column;gap:5px;
+  color:#ae9384;transition:background .15s ease,transform .15s ease,border-color .15s ease;
+  cursor:pointer;
+}
+.living-card-slot:not(:disabled):hover,.living-card-slot:not(:disabled):focus-visible{
+  background:#fff5e8;border-color:#a86166;transform:translateY(-2px);
+}
+.living-card-slot:focus-visible,.living-card-art-choice:focus-visible{
+  outline:3px solid #9d5c64;outline-offset:3px;
+}
+.living-card-slot:disabled{cursor:default;}
+.living-card-slot[data-state="empty"]:disabled{opacity:.65;}
+.living-card-slot[data-state="reserved"],.living-card-slot[data-state="redeemed"]{background:#e9dfd3;}
+.living-card-slot[data-state="peeled"]{background:#efe5da;}
+.living-card-slot img{object-fit:contain;max-width:72%;max-height:72%;height:auto;filter:drop-shadow(1px 2px 2px #4a302733);}
+.living-card-slot-number{position:absolute;top:5px;left:7px;font-size:10px;font-weight:700;}
+.living-card-empty-glyph{font-size:clamp(20px,4vw,32px);opacity:.5;line-height:1;}
+.living-card-slot-state{font-size:10px;color:#845f5f;text-align:center;}
+.living-card-requests{margin-top:22px;padding:14px;border-top:1px solid #dfc6b9;}
+.living-card-requests summary{cursor:pointer;font-weight:700;}
+.living-card-request{border-bottom:1px solid #eadbd0;padding:10px 0;display:grid;gap:7px;}
+.living-card-request-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.living-card-feedback{margin-top:10px;font-size:13px;color:#78524d;}
+.living-card-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:end center;}
+.living-card-backdrop{position:absolute;inset:0;background:#1f1817a8;border:0;cursor:pointer;}
+.living-card-tray{
+  position:relative;z-index:1;width:min(100%,620px);max-height:min(85dvh,760px);
+  overflow-y:auto;background:#fff9f0;color:#42322f;
+  border-radius:20px 20px 0 0;box-shadow:0 -10px 55px #0003;
+  padding:20px clamp(16px,4vw,30px) 26px;
+}
+.living-card-tray-title{display:flex;align-items:start;justify-content:space-between;gap:12px;}
+.living-card-tray-title small{color:#9a6e68;font-size:10px;letter-spacing:.2em;}
+.living-card-tray-title h3{font:700 22px Georgia,serif;margin:4px 0 16px;}
+.living-card-stamp-form{display:grid;gap:12px;}
+.living-card-stamp-form fieldset{border:0;padding:0;min-width:0;display:grid;gap:12px;}
+.living-card-stamp-form legend{font-weight:700;margin-bottom:10px;}
+.living-card-art-tray{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-height:290px;overflow:auto;}
+.living-card-art-choice{
+  display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;
+  padding:8px 5px;background:#fff;border:1px solid #e4cfc1;border-radius:8px;
+  color:#513d34;cursor:pointer;font-size:12px;
+}
+.living-card-art-choice[aria-pressed="true"]{outline:2px solid #b56869;background:#fff0e6;}
+.living-card-art-choice img{object-fit:contain;max-width:100%;height:64px;}
+.living-card-note{display:grid;gap:7px;font-weight:600;font-size:13px;}
+.living-card-tray-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.living-card-tray-actions .button{min-height:44px;}
+.living-card-retry-note{color:#a0524e;font-size:13px;}
+.living-card-fixed-reward{font-size:13px;line-height:1.5;}
+@media(min-width:750px){
+  .living-card-tray{margin-bottom:auto;margin-top:auto;border-radius:18px;}
+}
+@media(max-width:410px){
+  .living-card-sheet{padding:14px 9px;}
+  .living-card-slots{gap:5px;}
+  .living-card-slot{min-height:55px;}
+  .living-card-slot-number{top:3px;left:4px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .living-card-slot{transition:none;}
+  .living-card-slot:not(:disabled):hover{transform:none;}
+}
