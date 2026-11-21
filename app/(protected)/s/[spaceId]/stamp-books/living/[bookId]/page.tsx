@@ -5,10 +5,10 @@ import { LivingPageManager } from '@/features/living-books/page-manager'
 import {LivingBookStudio} from '@/features/living-books/editor-studio'
 import { LivingPaperEditor } from '@/features/living-books/paper-editor'
 import { LivingCardBoard } from '@/features/living-books/card-board'
-import {loadLivingRedemptionData} from '@/features/living-books/redemption-data'
-import {LivingRedemptionPanel} from '@/features/living-books/redemption-panel'
+import {loadLivingRedemptionOverview} from '@/features/living-books/redemption-data'
+import {LivingRewardsOnDemand} from '@/features/living-books/rewards-on-demand'
 
-export const metadata: Metadata = {title:'Living Stampbook — สมุดความทรงจำ'}
+export const metadata: Metadata = {title:'สมุดความทรงจำ'}
 
 export default async function LivingBookPage({params,searchParams}:{
   params:Promise<{spaceId:string;bookId:string}>
@@ -20,9 +20,12 @@ export default async function LivingBookPage({params,searchParams}:{
     loadLivingEditorData(spaceId,bookId,typeof requestedPage==='string'?requestedPage:undefined),
   ])
   if(book.space_id!==spaceId)notFound()
-  const {marks,requests,imageUrls,canGive}=await loadLivingPageMedia(spaceId,bookId,page.id)
-  const {balance,history,pendingCount,candidates,associations,knownStamps}=
-    await loadLivingRedemptionData(spaceId,bookId)
+  // The ledger and lightweight header balance are independent. Do not fetch
+  // reward history or stamp preview artwork until the rewards drawer opens.
+  const [{marks,requests,imageUrls,canGive},{balance,pendingCount}]=await Promise.all([
+    loadLivingPageMedia(spaceId,bookId,page.id,elements),
+    loadLivingRedemptionOverview(spaceId,bookId),
+  ])
   const recipient=people.find(p=>p.id===book.recipient_participant_id)
   const canReview=Boolean(recipient?.user_id===context.user.id||
     (!recipient?.user_id&&['owner','admin'].includes(context.member.role)))&&
@@ -36,10 +39,8 @@ export default async function LivingBookPage({params,searchParams}:{
       description={book.description} recipientName={recipient?.display_name}
       status={book.status} availableStamps={balance.available}
       pendingRewards={owner?pendingCount:0}
-      rewardPanel={<LivingRedemptionPanel spaceId={spaceId} bookId={bookId}
-        balance={balance} history={history} pendingCount={pendingCount}
-        candidates={candidates}
-        associations={associations} knownStamps={knownStamps}
+      rewardPanel={<LivingRewardsOnDemand spaceId={spaceId} bookId={bookId}
+        availableStamps={balance.available} pendingRewards={pendingCount}
         canRequest={isRecipient} canFulfill={owner}
         isActive={book.status==='active'} card={book.card??undefined}/>}>
       {book.card ? <LivingCardBoard spaceId={spaceId} bookId={bookId} pageId={page.id}
