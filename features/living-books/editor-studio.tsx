@@ -33,6 +33,7 @@ export function LivingBookStudio({children,title,backHref,description,recipientN
   const rewardTriggerRef=useRef<HTMLButtonElement|null>(null)
   const rewardDialogRef=useRef<HTMLElement|null>(null)
   const [rewardsOpen,setRewardsOpen]=useState(false)
+  const [focusMode,setFocusMode]=useState(false)
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{
       if(event.key==='Escape'&&settingsRef.current?.open)settingsRef.current.open=false
@@ -97,10 +98,16 @@ export function LivingBookStudio({children,title,backHref,description,recipientN
   }),[paperUnsaved,pageUnsaved])
   const statusLabel=status==='active'?'กำลังสะสม':status==='paused'?'พักใช้':'เก็บถาวร'
   return <studioContext.Provider value={state}>
-    <div className="living-workspace living-reader">
+    <div className={'living-workspace living-reader'+(focusMode?' living-reader--focus':'')}>
       <header className="living-reader-header">
         <Link className="living-reader-back" href={backHref}
-          aria-label="กลับไปหน้ารวมสมุดความทรงจำ">
+          aria-label="กลับไปหน้ารวมสมุดความทรงจำ"
+          onClick={event=>{
+            if(paperUnsaved||pageUnsaved){
+              event.preventDefault()
+              window.alert('มีการแก้ไขที่ยังไม่ได้บันทึก กดบันทึกหรือทิ้งการแก้ไขก่อนออกจากสมุด')
+            }
+          }}>
           <span aria-hidden="true">←</span>
         </Link>
         <div className="living-reader-heading">
@@ -108,6 +115,12 @@ export function LivingBookStudio({children,title,backHref,description,recipientN
           <h1 title={title}>{title}</h1>
         </div>
         <div className="living-reader-actions">
+          <button type="button" className="living-reader-focus-toggle"
+            aria-label={focusMode?'ออกจากโหมดโฟกัส':'เปิดโหมดโฟกัส'}
+            aria-pressed={focusMode} title="ซ่อนแถบเครื่องมือเพื่ออ่านหน้ากระดาษ"
+            onClick={()=>setFocusMode(value=>!value)}>
+            <span aria-hidden="true">{focusMode?'▣':'⛶'}</span>
+          </button>
           <button type="button" ref={rewardTriggerRef}
             className="living-reader-balance"
             aria-haspopup="dialog" aria-expanded={rewardsOpen}
