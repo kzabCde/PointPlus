@@ -1329,3 +1329,222 @@
   .living-selection-advanced-close {min-width:44px;min-height:44px;}
   .living-drawing-toolbar label {min-height:44px;}
 }
+
+
+/* UX03 — stamp tray / real-stamp context and on-paper unissued preview. */
+.living-reader .living-editor-viewport {position:relative;}
+.living-reader .living-stamp-placement-preview {
+  position:absolute;
+  z-index:2000003;
+  pointer-events:auto;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  aspect-ratio:1;
+  max-width:40%;
+  border:2px dashed rgb(184 99 95 / 60%);
+  border-radius:5px;
+  background:rgb(255 244 223 / 40%);
+  cursor:grab;
+  touch-action:none;
+  filter:drop-shadow(0 3px 4px rgb(91 48 39 / 21%));
+  user-select:none;
+}
+.living-reader .living-stamp-placement-preview:active{cursor:grabbing;}
+.living-stamp-placement-preview img {
+  display:block;
+  object-fit:contain;
+  width:100%;
+  height:auto;
+  pointer-events:none;
+}
+.living-stamp-preview-watermark {
+  position:absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  background:rgb(255 249 235 / 88%);
+  color:#915d60;
+  font-size:clamp(8px,1vw,12px);
+  line-height:1.5;
+  letter-spacing:.07em;
+  text-align:center;
+  pointer-events:none;
+}
+.living-stamp-preview-handles {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  position:absolute;
+  z-index:2000005;
+  padding:5px;
+  border:1px solid #dbb7a7;
+  border-radius:999px;
+  background:#fff9f0;
+  box-shadow:0 5px 14px rgb(91 52 42 / 17%);
+  transform:translate(-50%,-50%);
+  max-width:90%;
+}
+.living-stamp-preview-handles button {
+  min-width:40px;
+  min-height:40px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+  color:#914f56;
+  font-size:20px;
+  font-weight:700;
+  cursor:pointer;
+}
+.living-stamp-preview-handles button:hover {background:#fce5d9;}
+.living-reader .living-reader-stamp-panel {
+  position:fixed;
+  z-index:95;
+  right:clamp(10px,2vw,30px);
+  bottom:clamp(12px,3vw,32px);
+  width:min(420px,calc(100vw - 20px));
+  max-height:min(75dvh,730px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  border:1px solid #dbc2b1;
+  border-radius:19px;
+  background:#fff9f1;
+  box-shadow:0 20px 60px rgb(76 48 41 / 23%);
+}
+.living-reader .living-stamp-tray {
+  background:transparent;
+  border:0;
+  box-shadow:none;
+  padding:16px;
+  gap:14px;
+  min-width:0;
+}
+.living-stamp-tray-heading{display:grid;gap:3px;}
+.living-stamp-tray-heading h3{margin:0;font-family:Georgia,'Noto Serif Thai',serif;}
+.living-stamp-tray-heading small{color:var(--muted);line-height:1.4;}
+.living-stamp-art-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+  padding:3px;
+  max-height:290px;
+  overflow-y:auto;
+}
+.living-stamp-art-choice {
+  display:grid;
+  align-content:center;
+  justify-items:center;
+  gap:5px;
+  min-height:94px;
+  border:1px solid #dbc0b2;
+  border-radius:9px;
+  background:#fffdf7;
+  color:#785953;
+  font:inherit;
+  font-size:11px;
+  cursor:pointer;
+}
+.living-stamp-art-choice img {width:60px;height:60px;object-fit:contain;}
+.living-stamp-art-choice[data-chosen="true"],
+.living-stamp-art-choice[aria-pressed="true"]{
+  border-color:#bd7977;
+  background:#fcece3;
+  outline:2px solid #d8a3a0;
+}
+.living-stamp-art-choice:focus-visible,
+.living-stamp-preview-handles button:focus-visible{
+  outline:3px solid #a5505f;outline-offset:2px;
+}
+.living-stamp-tray-help,.living-stamp-ledger-note{
+  font-size:12px;color:#956c65;margin:0;line-height:1.55;
+}
+.living-stamp-unissued {
+  display:inline-flex;
+  color:#9b585f;
+  font-size:11px;
+  font-weight:500;
+}
+.living-stamp-precision {
+  display:grid;
+  grid-column:1/-1;
+  gap:9px;
+  min-width:0;
+  padding:10px;
+  border:1px dashed #e2bcac;
+  border-radius:9px;
+}
+.living-stamp-precision summary {min-height:44px;cursor:pointer;}
+.living-stamp-preview-settings {
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+.living-stamp-preview-settings label,
+.living-stamp-preview-settings .living-m03-actions{
+  grid-column:1;
+}
+.living-stamp-peel-confirm {
+  display:grid;
+  grid-column:1/-1;
+  gap:12px;
+  padding:15px;
+  border:1px solid #c99090;
+  border-radius:11px;
+  background:#fff1ee;
+}
+.living-stamp-peel-confirm p {margin:0;font-size:13px;line-height:1.6;}
+.living-stamp-peel-confirm input[type="checkbox"] {width:20px;height:20px;}
+.living-stamp-context .living-m03-actions {gap:8px;}
+.living-stamp-context .living-m03-actions button {min-height:44px;}
+.living-page-edge-actions {
+  position:absolute;
+  inset:0;
+  z-index:9;
+  pointer-events:none;
+}
+.living-page-edge{
+  position:absolute;
+  top:23%;
+  bottom:23%;
+  width:clamp(24px,3vw,38px);
+  padding:0;
+  border:1px solid rgb(202 171 152 / 38%);
+  border-radius:12px;
+  background:rgb(255 248 238 / 42%);
+  color:rgb(141 91 83 / 70%);
+  font:inherit;
+  font-size:27px;
+  cursor:pointer;
+  pointer-events:auto;
+  touch-action:pan-y;
+}
+.living-page-edge--prev {left:4px;}
+.living-page-edge--next {right:4px;}
+.living-page-edge:hover,.living-page-edge:focus-visible{
+  background:rgb(255 245 233 / 92%);color:#87524f;
+}
+.living-page-thumbnail[draggable="true"] {cursor:grab;}
+.living-page-thumbnail[draggable="true"]:active {cursor:grabbing;}
+.living-reader-page-corner {
+  background:linear-gradient(135deg,transparent 0 76%,#dfbaa5 77% 100%);
+  border-radius:0 0 11px 0;
+}
+@media(max-width:680px) {
+  .living-reader .living-reader-stamp-panel{
+    position:fixed;left:0;right:0;bottom:0;
+    width:100%;max-width:none;
+    max-height:69dvh;
+    border-radius:19px 19px 0 0;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .living-stamp-art-grid {grid-template-columns:repeat(4,minmax(0,1fr));}
+  .living-stamp-art-choice {min-height:75px;}
+  .living-stamp-art-choice img {width:47px;height:47px;}
+  .living-stamp-preview-handles button {min-width:44px;min-height:44px;}
+  .living-page-edge{width:27px;background:rgb(255 248 238 / 37%);}
+}
+@media(prefers-reduced-motion:reduce) {
+  .living-reader .living-stamp-placement-preview,
+  .living-page-edge,
+  .living-stamp-art-choice {transition:none!important;animation:none!important;}
+}
