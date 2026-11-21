@@ -97,7 +97,7 @@ export async function loadLivingPageMedia(spaceId:string,bookId:string,pageId:st
   const requests:LivingStampRequest[]=[]
   for(let offset=0;;offset+=300){
     const {data,error}=await supabase.from('living_stamp_marks')
-      .select('id,request_id,book_id,page_id,recipient_participant_id,giver_user_id,asset_id,note,position_x,position_y,rotation_deg,scale_factor,state,version,granted_at,peeled_at')
+      .select('id,request_id,book_id,page_id,recipient_participant_id,giver_user_id,asset_id,note,position_x,position_y,rotation_deg,scale_factor,state,version,granted_at,peeled_at,reserved_at,redeemed_at,redemption_id')
       .eq('book_id',bookId).eq('page_id',pageId)
       .order('granted_at').order('id').range(offset,offset+299)
     if(error)throw new Error('Cannot load Living Stamp marks')
