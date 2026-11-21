@@ -736,7 +736,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         <span aria-hidden="true">{editable||canGive?'＋':'⌕'}</span>
         <span className="living-reader-add-label">{editable||canGive?'เพิ่ม':'ดู'}</span>
       </button>
-      {tool!=='select'&&!toolsOpen&&<button type="button"
+      {tool!=='select'&&tool!=='pen'&&tool!=='eraser'&&!toolsOpen&&<button type="button"
         className="living-reader-mode-chip"
         aria-label={'ออกจากโหมด '+(toolLabels.find(item=>item.tool===tool)?.label??tool)}
         onClick={()=>{
