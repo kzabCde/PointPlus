@@ -144,7 +144,10 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const savedRef=useRef(new Map(initialElements.map(item=>[item.id,item])))
   const deletedVersions=useRef(new Map<string,number>())
   const draftEdits=useRef(new Map<string,EditorElement>())
-  const autosaveTimer=useRef<ReturnType<typeof setTimeout>|null>(null)
+  const pendingDeletes=useRef(new Map<string,EditorElement>())
+  const pendingPhotos=useRef<{name:string;file:File}[]>([])
+  const savingBatch=useRef(false)
+  const [queuedPhotoNames,setQueuedPhotoNames]=useState<string[]>([])
   const historyRef=useRef<PaperHistory>(emptyPaperHistory())
   const [history,setHistory]=useState<PaperHistory>(emptyPaperHistory)
   const [saveFailed,setSaveFailed]=useState(false)
@@ -168,7 +171,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const suppressEdgeClick=useRef(false)
   const [selectedStampId,setSelectedStampId]=useState<string|null>(null)
   useEffect(()=>{
-    if(!locked.current&&draftEdits.current.size===0){
+    if(!locked.current&&draftEdits.current.size===0&&pendingDeletes.current.size===0&&pendingPhotos.current.length===0){
       setItems(initialElements)
       savedRef.current=new Map(initialElements.map(item=>[item.id,item]))
       setPhotos(imageUrls)
@@ -236,7 +239,6 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     window.addEventListener('beforeunload',beforeUnload)
     return ()=>window.removeEventListener('beforeunload',beforeUnload)
   },[dirty,busy])
-  useEffect(()=>()=>{if(autosaveTimer.current)clearTimeout(autosaveTimer.current)},[])
 
   function pushHistory(before:EditorElement|null,after:EditorElement|null){
     if(samePaperDecoration(before,after))return
@@ -252,7 +254,6 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     // A draft must use the latest confirmed version, never a stale UI version.
     const item={...element,version:previous?.version??element.version}
     locked.current=true;setBusy(true);setNotice('กำลังบันทึก…')
-    let writeSucceeded=false
     try{
       const result=item.element_type==='image'
         ? await transformLivingPhoto({
@@ -277,11 +278,10 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           ...((draftEdits.current.get(item.id)?[draftEdits.current.get(item.id)!]:[confirmed]))]
           .sort((a,b)=>a.z_index-b.z_index||a.id.localeCompare(b.id)))
         setSelectedId(item.id)
-        setDirty(draftEdits.current.size>0)
+        setDirty(draftEdits.current.size>0||pendingDeletes.current.size>0||pendingPhotos.current.length>0)
         setSaveFailed(false)
         setNotice('บันทึกลงสมุดแล้ว')
         emitPaperCue('write')
-        writeSucceeded=true
         return true
       }
       draftEdits.current.set(item.id,item)
@@ -299,30 +299,98 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       return false
     }finally{
       locked.current=false;setBusy(false)
-      // If typing continued during an in-flight write, schedule its newer draft.
-      // Do not automatically retry failed saves in a loop; the retry UI handles them.
-      if(writeSucceeded&&draftEdits.current.size>0)scheduleAutosave()
     }
   }
 
+  function hasPending(){
+    return draftEdits.current.size>0||pendingDeletes.current.size>0||
+      pendingPhotos.current.length>0
+  }
+  function stageObject(element:EditorElement){
+    if(!editable||locked.current||savingBatch.current)return
+    pendingDeletes.current.delete(element.id)
+    const confirmed=savedRef.current.get(element.id)
+    if(confirmed&&samePaperDecoration(element,confirmed))
+      draftEdits.current.delete(element.id)
+    else draftEdits.current.set(element.id,element)
+    setItems(prev=>[...prev.filter(item=>item.id!==element.id),element]
+      .sort((a,b)=>a.z_index-b.z_index||a.id.localeCompare(b.id)))
+    setDirty(hasPending());setSaveFailed(false)
+    setNotice('มีการแก้ไขที่ยังไม่ได้บันทึก')
+  }
+  async function queuePhoto(file:File){
+    if(!editable||locked.current||savingBatch.current)return
+    try{
+      const prepared=await preparePhotoForUpload(file)
+      // Private photo uploads run only from explicit Save, never on selection.
+      pendingPhotos.current.push({name:file.name,file:prepared})
+      setQueuedPhotoNames(pendingPhotos.current.map(entry=>entry.name))
+      setDirty(true);setSaveFailed(false)
+      setNotice('รูปภาพอยู่ในรายการรอบันทึก กดบันทึกเมื่อพร้อม')
+    }catch(error){
+      setNotice(error instanceof Error?error.message:'ไม่สามารถเตรียมรูปภาพได้')
+    }
+  }
+  function discardDrafts(){
+    if(savingBatch.current||locked.current||!hasPending())return
+    if(!window.confirm('ทิ้งการแก้ไขกระดาษและรูปภาพที่ยังไม่ได้บันทึกใช่ไหม?'))return
+    draftEdits.current.clear();pendingDeletes.current.clear();pendingPhotos.current=[]
+    setQueuedPhotoNames([])
+    setItems([...savedRef.current.values()].sort((a,b)=>
+      a.z_index-b.z_index||a.id.localeCompare(b.id)))
+    setDirty(false);setSaveFailed(false);setSelectedId(null)
+    setNotice('ทิ้งการแก้ไขที่ยังไม่ได้บันทึกแล้ว')
+  }
   async function flushDrafts():Promise<boolean>{
-    if(!editable||locked.current)return false
-    if(autosaveTimer.current){clearTimeout(autosaveTimer.current);autosaveTimer.current=null}
-    for(const [id] of draftEdits.current){
-      const draft=draftEdits.current.get(id)
-      if(!draft)continue
-      if(!await saveObject(draft))return false
+    if(!editable||locked.current||savingBatch.current)return false
+    if(!hasPending())return true
+    savingBatch.current=true;setBusy(true)
+    try{
+      for(const [id] of draftEdits.current){
+        const draft=draftEdits.current.get(id)
+        if(draft&&!await saveObject(draft))return false
+      }
+      for(const [id,item] of pendingDeletes.current){
+        const confirmed=savedRef.current.get(id)
+        if(!confirmed){pendingDeletes.current.delete(id);continue}
+        const result=await deleteLivingElement({
+          spaceId,bookId,pageId:page.id,elementId:id,
+          expectedVersion:confirmed.version,
+        })
+        if(!result.ok||!result.data){
+          setSaveFailed(true);setNotice(result.error??'ลบวัตถุไม่สำเร็จ กดบันทึกอีกครั้ง')
+          return false
+        }
+        deletedVersions.current.set(id,result.data.version)
+        savedRef.current.delete(id);pendingDeletes.current.delete(id)
+        pushHistory(item,null)
+      }
+      let uploaded=false
+      while(pendingPhotos.current.length>0){
+        const photo=pendingPhotos.current[0]
+        const form=new FormData()
+        form.set('space_id',spaceId);form.set('book_id',bookId)
+        form.set('page_id',page.id);form.set('photo',photo.file)
+        const result=await uploadLivingPhoto(form)
+        if(!result.ok){
+          setSaveFailed(true)
+          setNotice(result.message+' โปรดตรวจประวัติหากผลการส่งไม่ชัดเจน')
+          return false
+        }
+        pendingPhotos.current.shift()
+        setQueuedPhotoNames(pendingPhotos.current.map(entry=>entry.name))
+        uploaded=true
+      }
+      if(uploaded)router.refresh()
+      setDirty(false);setSaveFailed(false);setNotice('บันทึกการแก้ไขแล้ว')
+      return true
+    }catch{
+      setSaveFailed(true)
+      setNotice('การเชื่อมต่อขัดข้อง ร่างยังอยู่บนหน้านี้ ลองบันทึกอีกครั้ง')
+      return false
+    }finally{
+      savingBatch.current=false;setBusy(false);setDirty(hasPending())
     }
-    setDirty(draftEdits.current.size>0)
-    return draftEdits.current.size===0
-  }
-
-  function scheduleAutosave(){
-    if(autosaveTimer.current)clearTimeout(autosaveTimer.current)
-    autosaveTimer.current=setTimeout(()=>{
-      autosaveTimer.current=null
-      if(!locked.current)void flushDrafts()
-    },850)
   }
 
   async function undoRedo(direction:'undo'|'redo'){
@@ -405,11 +473,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   function patchSelected(changes:Partial<EditorElement>){
     if(!editable||!selected||locked.current)return
     const next={...selected,...changes}
-    draftEdits.current.set(selected.id,next)
-    setItems(prev=>prev.map(item=>item.id===next.id?next:item))
-    setDirty(true);setSaveFailed(false)
-    setNotice('กำลังเตรียมบันทึกอัตโนมัติ…')
-    scheduleAutosave()
+    stageObject(next)
   }
   function patchText(changes:Partial<EditorText>){
     if(!selectedText)return
@@ -417,7 +481,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
 
   function newText(x:number,y:number) {
-    if(!editable||locked.current||draftEdits.current.size>0)return
+    if(!editable||locked.current||savingBatch.current)return
     const element:EditorElement={
       id:crypto.randomUUID(),book_id:bookId,page_id:page.id,
       element_type:'text',payload:{...textDefault,color:penColor},
@@ -425,7 +489,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       z_index:Math.min(1000000,items.reduce((n,e)=>Math.max(n,e.z_index),0)+1),
       version:0,
     }
-    void saveObject(element).then(ok=>{if(ok)setEditingTextId(element.id)})
+    stageObject(element);setSelectedId(element.id);setEditingTextId(element.id)
     setTool('select')
   }
 
@@ -459,13 +523,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         return
       }
     }
-    if((!editable&&!(canGive&&tool==='stamp'))||locked.current||
+    if((!editable&&!(canGive&&tool==='stamp'))||locked.current||savingBatch.current||
       event.button>0||!canvas.current)return
-    if(draftEdits.current.size>0){
-      setNotice('กำลังบันทึกการแก้ไขก่อนใช้เครื่องมือใหม่')
-      if(!saveFailed)void flushDrafts()
-      return
-    }
     const stampHit=(event.target as Element).closest<HTMLElement>('[data-living-stamp-id]')
     const mark=marks.find(item=>item.id===stampHit?.dataset.livingStampId)
     if(tool==='select'&&mark){
@@ -595,7 +654,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         pinch.current=null
         if(ended.mode==='object'&&ended.original&&ended.next&&
           !samePaperDecoration(ended.original,ended.next))
-          void saveObject(ended.next,ended.original)
+          stageObject(ended.next)
       }
       return
     }
@@ -620,10 +679,10 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         rotation_deg:0,opacity:1,z_index:Math.min(1000000,items.reduce((n,e)=>Math.max(n,e.z_index),0)+1),
         version:0,
       }
-      void saveObject(element)
+      stageObject(element)
     }else if(['move','resize','rotate'].includes(g.mode)&&g.original&&g.next&&
       !samePaperDecoration(g.next,g.original))
-      void saveObject(g.next,g.original)
+      stageObject(g.next)
   }
   async function saveStampMove(mark:LivingStampMark,original:LivingStampMark){
     if(locked.current)return
@@ -662,33 +721,16 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       setStampPoint({x:g.originalStampPreview.x,y:g.originalStampPreview.y})
     }
   }
-  async function remove(item:EditorElement){
-    if(!editable||locked.current||item.version===0)return
-    if(draftEdits.current.size>0){
-      setNotice('กรุณาบันทึกการแก้ไขก่อนลบวัตถุ')
-      return
-    }
-    locked.current=true;setBusy(true);setNotice('กำลังลบ…')
-    try{
-      // M05 keeps a private image file during soft deletion so Undo can restore it.
-      // This never removes a real stamp or its historical transaction.
-      const result=await deleteLivingElement({
-        spaceId,bookId,pageId:page.id,elementId:item.id,
-        expectedVersion:item.version,
-      })
-      if(result.ok&&result.data){
-        deletedVersions.current.set(item.id,result.data.version)
-        savedRef.current.delete(item.id)
-        pushHistory(item,null)
-        setItems(prev=>prev.filter(existing=>existing.id!==item.id))
-        setSelectedId(null);setDirty(false);setNotice('นำวัตถุออกจากหน้าแล้ว (Undo เพื่อคืนค่า)')
-        emitPaperCue('write')
-      }else{
-        setNotice(result.error??'ลบวัตถุไม่สำเร็จ')
-        if(result.conflict)setSaveFailed(true)
-      }
-    }catch{setNotice('การเชื่อมต่อขัดข้อง ไม่สามารถลบวัตถุ')}
-    finally{locked.current=false;setBusy(false)}
+  function remove(item:EditorElement){
+    if(!editable||locked.current||savingBatch.current)return
+    draftEdits.current.delete(item.id)
+    const confirmed=savedRef.current.get(item.id)
+    if(confirmed)pendingDeletes.current.set(item.id,confirmed)
+    else pendingDeletes.current.delete(item.id)
+    setItems(prev=>prev.filter(existing=>existing.id!==item.id))
+    setSelectedId(null);setAdvancedOpen(false)
+    setDirty(hasPending());setSaveFailed(false)
+    setNotice('ลบออกจากกระดาษแล้ว ยังไม่ได้บันทึกการลบ')
   }
   function emitPageTurn(direction:-1|1){
     if(tool!=='select'||stampPreview||selected||selectedStampId||busy||dirty||
@@ -757,24 +799,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     const file=Array.from(event.dataTransfer.files).find(item=>
       ['image/png','image/jpeg','image/webp'].includes(item.type))
     if(!file){setNotice('รองรับเฉพาะรูป JPEG, PNG และ WebP');return}
-    if(draftEdits.current.size>0){
-      setNotice('กรุณาบันทึกการแก้ไขกระดาษก่อนเพิ่มรูปภาพ')
-      return
-    }
-    locked.current=true;setBusy(true);setNotice('กำลังติดรูปภาพลงสมุด…')
-    try{
-      const prepared=await preparePhotoForUpload(file)
-      const form=new FormData()
-      form.set('space_id',spaceId)
-      form.set('book_id',bookId)
-      form.set('page_id',page.id)
-      form.set('photo',prepared)
-      const result=await uploadLivingPhoto(form)
-      setNotice(result.message)
-      if(result.ok){emitPaperCue('write');router.refresh()}
-    }catch(error){
-      setNotice(error instanceof Error?error.message:'ไม่สามารถเพิ่มรูปภาพได้')
-    }finally{locked.current=false;setBusy(false)}
+    await queuePhoto(file)
   }
   const top=Math.max(0,...items.map(e=>e.z_index))
   const bottom=Math.min(0,...items.map(e=>e.z_index))
@@ -952,9 +977,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
             const target=items.find(candidate=>candidate.id===item.id)
             if(!target||target.element_type!=='text')return
             const next={...target,payload:{...(target.payload as EditorText),text}}
-            draftEdits.current.set(target.id,next)
-            setItems(prev=>prev.map(current=>current.id===next.id?next:current))
-            setDirty(true);setSaveFailed(false);scheduleAutosave()
+            stageObject(next)
           }}
           onFinishText={()=>setEditingTextId(null)}
           photoSrc={photos[item.id]}/>)}
@@ -1222,8 +1245,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     {editable&&<details className="living-reader-editor-help">
       <summary>วิธีใช้สมุด</summary>
       <p className="living-editor-hint">
-      เลือกเครื่องมือแล้วแตะบนกระดาษ · ปากกาบันทึกเป็นเส้นเวกเตอร์ · ลากเพื่อย้ายวัตถุ
-      · ใช้ลูกศรเพื่อขยับตำแหน่ง · หยุดแก้ไขเพื่อบันทึกอัตโนมัติ
+      เลือกเครื่องมือแล้วแตะบนกระดาษ · ปากกาเป็นเส้นเวกเตอร์ · ลากเพื่อย้ายวัตถุ
+      · ใช้ลูกศรเพื่อขยับตำแหน่ง · กดบันทึกเพื่อเก็บการแก้ไขกระดาษ
       · Ctrl/Cmd+Z ย้อน และ Ctrl/Cmd+Shift+Z ทำซ้ำ
       </p>
     </details>}
