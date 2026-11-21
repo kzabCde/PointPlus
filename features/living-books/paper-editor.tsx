@@ -1031,6 +1031,17 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
             alt="" width={128} height={128} draggable={false}/>}
           <span className="living-stamp-preview-watermark">ตัวอย่าง</span>
         </div>}
+        {stampPreview&&!stampPanelOpen&&<button type="button"
+          className="living-stamp-preview-confirm-entry"
+          data-stamp-preview-control="true"
+          onPointerDown={event=>event.stopPropagation()}
+          onClick={()=>setStampPanelOpen(true)}
+          style={{
+            left:Math.min(84,Math.max(16,stampPreview.x*100))+'%',
+            top:Math.max(4,stampPreview.y*100-13)+'%',
+          }}>
+          {stampAttempted?'ลองยืนยันคำขอเดิม':'ตรวจและยืนยันแสตมป์'}
+        </button>}
         {stampPreview&&!stampAttempted&&<div className="living-stamp-preview-handles"
           data-stamp-preview-control="true" role="group" aria-label="จัดแสตมป์ตัวอย่าง"
           style={{
@@ -1163,6 +1174,12 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     </div>}
     <div id="living-reader-stamp-panel" className="living-reader-stamp-panel"
       hidden={!stampPanelOpen}>
+      <div className="living-stamp-sheet-head">
+        <strong>ถาดแสตมป์</strong>
+        <button type="button" className="living-reader-close"
+          onClick={()=>setStampPanelOpen(false)}
+          aria-label="ปิดถาดแสตมป์">✕</button>
+      </div>
     <LivingStampTools spaceId={spaceId} bookId={bookId} pageId={page.id}
       placement={stampPoint} preview={stampPreview}
       onPreviewChange={next=>{if(!stampAttempted){
