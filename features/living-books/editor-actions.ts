@@ -134,3 +134,27 @@ export async function deleteLivingElement(input:Context&{
   if(result.ok)revalidatePath('/s/'+input.spaceId+'/stamp-books/living/'+input.bookId)
   return result
 }
+
+/** Soft-deleted objects keep their UUID and backing image file for M05 Undo. */
+export async function restoreLivingElement(input:Context&{
+  pageId:string;elementId:string;expectedVersion:number
+}):Promise<EditorResult<{id:string;version:number;restored:boolean}>>{
+  if(!isUuid(input.pageId)||!isUuid(input.elementId)||
+    !Number.isSafeInteger(input.expectedVersion)||input.expectedVersion<1)
+    return reject('ข้อมูลวัตถุที่จะคืนค่าไม่ถูกต้อง')
+  const context=await ownerContext(input)
+  if(!context)return reject('เฉพาะเจ้าของสมุดที่เปิดใช้งานเท่านั้นที่คืนวัตถุได้')
+  const {data,error}=await context.supabase.rpc('pointplus_restore_living_book_element',{
+    p_book:input.bookId,p_page:input.pageId,p_element:input.elementId,
+    p_expected_version:input.expectedVersion,
+  })
+  const reply=(data!==null&&typeof data==='object'&&!Array.isArray(data))?data:null
+  if(error||!reply||!isUuid(String(reply.id))||
+    !Number.isSafeInteger(reply.version)||reply.restored!==true){
+    return reject(error?.code==='40001'?
+      'วัตถุถูกแก้ไขจากที่อื่น กรุณาโหลดหน้าใหม่ก่อนคืนค่า':
+      'คืนวัตถุที่ลบแล้วไม่สำเร็จ',error?.code==='40001')
+  }
+  revalidatePath('/s/'+input.spaceId+'/stamp-books/living/'+input.bookId)
+  return {ok:true,data:{id:String(reply.id),version:Number(reply.version),restored:true}}
+}
