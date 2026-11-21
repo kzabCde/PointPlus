@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { loadLivingBookDetail, loadLivingEditorData,loadLivingPageMedia } from '@/features/living-books/data'
 import { LivingPageManager } from '@/features/living-books/page-manager'
+import {LivingBookStudio} from '@/features/living-books/editor-studio'
 import { LivingPaperEditor } from '@/features/living-books/paper-editor'
 import {loadLivingRedemptionData} from '@/features/living-books/redemption-data'
 import {LivingRedemptionPanel} from '@/features/living-books/redemption-panel'
@@ -48,7 +49,7 @@ export default async function LivingBookPage({params,searchParams}:{
       <div><span>หน้าที่เพิ่มล่าสุด</span><strong>{lastPage?.page_order??1}</strong></div>
       <div><span>สถานะ</span><strong>{book.status==='active'?'เปิดใช้งาน':book.status==='paused'?'พักใช้':'เก็บถาวร'}</strong></div>
     </div>
-    <div className="living-workspace">
+    <LivingBookStudio>
       <LivingPageManager spaceId={spaceId} bookId={bookId} pages={pages}
         page={page} editable={owner && book.status==='active'}/>
       <LivingPaperEditor key={page.id} spaceId={spaceId} bookId={bookId}
@@ -56,7 +57,7 @@ export default async function LivingBookPage({params,searchParams}:{
         initialMarks={marks} initialRequests={requests} imageUrls={imageUrls}
         canGive={canGive&&book.status==='active'} canReview={canReview&&book.status==='active'}
         userId={context.user.id} pages={pages}/>
-    </div>
+    </LivingBookStudio>
     <LivingRedemptionPanel spaceId={spaceId} bookId={bookId}
       balance={balance} history={history} candidates={candidates}
       associations={associations} knownStamps={knownStamps}
