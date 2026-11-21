@@ -34,6 +34,7 @@ export default async function LivingBookPage({params,searchParams}:{
     <LivingBookStudio title={book.title} backHref={'/s/'+spaceId+'/stamp-books'}
       description={book.description} recipientName={recipient?.display_name}
       status={book.status} availableStamps={balance.available}
+      pendingRewards={owner?history.filter(item=>item.status==='requested').length:0}
       rewardPanel={<LivingRedemptionPanel spaceId={spaceId} bookId={bookId}
         balance={balance} history={history} candidates={candidates}
         associations={associations} knownStamps={knownStamps}
