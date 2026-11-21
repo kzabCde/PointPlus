@@ -13,9 +13,11 @@ test('R02: lightweight room launcher replaces old all-space dashboard',()=>{
  assert.match(read('app/(protected)/rooms/page.tsx'),/listMyRooms\(\)/)
  assert.doesNotMatch(read('app/(protected)/rooms/page.tsx'),/loadDashboard|loadMissionBoard/)
 })
-test('R03: Room Home prioritizes only room-local Stamp Books and protects membership',()=>{
+test('R03: Room Home prioritizes V3 collections and protects membership',()=>{
  const page=read('app/(protected)/s/[spaceId]/page.tsx')
- assert.match(page,/loadStampBookBoard\(spaceId\)/)
+ assert.match(page,/loadLivingBookShelf\(spaceId\)/)
+ assert.doesNotMatch(page,/loadStampBookBoard/)
+ assert.match(page,/สร้างสมุดหรือการ์ด/)
  assert.match(page,/stamp-books/)
  assert.ok(existsSync(new URL('../app/(protected)/s/[spaceId]/stamp-books/page.tsx',import.meta.url)))
 })
