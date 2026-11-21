@@ -20,7 +20,7 @@ export default async function LivingBookPage({params,searchParams}:{
   ])
   if(book.space_id!==spaceId)notFound()
   const {marks,requests,imageUrls,canGive}=await loadLivingPageMedia(spaceId,bookId,page.id)
-  const {balance,history,candidates,associations,knownStamps}=
+  const {balance,history,pendingCount,candidates,associations,knownStamps}=
     await loadLivingRedemptionData(spaceId,bookId)
   const recipient=people.find(p=>p.id===book.recipient_participant_id)
   const canReview=Boolean(recipient?.user_id===context.user.id||
@@ -34,9 +34,10 @@ export default async function LivingBookPage({params,searchParams}:{
     <LivingBookStudio title={book.title} backHref={'/s/'+spaceId+'/stamp-books'}
       description={book.description} recipientName={recipient?.display_name}
       status={book.status} availableStamps={balance.available}
-      pendingRewards={owner?history.filter(item=>item.status==='requested').length:0}
+      pendingRewards={owner?pendingCount:0}
       rewardPanel={<LivingRedemptionPanel spaceId={spaceId} bookId={bookId}
-        balance={balance} history={history} candidates={candidates}
+        balance={balance} history={history} pendingCount={pendingCount}
+        candidates={candidates}
         associations={associations} knownStamps={knownStamps}
         canRequest={isRecipient} canFulfill={owner}
         isActive={book.status==='active'}/>}>
