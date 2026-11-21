@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type DragEvent as ReactDragEvent, type PointerEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteLivingElement,saveLivingElement,restoreLivingElement } from './editor-actions'
 import {useLivingEditorStudio} from './editor-studio'
@@ -693,7 +693,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       }
     }
   }
-  async function handlePhotoDrop(event:React.DragEvent<HTMLDivElement>){
+  async function handlePhotoDrop(event:ReactDragEvent<HTMLDivElement>){
     if(!editable||locked.current||busy)return
     event.preventDefault()
     setDropActive(false)
@@ -849,7 +849,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           }}
           onTextChange={text=>{
             const target=items.find(candidate=>candidate.id===item.id)
-            if(!target||target.element_type!=='text'||locked.current)return
+            if(!target||target.element_type!=='text')return
             const next={...target,payload:{...(target.payload as EditorText),text}}
             draftEdits.current.set(target.id,next)
             setItems(prev=>prev.map(current=>current.id===next.id?next:current))
@@ -857,6 +857,59 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           }}
           onFinishText={()=>setEditingTextId(null)}
           photoSrc={photos[item.id]}/>)}
+        {editable&&selected&&tool==='select'&&<div
+          className="living-selection-toolbar" data-context-toolbar="true"
+          role="toolbar" aria-label={'แก้ไข'+(selected.element_type==='text'?'ข้อความ':
+            selected.element_type==='image'?'ภาพ':'เส้นวาด')+'ที่เลือก'}
+          onPointerDown={event=>event.stopPropagation()}
+          onKeyDown={event=>event.stopPropagation()}
+          style={{
+            left:Math.min(.67,Math.max(.02,selected.position_x))*100+'%',
+            top:Math.max(.012,selected.position_y-.085)*100+'%',
+          }}>
+          <span className="living-selection-toolbar-label">
+            {selected.element_type==='text'?'ข้อความ':selected.element_type==='image'?'รูปภาพ':'เส้นวาด'}
+          </span>
+          {selectedText&&<>
+            <button type="button" title="แก้ไขข้อความโดยตรง" aria-label="แก้ไขข้อความ"
+              onClick={()=>setEditingTextId(selected.id)}>✎</button>
+            <label className="living-selection-color" title="สีข้อความ">
+              <span className="sr-only">สีข้อความ</span>
+              <input type="color" aria-label="สีข้อความ" value={selectedText.color}
+                disabled={busy} onChange={event=>patchText({color:event.target.value})}/>
+            </label>
+            <button type="button" aria-label="ลดขนาดข้อความ" disabled={busy||selectedText.fontSize<=12}
+              onClick={()=>patchText({fontSize:clamp(selectedText.fontSize-2,12,120)})}>A−</button>
+            <button type="button" aria-label="เพิ่มขนาดข้อความ" disabled={busy||selectedText.fontSize>=120}
+              onClick={()=>patchText({fontSize:clamp(selectedText.fontSize+2,12,120)})}>A+</button>
+            <button type="button" aria-pressed={selectedText.bold}
+              disabled={busy} aria-label="ตัวหนา"
+              onClick={()=>patchText({bold:!selectedText.bold})}><strong>B</strong></button>
+            <button type="button" aria-pressed={selectedText.italic}
+              disabled={busy} aria-label="ตัวเอียง"
+              onClick={()=>patchText({italic:!selectedText.italic})}><em>I</em></button>
+          </>}
+          {selected.element_type==='drawing'&&<label className="living-selection-color"
+            title="สีเส้นวาด">
+            <span className="sr-only">สีเส้นวาด</span>
+            <input type="color" aria-label="สีเส้นวาด"
+              value={(selected.payload as EditorDrawing).color} disabled={busy}
+              onChange={event=>patchSelected({payload:{
+                ...selected.payload,color:event.target.value,
+              }})}/>
+          </label>}
+          {selectedPhoto&&<button type="button" disabled={busy}
+            onClick={()=>setAdvancedOpen(true)}>ครอป</button>}
+          <button type="button" aria-label="นำวัตถุมาด้านหน้า"
+            title="นำมาด้านหน้า" disabled={busy||top>=1000000}
+            onClick={()=>patchSelected({z_index:top+1})}>↑</button>
+          <button type="button" aria-label="ส่งวัตถุไปด้านหลัง"
+            title="ส่งไปด้านหลัง" disabled={busy||bottom<=-1000000}
+            onClick={()=>patchSelected({z_index:bottom-1})}>↓</button>
+          <button type="button" aria-expanded={advancedOpen}
+            aria-controls="living-selection-advanced" title="การตั้งค่าเพิ่มเติม"
+            onClick={()=>setAdvancedOpen(value=>!value)}>···</button>
+        </div>}
         <LivingStampOverlay marks={marks} pending={requests}
           freshMarkId={freshMarkId} selectedId={selectedStampId} selectable={tool==='select'}
           onSelect={id=>{
@@ -873,7 +926,11 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         </svg>}
       </div>
     </div>
-    {editable&&selected&&<div className="living-editor-properties">
+    {editable&&selected&&advancedOpen&&<div id="living-selection-advanced"
+      className="living-editor-properties living-editor-properties--contextual"
+      role="region" aria-label="การตั้งค่าขั้นสูงของวัตถุที่เลือก">
+      <button type="button" className="living-selection-advanced-close"
+        aria-label="ปิดการตั้งค่าขั้นสูง" onClick={()=>setAdvancedOpen(false)}>✕</button>
       <h3>ปรับแต่ง{selected.element_type==='text'?'ข้อความ':selected.element_type==='image'?'รูปภาพ':'เส้นวาด'}</h3>
       {selectedText&&<>
         <label className="living-editor-properties__wide">ข้อความ
