@@ -40,13 +40,18 @@ export async function loadLivingRedemptionData(spaceId:string,bookId:string){
   const history=(historyResult.data??[]) as LivingRedemption[]
   const candidates=(previewResult.data??[]) as RedemptionStamp[]
   const associations:RedemptionAssociation[]=[]
-  if(history.length){
-    const {data,error}=await supabase.from('living_stamp_redemption_marks')
-      .select('redemption_id,mark_id')
-      .eq('book_id',bookId).in('redemption_id',history.map(row=>row.id))
-      .order('linked_at',{ascending:true})
-    if(error)throw new Error('Cannot load redemption-to-stamp associations')
-    associations.push(...(data??[]) as RedemptionAssociation[])
+  // The ledger retains ALL associations, but the recent-history preview reads
+  // at most 9 per request. Never download tens of thousands of stamp IDs to
+  // draw tiny thumbnails in a user's browser.
+  for(let index=0;index<history.length;index+=8){
+    await Promise.all(history.slice(index,index+8).map(async item=>{
+      const {data,error}=await supabase.from('living_stamp_redemption_marks')
+        .select('redemption_id,mark_id')
+        .eq('book_id',bookId).eq('redemption_id',item.id)
+        .order('linked_at',{ascending:true}).order('mark_id').limit(9)
+      if(error)throw new Error('Cannot load redemption stamp preview')
+      associations.push(...(data??[]) as RedemptionAssociation[])
+    }))
   }
   const ids=[...new Set(associations.map(row=>row.mark_id))]
   const knownStamps:RedemptionStamp[]=[]
