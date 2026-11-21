@@ -59,7 +59,7 @@ test('Couple book creation initially requires only title, recipient is chosen au
   const html=renderToStaticMarkup(React.createElement(formComponents.CreateLivingBookForm,{
     spaceId:room,userId:id,kind:'couple',participants:users,format:'living',
   }))
-  assert.match(html,/name="title"[^>]*required/)
+  assert.match(html,/<input(?=[^>]*name="title")(?=[^>]*required)[^>]*>/)
   assert.match(html,/name="recipient_id" value="33333333-3333-4333-8333-333333333333"/)
   assert.match(html,/name="approval_policy" value="direct"/)
   assert.doesNotMatch(html,/id="living-book-recipient"/)
