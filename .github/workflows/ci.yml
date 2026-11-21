@@ -45,6 +45,8 @@ jobs:
         run: node --test tests/database-v3-contract.test.mjs
       - name: Verify Living Stamp Book login contracts
         run: node --test tests/living-auth.test.mjs
+      - name: Verify legacy Stamp Book removal and safe cleanup
+        run: node --test tests/living-only-retirement.test.mjs
       - name: Verify Living-only Stampbook V3 M01 foundations
         run: node --test tests/living-stampbook-m01.test.mjs
       - name: Verify Living Stampbook V3 M02 page editor
