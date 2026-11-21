@@ -10,8 +10,6 @@ const forms=read('features/living-books/forms.tsx')
 const data=read('features/living-books/data.ts')
 const newPage=read('app/(protected)/s/[spaceId]/stamp-books/new/page.tsx')
 const library=read('app/(protected)/s/[spaceId]/stamp-books/page.tsx')
-const card=read('features/stamp-books/card.tsx')
-const oldIssuer=read('features/stamp-books/actions.ts')
 const id='11111111-1111-4111-8111-111111111111'
 const room='22222222-2222-4222-8222-222222222222'
 const recipient='33333333-3333-4333-8333-333333333333'
@@ -29,8 +27,6 @@ test('M01 is additive: no finite cycle, stamp target, auto archive or mutation o
   assert.doesNotMatch(sql,/target_count|target_snapshot|auto_archive\s*=\s*true/i)
   assert.doesNotMatch(sql,/\bDROP TABLE\b|\bTRUNCATE\b|\bDELETE FROM\b|\bALTER TABLE public\.stamp_books\b/i)
   assert.match(sql,/COMMIT;\s*$/)
-  assert.match(oldIssuer,/pointplus_give_stamp_to_card/)
-  assert.match(card,/cardMarkSlots/)
 })
 test('M01 enforces RLS and read-only exposed tables, permission checked RPCs',()=>{
   for(const table of ['living_books','living_book_pages','living_book_givers']){
@@ -75,18 +71,14 @@ test('page reorder requires exactly the existing book pages and serializes with 
   assert.match(sql,/SET CONSTRAINTS public\.living_book_pages_order_unique DEFERRED/)
   assert.match(sql,/FROM unnest\(p_page_ids\) WITH ORDINALITY/)
 })
-test('M01 creation and library offer dedicated Living Book while preserving card mode',()=>{
-  assert.match(forms,/format==='living'/)
-  assert.match(forms,/format==='card'/)
-  assert.match(forms,/CreateCoupleStampBookForm[\s\S]*cardOnly/)
-  assert.match(forms,/CreateStampBookForm \{\.\.\.props\} cardOnly/)
+test('Living-only creation and library contain no legacy Stamp Card option',()=>{
+  assert.doesNotMatch(forms,/CollectionCreationChoice|CreateCoupleStampBookForm|CreateStampBookForm|cardOnly/)
   assert.match(forms,/name="idempotency_key"/)
   assert.match(forms,/CreateLivingBookForm/)
   assert.match(forms,/AddLivingBookPageForm/)
-  assert.match(newPage,/CollectionCreationChoice/)
+  assert.match(newPage,/CreateLivingBookForm/)
   assert.match(library,/LivingBookShelf/)
-  assert.match(library,/BookShelf/)
-  assert.match(read('features/stamp-books/forms.tsx'),/cardOnly \? 'stamp_card' : 'notebook'/)
+  assert.doesNotMatch(library,/loadStampBookBoard|BookShelf[^a-zA-Z]|การ์ดสะสมเดิม/)
   assert.match(data,/pointplus_get_living_book_summary/)
 })
 function mockActions({role='member',kind='couple',owner=id,status='active'}={}){
