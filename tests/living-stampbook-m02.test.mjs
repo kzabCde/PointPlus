@@ -111,7 +111,7 @@ test('editor tools provide independent text, vector pen, selection, eraser, pan,
   assert.match(editor,/tool:'text'/)
   assert.match(editor,/tool:'hand'/)
   assert.match(editor,/onPointerDown=\{begin\}/)
-  assert.match(editor,/onPointerCancel=\{cancel\}/)
+  assert.match(editor,/onPointerCancel=\{event=>\{activeFingers\.current\.delete\(event\.pointerId\);cancel\(\)\}\}/)
   assert.match(editor,/makeStrokeElement/)
   assert.match(editor,/saveLivingElement/)
   assert.match(editor,/deleteLivingElement/)

@@ -23,7 +23,7 @@ const balanceZero:StampBalance={total:0,available:0,reserved:0,redeemed:0,peeled
  */
 export async function loadLivingRedemptionData(spaceId:string,bookId:string){
   const {supabase}=await getSpaceContext(spaceId)
-  const [balanceResult,historyResult,previewResult]=await Promise.all([
+  const [balanceResult,historyResult,previewResult,pendingResult]=await Promise.all([
     supabase.rpc('pointplus_get_living_stamp_balance',{p_book:bookId}),
     supabase.from('living_stamp_redemptions')
       .select('id,book_id,space_id,recipient_participant_id,requested_by,requested_quantity,reward_message,status,requested_at,fulfilled_at,fulfilled_by,canceled_at,canceled_by')
@@ -33,18 +33,32 @@ export async function loadLivingRedemptionData(spaceId:string,bookId:string){
       .select('id,asset_id,page_id,state,granted_at')
       .eq('book_id',bookId).eq('state','available')
       .order('granted_at',{ascending:true}).order('id',{ascending:true}).limit(30),
+    // Pending owner decisions must not disappear when 40 newer historical
+    // redemptions fill the regular activity feed.
+    supabase.from('living_stamp_redemptions')
+      .select('id,book_id,space_id,recipient_participant_id,requested_by,requested_quantity,reward_message,status,requested_at,fulfilled_at,fulfilled_by,canceled_at,canceled_by',
+        {count:'exact'})
+      .eq('book_id',bookId).eq('space_id',spaceId).eq('status','requested')
+      .order('requested_at',{ascending:false}).order('id',{ascending:false}).limit(100),
   ])
-  if(balanceResult.error||historyResult.error||previewResult.error)
+  if(balanceResult.error||historyResult.error||previewResult.error||pendingResult.error)
     throw new Error('Cannot load Living Book redemption balances and history')
   const balance=(balanceResult.data??balanceZero) as StampBalance
-  const history=(historyResult.data??[]) as LivingRedemption[]
+  const recent=(historyResult.data??[]) as LivingRedemption[]
+  const pendingRecords=(pendingResult.data??[]) as LivingRedemption[]
+  const pendingCount=pendingResult.count??pendingRecords.length
+  const byId=new Map<string,LivingRedemption>(
+    [...pendingRecords,...recent].map(item=>[item.id,item]))
+  const history=[...byId.values()].sort((a,b)=>
+    b.requested_at.localeCompare(a.requested_at)||b.id.localeCompare(a.id))
   const candidates=(previewResult.data??[]) as RedemptionStamp[]
   const associations:RedemptionAssociation[]=[]
   // The ledger retains ALL associations, but the recent-history preview reads
   // at most 9 per request. Never download tens of thousands of stamp IDs to
   // draw tiny thumbnails in a user's browser.
-  for(let index=0;index<history.length;index+=8){
-    await Promise.all(history.slice(index,index+8).map(async item=>{
+  const completed=history.filter(item=>item.status!=='requested')
+  for(let index=0;index<completed.length;index+=8){
+    await Promise.all(completed.slice(index,index+8).map(async item=>{
       const {data,error}=await supabase.from('living_stamp_redemption_marks')
         .select('redemption_id,mark_id')
         .eq('book_id',bookId).eq('redemption_id',item.id)
@@ -62,5 +76,5 @@ export async function loadLivingRedemptionData(spaceId:string,bookId:string){
     if(error)throw new Error('Cannot load redeemed stamp artwork')
     knownStamps.push(...(data??[]) as RedemptionStamp[])
   }
-  return {balance,history,candidates,associations,knownStamps}
+  return {balance,history,pendingCount,candidates,associations,knownStamps}
 }

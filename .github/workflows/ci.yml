@@ -67,6 +67,20 @@ jobs:
         run: node --test tests/living-stampbook-m05.test.mjs
       - name: Syntax check isolated hosted two-account E2E (no credentials or deployment)
         run: node --check tests/e2e/living-v3-hosted.test.mjs
+      - name: Verify Buttonless V3 card visual and ledger interaction contracts
+        run: node --test tests/living-v3-card-buttonless.test.mjs
+      - name: Verify UX01 Paper First layout and preserved interactions
+        run: node --test tests/living-v3-ux01-paper-first.test.mjs
+      - name: Verify UX02 Contextual Editing and normalized transform geometry
+        run: node --test tests/living-v3-ux02-contextual.test.mjs
+      - name: Verify UX03 stamp previews, guarded page turns and ledger invariants
+        run: node --test tests/living-v3-ux03-stamp-page.test.mjs
+      - name: Verify UX04 real React reward rendering, owner/recipient controls and accessible modal
+        run: node --test tests/living-v3-ux04-rewards.test.mjs
+      - name: Syntax check staged two-account UX04 browser gate (never Production)
+        run: node --check tests/e2e/living-v3-ux04-browser.mjs
+      - name: Syntax check staging-only two-account desktop/mobile V3 card E2E
+        run: node --check tests/e2e/living-v3-card-buttonless-browser.mjs
       - name: Verify Server Action runtime exports (prevents client form 500)
         run: node --test tests/server-action-export-boundary.test.mjs
       - name: Typecheck
@@ -76,7 +90,7 @@ jobs:
 
   verify-living-migrations:
     name: Living M01–M05 PostgreSQL migrations and RLS tests
-    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3'
+    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3' || github.head_ref == 'feat/living-v3-buttonless-integration'
     runs-on: ubuntu-latest
     services:
       postgres:
