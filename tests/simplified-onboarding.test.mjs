@@ -38,8 +38,14 @@ test('room creation opens room home and couple books require just basic book det
  assert.match(form,/name="rewards" value=/)
  assert.match(form,/เชิญเข้าห้อง/)
  const page=read('app/(protected)/s/[spaceId]/stamp-books/new/page.tsx')
- assert.match(page,/space\.kind==='couple'/)
- assert.match(page,/CreateCoupleStampBookForm/)
+ assert.match(page,/space\.kind!=='couple'/)
+ assert.match(page,/CollectionCreationChoice/)
+ const choice=read('features/living-books/forms.tsx')
+ assert.match(choice,/props\.kind==='couple'/)
+ assert.match(choice,/CreateCoupleStampBookForm/)
+ assert.match(choice,/CreateStampBookForm/)
+ assert.match(choice,/cardOnly/)
+ assert.match(choice,/CreateLivingBookForm/)
 })
 
 test('timezone is not selected or modeled by the active Room/Profile data loaders',()=>{
