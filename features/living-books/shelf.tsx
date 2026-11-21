@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookCover } from '@/features/stamp-books/presentation'
+import { LivingBookCover } from '@/features/living-books/cover'
 import type { Participant } from '@/features/spaces/data'
 import type { LivingBook } from './data'
 
@@ -11,7 +11,7 @@ export function LivingBookShelf({books,people,base}:{
       const recipient=people.find(p=>p.id===book.recipient_participant_id)
       return <article className="stamp-book-cover" key={book.id}>
         <div className="book-card__visual">
-          <BookCover assetId={book.cover_asset_id} eager={index===0}/>
+          <LivingBookCover assetId={book.cover_asset_id} eager={index===0}/>
         </div>
         <div className="book-card__content">
           <span className="stamp-collection-type">Living Stampbook</span>
