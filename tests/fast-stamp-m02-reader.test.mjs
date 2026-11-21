@@ -130,8 +130,8 @@ test('Reader navigates by metadata without downloading other pages decorations',
 
 const {LivingReadOnlyPage}=fromTS('features/living-books/read-only-page.tsx',{
   'react/jsx-runtime':require('react/jsx-runtime'),
-  'next/image':{default:fakeImage},
-  'next/link':{default:fakeLink},
+  'next/image':fakeImage,
+  'next/link':fakeLink,
   '@/lib/point-plus/assets':{pointPlusStamps:[{id:'heart',nameTh:'หัวใจ',png:'/heart.png'}]},
 },true)
 
