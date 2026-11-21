@@ -122,7 +122,7 @@ test('M04 UI lets recipient choose any valid quantity, enter free text and previ
   assert.match(panel,/canFulfill/)
   assert.match(data,/pointplus_get_living_stamp_balance/)
   assert.match(data,/living_stamp_redemption_marks/)
-  assert.match(data,/status','available/)
+  assert.match(data,/state','available/)
   assert.match(page,/LivingRedemptionPanel/)
   assert.match(page,/canRequest=\{isRecipient\}/)
   assert.match(page,/canFulfill=\{owner\}/)
@@ -132,7 +132,7 @@ test('M04 shows permanently marked spent stamps and restricts transformations to
   assert.match(overlay,/data-used=\{used\}/)
   assert.match(overlay,/data-reserved=\{reserved\}/)
   assert.match(overlay,/className="living-real-stamp__used"/)
-  assert.match(overlay,/mark\.state==='available'&&canEdit/)
+  assert.match(overlay,/mark\?\.state==='available'&&canEdit/)
   assert.match(get('features/living-books/m03-actions.ts'),/pointplus_peel_living_stamp/)
 })
 
