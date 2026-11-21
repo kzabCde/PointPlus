@@ -39,8 +39,46 @@ export async function createLivingBookAction(_previous:LivingActionState,form:Fo
   if(error || !data || !isUuid(String(data)))
     return fail('สร้างสมุดไม่สำเร็จ กรุณาตรวจสอบสิทธิ์และฐานข้อมูล Living Stampbook V3')
 
+  revalidatePath('/s/'+spaceId)
   revalidatePath('/s/'+spaceId+'/stamp-books')
   return {status:'success',message:'สร้างสมุด Living พร้อมกระดาษหน้าแรกแล้ว',bookId:String(data)}
+}
+
+export async function createLivingCardAction(_previous:LivingActionState,form:FormData):Promise<LivingActionState> {
+  const spaceId=text(form,'space_id')
+  const recipient=text(form,'recipient_id')
+  const title=text(form,'title')
+  const description=text(form,'description')
+  const cover=text(form,'cover_asset_id')
+  const approval=text(form,'approval_policy')
+  const key=text(form,'idempotency_key')
+  const targetText=text(form,'target_count')
+  const target=Number(targetText)
+  const reward=text(form,'reward_title')
+  if(![spaceId,recipient,key].every(isUuid) || !/^[1-9][0-9]*$/.test(targetText) ||
+    !Number.isSafeInteger(target) || target<1 || target>100 ||
+    reward.length<1 || reward.length>160 ||
+    title.length<1 || title.length>160 || description.length>2000 ||
+    !['direct','approval_required'].includes(approval) ||
+    !pointPlusStamps.some(stamp=>stamp.id===cover))
+    return fail('กรุณาตรวจชื่อการ์ด ผู้รับ จำนวนช่อง รางวัล และภาพปก')
+
+  const {supabase,space,member}=await getSpaceContext(spaceId)
+  if(space.kind!=='couple' && !['owner','admin'].includes(member.role))
+    return fail('เฉพาะผู้ดูแลห้องที่สร้างการ์ดได้')
+  const {data,error}=await supabase.rpc('pointplus_create_living_card',{
+    p_space:spaceId,p_recipient:recipient,p_title:title,
+    p_description:description||null,p_cover:cover,p_approval:approval,p_key:key,
+    p_target:target,p_reward:reward,
+  })
+  if(error||!data||!isUuid(String(data))){
+    if(error?.code==='42883'||error?.code==='PGRST202')
+      return fail('ระบบการ์ด V3 ยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลเพื่ออัปเดตฐานข้อมูล')
+    return fail('สร้างการ์ดไม่สำเร็จ กรุณาตรวจสอบผู้รับ สิทธิ์ และลองอีกครั้ง')
+  }
+  revalidatePath('/s/'+spaceId)
+  revalidatePath('/s/'+spaceId+'/stamp-books')
+  return {status:'success',message:'สร้างการ์ดสะสมแล้ว',bookId:String(data)}
 }
 
 export async function addLivingBookPageAction(_previous:LivingActionState,form:FormData):Promise<LivingActionState> {
