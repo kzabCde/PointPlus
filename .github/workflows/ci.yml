@@ -55,6 +55,8 @@ jobs:
         run: node --test tests/stamp-card-tap-slots.test.mjs
       - name: Verify Living Stampbook V3 M01 foundations
         run: node --test tests/living-stampbook-m01.test.mjs
+      - name: Verify V3 cards and Room creation repair contracts
+        run: node --test tests/living-v3-card-contract.test.mjs
       - name: Verify Living Stampbook V3 M02 page editor
         run: node --test tests/living-stampbook-m02.test.mjs
       - name: Verify Living Stampbook V3 M03 images and real stamps
@@ -74,7 +76,7 @@ jobs:
 
   verify-living-migrations:
     name: Living M01–M05 PostgreSQL migrations and RLS tests
-    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3'
+    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -123,3 +125,7 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/20_living_stampbook_v3_m05_reversible_editor.sql
       - name: Verify owner-only reversible paper edits and immutable stamp ledger
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-m05-assertions.sql
+      - name: Apply V3 card repair on isolated PostgreSQL (never production)
+        run: psql -v ON_ERROR_STOP=1 -f supabase/stamp-book-first/23_living_v3_stamp_cards.sql
+      - name: Verify both Couple directions, ledger slot uniqueness and reward eligibility
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/living-v3-card-assertions.sql
