@@ -1,6 +1,7 @@
 'use client'
 
-import {createContext,useContext,useMemo,useState,type ReactNode} from 'react'
+import {createContext,useContext,useEffect,useMemo,useState,type ReactNode} from 'react'
+import {useRouter} from 'next/navigation'
 import {usePaperSound} from './paper-sound'
 
 type EditorStudioContext={
@@ -21,6 +22,22 @@ export function LivingBookStudio({children}:{children:ReactNode}){
   const [paperUnsaved,setPaperUnsaved]=useState(false)
   const [pageUnsaved,setPageUnsaved]=useState(false)
   const {enabled,toggle}=usePaperSound()
+  const router=useRouter()
+  useEffect(()=>{
+    const block=(event:BeforeUnloadEvent)=>{
+      if(paperUnsaved||pageUnsaved){event.preventDefault();event.returnValue=''}
+    }
+    window.addEventListener('beforeunload',block)
+    // Renew private photo signed URLs before their 20-minute expiry when idle.
+    const urlRefresh=window.setInterval(()=>{
+      if(!paperUnsaved&&!pageUnsaved&&document.visibilityState==='visible')
+        router.refresh()
+    },14*60*1000)
+    return ()=>{
+      window.removeEventListener('beforeunload',block)
+      window.clearInterval(urlRefresh)
+    }
+  },[paperUnsaved,pageUnsaved,router])
   const state=useMemo(()=>({
     paperUnsaved,pageUnsaved,setPaperUnsaved,setPageUnsaved,
   }),[paperUnsaved,pageUnsaved])
