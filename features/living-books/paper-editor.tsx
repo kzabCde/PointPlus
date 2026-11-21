@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {pointPlusStamps} from '@/lib/point-plus/assets'
 import { deleteLivingElement,saveLivingElement,restoreLivingElement } from './editor-actions'
+import {saveLivingPaperBatch} from './editor-batch-actions'
 import {useLivingEditorStudio} from './editor-studio'
 import {emitPaperCue} from './paper-sound'
 import {appendPaperHistory,emptyPaperHistory,peekPaperHistory,
@@ -358,9 +359,47 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     if(!hasPending())return true
     savingBatch.current=true;setBusy(true)
     try{
-      for(const [id] of draftEdits.current){
-        const draft=draftEdits.current.get(id)
-        if(draft&&!await saveObject(draft))return false
+      const staged=[...draftEdits.current.values()]
+      for(let start=0;start<staged.length;start+=8){
+        const batch=staged.slice(start,start+8)
+        if(batch.length===1){
+          if(!await saveObject(batch[0]))return false
+          continue
+        }
+        // One server-action request rather than a network roundtrip per
+        // decoration. Each existing RPC still validates owner and version.
+        const payload=batch.map(element=>{
+          const version=savedRef.current.get(element.id)?.version??element.version
+          return {element:{...element,version},expectedVersion:version}
+        })
+        const results=await saveLivingPaperBatch({
+          spaceId,bookId,pageId:page.id,drafts:payload,
+        })
+        const confirmed=new Map<string,EditorElement>()
+        let failed=false
+        for(const receipt of results){
+          const item=batch.find(element=>element.id===receipt.id)
+          if(!item)continue
+          if(!receipt.ok||!Number.isSafeInteger(receipt.version)){
+            failed=true;setSaveFailed(true)
+            setNotice(receipt.error??'บันทึกบางรายการไม่สำเร็จ โปรดตรวจสอบก่อนลองอีกครั้ง')
+            continue
+          }
+          const prior=savedRef.current.get(item.id)??null
+          const next={...item,version:receipt.version!}
+          savedRef.current.set(item.id,next)
+          pushHistory(prior,next)
+          const pending=draftEdits.current.get(item.id)
+          if(pending&&samePaperDecoration(pending,item))draftEdits.current.delete(item.id)
+          confirmed.set(item.id,next)
+        }
+        if(confirmed.size>0){
+          setItems(previous=>previous.map(item=>confirmed.get(item.id)??item)
+            .sort((a,b)=>a.z_index-b.z_index||a.id.localeCompare(b.id)))
+          emitPaperCue('write')
+        }
+        setDirty(hasPending())
+        if(failed)return false
       }
       for(const [id,item] of pendingDeletes.current){
         const confirmed=savedRef.current.get(id)
