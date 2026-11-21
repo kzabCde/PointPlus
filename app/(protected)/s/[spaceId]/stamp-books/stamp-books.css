@@ -211,3 +211,52 @@
  .stamp-format-option { min-block-size: 72px; }
 }
 @media (prefers-reduced-motion: reduce) { .stamp-format-option { transition: none; } }
+
+
+/* Living Stampbook M01 — separate continuous book identity from fixed-slot cards. */
+.living-creator { display: grid; gap: 16px; max-width: 760px; }
+.living-creation-form { max-width: 720px; display: grid; gap: 12px; }
+.living-creation-form > label, .living-add-page > label { display: grid; gap: 6px; font-weight: 700; }
+.living-creation-form > p { margin: 0; }
+.living-creation-form > .book-cover-art { --cover-size: 83px; }
+.living-shelf-section { display: grid; gap: 13px; }
+.living-shelf-section > h3 { margin: 0; font-size: 18px; }
+.living-book-overview {
+  display: grid; grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 10px;
+}
+.living-book-overview > div {
+  display: grid; gap: 5px;
+  padding: 15px;
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+  background: var(--paper);
+}
+.living-book-overview span { color: var(--muted); font-size: 13px; }
+.living-book-overview strong { font-size: 23px; font-variant-numeric: tabular-nums; }
+.living-paper-preview {
+  display: grid; align-content: start; gap: 12px;
+  min-height: clamp(320px,56vw,610px);
+  max-width: 810px; padding: clamp(22px,5vw,58px);
+  background: #fff8e9; color: #724d42;
+  border: 1px solid #d5bba3;
+  border-radius: 4px 13px 13px 4px;
+  border-left: 8px solid #c9a48f;
+  box-shadow: 4px 5px 0 #f3e1cf, 12px 13px 25px #744d3722;
+}
+.living-paper-preview[data-background="white"] { background: #fff; }
+.living-paper-preview[data-background="kraft"] { background: #ead3ae; }
+.living-paper-preview[data-background="lined"] {
+  background: repeating-linear-gradient(#fff8e9 0 32px,#e7d5c5 33px,#fff8e9 34px);
+}
+.living-paper-preview[data-background="grid"] {
+  background-color: #fff8e9;
+  background-image: linear-gradient(#e7d5c5 1px,transparent 1px),linear-gradient(90deg,#e7d5c5 1px,transparent 1px);
+  background-size: 28px 28px;
+}
+.living-paper-preview__number { color: #906f60; font-size: 12px; letter-spacing: .08em; }
+.living-paper-preview > h3 { margin: 0; }
+.living-paper-preview > p { max-width: 420px; }
+.living-book-owner-tools { max-width: 720px; display: grid; gap: 12px; }
+.living-book-owner-tools :is(h3,p) { margin: 0; }
+.living-add-page { display: grid; gap: 12px; }
+@media (max-width:560px) { .living-book-overview { grid-template-columns: repeat(2,minmax(0,1fr)); } }
