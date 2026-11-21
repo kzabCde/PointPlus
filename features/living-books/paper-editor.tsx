@@ -1,15 +1,22 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type DragEvent as ReactDragEvent, type PointerEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import {pointPlusStamps} from '@/lib/point-plus/assets'
 import { deleteLivingElement,saveLivingElement,restoreLivingElement } from './editor-actions'
 import {useLivingEditorStudio} from './editor-studio'
 import {emitPaperCue} from './paper-sound'
 import {appendPaperHistory,emptyPaperHistory,peekPaperHistory,
   completePaperHistory,samePaperDecoration,type PaperHistory} from './paper-history'
 import {deleteLivingPhoto,transformLivingPhoto,transformLivingStamp} from './m03-actions'
-import {LivingStampOverlay,LivingStampTools,LivingPhotoUpload} from './m03-tools'
-import type {LivingStampMark,LivingStampRequest} from './stamp-model'
+import {LivingStampOverlay,LivingStampTools,LivingPhotoUpload,preparePhotoForUpload} from './m03-tools'
+import {uploadLivingPhoto} from './m03-actions'
+import {moveDecoration,resizeDecoration,rotateDecoration,pinchDecoration,
+  type ResizeCorner} from './direct-manipulation'
+import {stampArtwork,type LivingStampMark,type LivingStampRequest} from './stamp-model'
+import {moveStampDraft,rotateStampDraft,scaleStampDraft,
+  type StampDraft} from './stamp-gesture'
 import {
   clamp,isHexColor,makeStrokeElement,normalizePoint,normalizeRotation,textDefault,
   type EditorElement,type EditorTool,type EditorText,type EditorDrawing,type EditorImage,type LivingEditorPage,type Point,
@@ -23,9 +30,16 @@ type EditorProps={
   canGive:boolean;canReview:boolean;userId:string
 }
 type Gesture={
-  id:number;mode:'draw'|'move'|'hand'|'stamp-move';startX:number;startY:number
+  id:number;mode:'draw'|'move'|'hand'|'stamp-move'|'stamp-preview-move'|'resize'|'rotate'
+  startX:number;startY:number;corner?:ResizeCorner
   points?:Point[];original?:EditorElement;next?:EditorElement
   scrollX?:number;scrollY?:number;originalStamp?:LivingStampMark;nextStamp?:LivingStampMark
+  originalStampPreview?:StampDraft
+}
+type Finger={x:number;y:number;itemId:string|null}
+type PinchGesture={
+  mode:'canvas'|'object';startDistance:number;initialZoom:number
+  original?:EditorElement;next?:EditorElement
 }
 const defaultColor='#b76872'
 const toolLabels:{tool:EditorTool;label:string}[]=[
@@ -36,8 +50,10 @@ const toolLabels:{tool:EditorTool;label:string}[]=[
 const strokePoints=(points:Point[])=>points.map(p=>
   Math.round(p.x*1000)+','+Math.round(p.y*1000)).join(' ')
 
-function PaperObject({item,selected,editable,photoSrc}:{
+function PaperObject({item,selected,editable,photoSrc,editingText,onEditText,onTextChange,onFinishText}:{
   item:EditorElement;selected:boolean;editable:boolean;photoSrc?:string
+  editingText:boolean;onEditText:(id:string)=>void
+  onTextChange:(text:string)=>void;onFinishText:()=>void
 }){
   const style:CSSProperties={
     left:(item.position_x*100)+'%',top:(item.position_y*100)+'%',
@@ -45,6 +61,14 @@ function PaperObject({item,selected,editable,photoSrc}:{
     transform:'rotate('+item.rotation_deg+'deg)',opacity:item.opacity,
     zIndex:item.z_index+1000000,
   }
+  const handles=editable&&selected&&<div className="living-selection-handles"
+    aria-hidden="true">
+    {(['nw','ne','sw','se'] as const).map(corner=><span key={corner}
+      data-editor-handle={corner}
+      className={'living-selection-handle living-selection-handle--'+corner}/>)}
+    <span data-editor-handle="rotate" className="living-selection-rotate"
+      title="ลากเพื่อหมุนวัตถุ"/>
+  </div>
   if(item.element_type==='text') {
     const p=item.payload as EditorText
     const fontFamily=p.fontFamily==='serif'?'Georgia,serif':
@@ -52,11 +76,35 @@ function PaperObject({item,selected,editable,photoSrc}:{
     return <div className="living-paper-object living-paper-object--text"
       data-editor-id={item.id} data-selected={selected} style={style}
       role={editable?'button':undefined} tabIndex={editable?0:undefined}
-      aria-label={editable?'เลือกข้อความเพื่อแก้ไข: '+p.text.slice(0,60):undefined}>
-      <div className="living-paper-object__text" style={{
-        color:p.color,fontSize:p.fontSize,fontFamily,textAlign:p.align,
-        fontWeight:p.bold?'bold':'normal',fontStyle:p.italic?'italic':'normal',
-      }}>{p.text}</div>
+      aria-label={editable?'เลือกข้อความเพื่อแก้ไข: '+p.text.slice(0,60):undefined}
+      onDoubleClick={()=>{if(editable)onEditText(item.id)}}
+      onTouchEnd={event=>{
+        if(!editable||(event.target as Element).closest('[data-editor-handle]'))return
+        const node=event.currentTarget as HTMLElement & {dataset:DOMStringMap}
+        const last=Number(node.dataset.lastTap??0)
+        const now=Date.now()
+        if(now-last<330){onEditText(item.id);delete node.dataset.lastTap}
+        else node.dataset.lastTap=String(now)
+      }}>
+      {editingText
+        ?<textarea data-inline-text="true" className="living-paper-inline-text"
+          aria-label="แก้ไขข้อความบนกระดาษ" value={p.text}
+          maxLength={5000} onChange={event=>onTextChange(event.target.value)}
+          onBlur={onFinishText}
+          onKeyDown={event=>{
+            event.stopPropagation()
+            if(event.key==='Escape'||((event.ctrlKey||event.metaKey)&&event.key==='Enter')){
+              event.preventDefault();onFinishText()
+            }
+          }} style={{
+            color:p.color,fontSize:p.fontSize,fontFamily,textAlign:p.align,
+            fontWeight:p.bold?'bold':'normal',fontStyle:p.italic?'italic':'normal',
+          }}/>
+        :<div className="living-paper-object__text" style={{
+          color:p.color,fontSize:p.fontSize,fontFamily,textAlign:p.align,
+          fontWeight:p.bold?'bold':'normal',fontStyle:p.italic?'italic':'normal',
+        }}>{p.text}</div>}
+      {handles}
     </div>
   }
   if(item.element_type==='image'){
@@ -72,6 +120,7 @@ function PaperObject({item,selected,editable,photoSrc}:{
             left:(-100*crop.x/crop.width)+'%',top:(-100*crop.y/crop.height)+'%'}}/>
           :<span className="living-paper-object__missing">ภาพส่วนตัวหมดอายุหรือโหลดไม่ได้</span>}
       </div>
+      {handles}
     </div>
   }
   const p=item.payload as EditorDrawing
@@ -84,6 +133,7 @@ function PaperObject({item,selected,editable,photoSrc}:{
       <polyline points={strokePoints(p.points)} fill="none" stroke={p.color}
         strokeWidth={p.strokeWidth*5} strokeLinejoin="round" strokeLinecap="round"/>
     </svg>
+    {handles}
   </div>
 }
 
@@ -101,8 +151,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const canvas=useRef<HTMLDivElement>(null)
   const viewport=useRef<HTMLDivElement>(null)
   const gesture=useRef<Gesture|null>(null)
-  const activeFingers=useRef(new Map<number,{x:number;y:number}>())
-  const pinch=useRef<{startDistance:number;initialZoom:number}|null>(null)
+  const activeFingers=useRef(new Map<number,Finger>())
+  const pinch=useRef<PinchGesture|null>(null)
   const locked=useRef(false)
   const [items,setItems]=useState<EditorElement[]>(initialElements)
   const [photos,setPhotos]=useState(imageUrls)
@@ -111,6 +161,11 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const [freshMarkId,setFreshMarkId]=useState<string|null>(null)
   const [requests,setRequests]=useState(initialRequests)
   const [stampPoint,setStampPoint]=useState<Point|null>(null)
+  const [stampArtworkId,setStampArtworkId]=useState(pointPlusStamps[0].id)
+  const [stampPreview,setStampPreview]=useState<StampDraft|null>(null)
+  const [stampAttempted,setStampAttempted]=useState(false)
+  const edgeSwipe=useRef<{side:'prev'|'next';x:number;y:number}|null>(null)
+  const suppressEdgeClick=useRef(false)
   const [selectedStampId,setSelectedStampId]=useState<string|null>(null)
   useEffect(()=>{
     if(!locked.current&&draftEdits.current.size===0){
@@ -138,14 +193,39 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const [dirty,setDirty]=useState(false)
   const [busy,setBusy]=useState(false)
   const [notice,setNotice]=useState('')
+  const [toolsOpen,setToolsOpen]=useState(false)
+  const [stampPanelOpen,setStampPanelOpen]=useState(false)
+  const [editingTextId,setEditingTextId]=useState<string|null>(null)
+  const [advancedOpen,setAdvancedOpen]=useState(false)
+  const [dropActive,setDropActive]=useState(false)
+  const inlineTextRef=useRef<HTMLTextAreaElement|null>(null)
   const selected=items.find(item=>item.id===selectedId)
   const selectedText=selected?.element_type==='text'?selected.payload as EditorText:null
   const selectedPhoto=selected?.element_type==='image'?selected.payload as EditorImage:null
   const selectedStamp=marks.find(mark=>mark.id===selectedStampId)??null
+  useEffect(()=>{setAdvancedOpen(false)},[selectedId])
+  useEffect(()=>{
+    if(!editingTextId)return
+    const textarea=canvas.current?.querySelector<HTMLTextAreaElement>('[data-inline-text]')
+    inlineTextRef.current=textarea??null
+    textarea?.focus()
+    textarea?.select()
+  },[editingTextId])
+  useEffect(()=>{
+    if(!toolsOpen&&!stampPanelOpen)return
+    const onEscape=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        setToolsOpen(false)
+        if(!stampPoint)setStampPanelOpen(false)
+      }
+    }
+    window.addEventListener('keydown',onEscape)
+    return ()=>window.removeEventListener('keydown',onEscape)
+  },[toolsOpen,stampPanelOpen,stampPoint])
 
   useEffect(()=>{
-    studio?.setPaperUnsaved(dirty||busy)
-  },[dirty,busy,studio?.setPaperUnsaved])
+    studio?.setPaperUnsaved(dirty||busy||!!stampPreview)
+  },[dirty,busy,stampPreview,studio?.setPaperUnsaved])
   useEffect(()=>()=>studio?.setPaperUnsaved(false),[studio?.setPaperUnsaved])
   useEffect(()=>{
     if(!dirty&&!busy)return
@@ -172,6 +252,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     // A draft must use the latest confirmed version, never a stale UI version.
     const item={...element,version:previous?.version??element.version}
     locked.current=true;setBusy(true);setNotice('กำลังบันทึก…')
+    let writeSucceeded=false
     try{
       const result=item.element_type==='image'
         ? await transformLivingPhoto({
@@ -200,6 +281,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         setSaveFailed(false)
         setNotice('บันทึกลงสมุดแล้ว')
         emitPaperCue('write')
+        writeSucceeded=true
         return true
       }
       draftEdits.current.set(item.id,item)
@@ -217,6 +299,9 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       return false
     }finally{
       locked.current=false;setBusy(false)
+      // If typing continued during an in-flight write, schedule its newer draft.
+      // Do not automatically retry failed saves in a loop; the retry UI handles them.
+      if(writeSucceeded&&draftEdits.current.size>0)scheduleAutosave()
     }
   }
 
@@ -340,23 +425,42 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       z_index:Math.min(1000000,items.reduce((n,e)=>Math.max(n,e.z_index),0)+1),
       version:0,
     }
-    void saveObject(element)
+    void saveObject(element).then(ok=>{if(ok)setEditingTextId(element.id)})
     setTool('select')
   }
 
   function begin(event:PointerEvent<HTMLDivElement>){
+    if((event.target as Element).closest(
+      '[data-inline-text], [data-context-toolbar], [data-living-page-edge], [data-stamp-preview-control]'
+    ))return
+    if(tool==='stamp'&&stampPreview&&!stampAttempted&&
+      (event.target as Element).closest('[data-stamp-preview]')){
+      gesture.current={mode:'stamp-preview-move',id:event.pointerId,
+        startX:event.clientX,startY:event.clientY,
+        originalStampPreview:stampPreview}
+      try{event.currentTarget.setPointerCapture(event.pointerId)}catch{}
+      return
+    }
     if(event.pointerType==='touch'){
-      activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY})
+      const hit=(event.target as Element).closest<HTMLElement>('[data-editor-id]')
+      activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY,
+        itemId:hit?.dataset.editorId??null})
       if(activeFingers.current.size>=2){
         const [a,b]=[...activeFingers.current.values()]
-        pinch.current={startDistance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),
-          initialZoom:zoom}
+        const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))
+        const sameItem=editable&&tool==='select'&&a.itemId&&a.itemId===b.itemId
+          ?items.find(item=>item.id===a.itemId):null
         cancel()
+        pinch.current=sameItem
+          ?{mode:'object',startDistance:distance,initialZoom:zoom,
+            original:sameItem,next:sameItem}
+          :{mode:'canvas',startDistance:distance,initialZoom:zoom}
         try{event.currentTarget.setPointerCapture(event.pointerId)}catch{}
         return
       }
     }
-    if(!editable||locked.current||event.button>0||!canvas.current)return
+    if((!editable&&!(canGive&&tool==='stamp'))||locked.current||
+      event.button>0||!canvas.current)return
     if(draftEdits.current.size>0){
       setNotice('กำลังบันทึกการแก้ไขก่อนใช้เครื่องมือใหม่')
       if(!saveFailed)void flushDrafts()
@@ -365,7 +469,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     const stampHit=(event.target as Element).closest<HTMLElement>('[data-living-stamp-id]')
     const mark=marks.find(item=>item.id===stampHit?.dataset.livingStampId)
     if(tool==='select'&&mark){
-      setSelectedStampId(mark.id);setSelectedId(null)
+      setSelectedStampId(mark.id);setSelectedId(null);setStampPanelOpen(true)
       if(editable&&mark.state==='available'){
         gesture.current={mode:'stamp-move',id:event.pointerId,startX:event.clientX,
           startY:event.clientY,originalStamp:mark,nextStamp:mark}
@@ -375,6 +479,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     }
     const target=(event.target as Element).closest<HTMLElement>('[data-editor-id]')
     const element=items.find(item=>item.id===target?.dataset.editorId)
+    const handle=(event.target as Element).closest<HTMLElement>('[data-editor-handle]')
+      ?.dataset.editorHandle
     if(tool==='eraser'&&element?.element_type==='drawing') {
       setSelectedId(element.id)
       void remove(element)
@@ -384,15 +490,26 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     const p=normalizePoint(event.clientX,event.clientY,bound)
     if(!p)return
     if(tool==='stamp'){
-      if(canGive&&!element&&!mark){setStampPoint(p);setSelectedId(null);setSelectedStampId(null)}
+      if(canGive&&!element&&!mark&&!stampAttempted){
+        const draft:StampDraft=stampPreview?
+          {...stampPreview,x:p.x,y:p.y}:
+          {artId:stampArtworkId,x:p.x,y:p.y,rotation:0,scale:1}
+        setStampPreview(draft)
+        setStampPoint(p);setSelectedId(null);setSelectedStampId(null)
+        setStampPanelOpen(true)
+      }
       return
     }
     if(tool==='text'){if(!element)newText(p.x,p.y);return}
     if(tool==='select'){
       setSelectedStampId(null)
       setSelectedId(element?.id??null)
+      if(editingTextId&&element?.id!==editingTextId)setEditingTextId(null)
       if(!element)return
-      gesture.current={mode:'move',id:event.pointerId,startX:event.clientX,
+      const resizeCorner=handle&&['nw','ne','sw','se'].includes(handle)
+        ?handle as ResizeCorner:undefined
+      gesture.current={mode:handle==='rotate'?'rotate':resizeCorner?'resize':'move',
+        corner:resizeCorner,id:event.pointerId,startX:event.clientX,
         startY:event.clientY,original:element,next:element}
     }else if(tool==='pen'){
       gesture.current={mode:'draw',id:event.pointerId,startX:event.clientX,
@@ -407,11 +524,18 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
   function move(event:PointerEvent<HTMLDivElement>){
     if(activeFingers.current.has(event.pointerId)){
-      activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY})
+      const finger=activeFingers.current.get(event.pointerId)!
+      activeFingers.current.set(event.pointerId,{...finger,x:event.clientX,y:event.clientY})
       if(pinch.current&&activeFingers.current.size>=2){
         const [a,b]=[...activeFingers.current.values()]
         const distance=Math.hypot(a.x-b.x,a.y-b.y)
-        setZoom(clamp(pinch.current.initialZoom*distance/pinch.current.startDistance,.6,2.2))
+        const factor=distance/pinch.current.startDistance
+        if(pinch.current.mode==='object'&&pinch.current.original&&canvas.current){
+          const rect=canvas.current.getBoundingClientRect()
+          const next=pinchDecoration(pinch.current.original,factor,rect)
+          pinch.current.next=next
+          setItems(prev=>prev.map(item=>item.id===next.id?next:item))
+        }else setZoom(clamp(pinch.current.initialZoom*factor,.6,2.2))
         return
       }
     }
@@ -425,6 +549,13 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       return
     }
     const bound=canvas.current.getBoundingClientRect()
+    if(g.mode==='stamp-preview-move'&&g.originalStampPreview&&!stampAttempted){
+      const next=moveStampDraft(g.originalStampPreview,
+        event.clientX-g.startX,event.clientY-g.startY,bound)
+      setStampPreview(next)
+      setStampPoint({x:next.x,y:next.y})
+      return
+    }
     if(g.mode==='stamp-move'&&g.originalStamp){
       const next={...g.originalStamp,
         position_x:clamp(g.originalStamp.position_x+
@@ -442,22 +573,36 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       if(Math.hypot(last.x-p.x,last.y-p.y)<.0015)return
       g.points=[...g.points,p]
       setDraft(g.points)
-    }else if(g.mode==='move'&&g.original){
-      const dx=(event.clientX-g.startX)/bound.width
-      const dy=(event.clientY-g.startY)/bound.height
-      const next={...g.original,
-        position_x:clamp(g.original.position_x+dx,0,1),
-        position_y:clamp(g.original.position_y+dy,0,1)}
+    }else if(g.original&&['move','resize','rotate'].includes(g.mode)){
+      const dx=event.clientX-g.startX
+      const dy=event.clientY-g.startY
+      const next=g.mode==='resize'&&g.corner
+        ?resizeDecoration(g.original,g.corner,dx,dy,bound)
+        :g.mode==='rotate'
+          ?rotateDecoration(g.original,
+            {x:g.startX-bound.left,y:g.startY-bound.top},
+            {x:event.clientX-bound.left,y:event.clientY-bound.top},bound)
+          :moveDecoration(g.original,dx,dy,bound)
       g.next=next
       setItems(prev=>prev.map(item=>item.id===next.id?next:item))
     }
   }
   function finish(event:PointerEvent<HTMLDivElement>){
     activeFingers.current.delete(event.pointerId)
-    if(activeFingers.current.size<2)pinch.current=null
+    if(pinch.current){
+      if(activeFingers.current.size<2){
+        const ended=pinch.current
+        pinch.current=null
+        if(ended.mode==='object'&&ended.original&&ended.next&&
+          !samePaperDecoration(ended.original,ended.next))
+          void saveObject(ended.next,ended.original)
+      }
+      return
+    }
     const g=gesture.current
     if(!g||g.id!==event.pointerId)return
     gesture.current=null
+    if(g.mode==='stamp-preview-move')return
     if(g.mode==='stamp-move'&&g.originalStamp&&g.nextStamp&&
       (g.nextStamp.position_x!==g.originalStamp.position_x||
        g.nextStamp.position_y!==g.originalStamp.position_y)){
@@ -476,8 +621,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         version:0,
       }
       void saveObject(element)
-    }else if(g.mode==='move'&&g.original&&g.next &&
-      (g.next.position_x!==g.original.position_x||g.next.position_y!==g.original.position_y))
+    }else if(['move','resize','rotate'].includes(g.mode)&&g.original&&g.next&&
+      !samePaperDecoration(g.next,g.original))
       void saveObject(g.next,g.original)
   }
   async function saveStampMove(mark:LivingStampMark,original:LivingStampMark){
@@ -505,12 +650,17 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
   function cancel(){
     const g=gesture.current;gesture.current=null;setDraft([])
-    // Multi-touch gesture takes over only after the current stroke/move is reverted.
-    if(activeFingers.current.size<2)pinch.current=null
-    if(g?.mode==='move'&&g.original)
-      setItems(prev=>prev.map(item=>item.id===g.original?.id?g.original:item) as EditorElement[])
+    const p=pinch.current;pinch.current=null
+    if(p?.mode==='object'&&p.original)
+      setItems(prev=>prev.map(item=>item.id===p.original?.id?p.original!:item))
+    if(g?.original&&['move','resize','rotate'].includes(g.mode))
+      setItems(prev=>prev.map(item=>item.id===g.original?.id?g.original!:item))
     if(g?.mode==='stamp-move'&&g.originalStamp)
       setMarks(prev=>prev.map(mark=>mark.id===g.originalStamp?.id?g.originalStamp!:mark))
+    if(g?.mode==='stamp-preview-move'&&g.originalStampPreview){
+      setStampPreview(g.originalStampPreview)
+      setStampPoint({x:g.originalStampPreview.x,y:g.originalStampPreview.y})
+    }
   }
   async function remove(item:EditorElement){
     if(!editable||locked.current||item.version===0)return
@@ -540,9 +690,23 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     }catch{setNotice('การเชื่อมต่อขัดข้อง ไม่สามารถลบวัตถุ')}
     finally{locked.current=false;setBusy(false)}
   }
-  function handleKey(event:KeyboardEvent<HTMLDivElement>){
+  function emitPageTurn(direction:-1|1){
+    if(tool!=='select'||stampPreview||selected||selectedStampId||busy||dirty||
+      draftEdits.current.size>0)return
+    window.dispatchEvent(new CustomEvent('pointplus:living-page-turn',{
+      detail:{pageId:page.id,direction},
+    }))
+  }
+  function handleKey(event:ReactKeyboardEvent<HTMLDivElement>){
+    if(event.target===event.currentTarget&&tool==='select'&&!selected&&!selectedStampId&&
+      (event.key==='ArrowLeft'||event.key==='ArrowRight')&&
+      !event.altKey&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey){
+      event.preventDefault()
+      emitPageTurn(event.key==='ArrowRight'?1:-1)
+      return
+    }
     if(!editable||locked.current)return
-    if((event.target as HTMLElement).closest('textarea,input,select'))return
+    if((event.target as HTMLElement).closest('textarea,input,select,[data-context-toolbar]'))return
     if((event.ctrlKey||event.metaKey)&&!event.altKey){
       const key=event.key.toLowerCase()
       if(key==='z'||key==='y'){
@@ -554,8 +718,9 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     const focused=(event.target as Element).closest<HTMLElement>('[data-editor-id]')
     if((event.key==='Enter'||event.key===' ')&&focused){
       event.preventDefault()
-      setSelectedId(focused.dataset.editorId??null)
-      setTool('select')
+      const id=focused.dataset.editorId??null
+      if(id===selectedId&&selected?.element_type==='text')setEditingTextId(id)
+      else{setSelectedId(id);setTool('select')}
       return
     }
     if(!selected)return
@@ -572,21 +737,104 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     const step=shifts[event.key]
     if(step){
       event.preventDefault()
-      patchSelected({position_x:clamp(selected.position_x+step[0],0,1),
-        position_y:clamp(selected.position_y+step[1],0,1)})
+      if(event.altKey){
+        patchSelected({width:clamp(selected.width+step[0],.005,1),
+          height:clamp(selected.height+step[1],.005,1)})
+      }else if(event.shiftKey) {
+        patchSelected({rotation_deg:normalizeRotation(
+          selected.rotation_deg+(event.key==='ArrowRight'||event.key==='ArrowDown'?5:-5))})
+      }else{
+        patchSelected({position_x:clamp(selected.position_x+step[0],0,Math.max(0,1-selected.width)),
+          position_y:clamp(selected.position_y+step[1],0,Math.max(0,1-selected.height))})
+      }
     }
+  }
+  async function handlePhotoDrop(event:ReactDragEvent<HTMLDivElement>){
+    // Always cancel native file-drop navigation, even in readonly/saving states.
+    event.preventDefault()
+    setDropActive(false)
+    if(!editable||locked.current||busy)return
+    const file=Array.from(event.dataTransfer.files).find(item=>
+      ['image/png','image/jpeg','image/webp'].includes(item.type))
+    if(!file){setNotice('รองรับเฉพาะรูป JPEG, PNG และ WebP');return}
+    if(draftEdits.current.size>0){
+      setNotice('กรุณาบันทึกการแก้ไขกระดาษก่อนเพิ่มรูปภาพ')
+      return
+    }
+    locked.current=true;setBusy(true);setNotice('กำลังติดรูปภาพลงสมุด…')
+    try{
+      const prepared=await preparePhotoForUpload(file)
+      const form=new FormData()
+      form.set('space_id',spaceId)
+      form.set('book_id',bookId)
+      form.set('page_id',page.id)
+      form.set('photo',prepared)
+      const result=await uploadLivingPhoto(form)
+      setNotice(result.message)
+      if(result.ok){emitPaperCue('write');router.refresh()}
+    }catch(error){
+      setNotice(error instanceof Error?error.message:'ไม่สามารถเพิ่มรูปภาพได้')
+    }finally{locked.current=false;setBusy(false)}
   }
   const top=Math.max(0,...items.map(e=>e.z_index))
   const bottom=Math.min(0,...items.map(e=>e.z_index))
-  return <section className="living-editor" aria-label="เครื่องมือแก้ไขกระดาษ">
+  return <section className="living-editor" aria-label="กระดาษและเครื่องมือสมุดความทรงจำ">
+    <div className="living-reader-tool-entry">
+      <button type="button" className="living-reader-add-button"
+        aria-controls="living-reader-editor-tools" aria-expanded={toolsOpen}
+        aria-label={editable||canGive?'เพิ่มและแก้ไขสิ่งของบนกระดาษ':'เครื่องมือการแสดงผล'}
+        onClick={()=>setToolsOpen(value=>!value)}>
+        <span aria-hidden="true">{editable||canGive?'＋':'⌕'}</span>
+        <span className="living-reader-add-label">{editable||canGive?'เพิ่ม':'ดู'}</span>
+      </button>
+      {tool!=='select'&&tool!=='pen'&&tool!=='eraser'&&!toolsOpen&&<button type="button"
+        className="living-reader-mode-chip"
+        aria-label={stampAttempted&&tool==='stamp'
+          ?'กลับไปตรวจสอบคำขอแสตมป์ที่อาจส่งสำเร็จแล้ว':
+          'ออกจากโหมด '+(toolLabels.find(item=>item.tool===tool)?.label??tool)}
+        onClick={()=>{
+          if(stampAttempted&&tool==='stamp'){
+            setStampPanelOpen(true)
+            setNotice('กรุณาลองยืนยันด้วยรหัสเดิม หรือตรวจสอบยอดก่อนยกเลิก')
+            return
+          }
+          setTool('select');setStampPoint(null);setStampPreview(null)
+          setStampAttempted(false);setSelectedStampId(null)
+          setStampPanelOpen(false)
+        }}>
+        {toolLabels.find(item=>item.tool===tool)?.label??tool} <span aria-hidden="true">×</span>
+      </button>}
+      <div id="living-reader-editor-tools" className="living-reader-editor-tools"
+        hidden={!toolsOpen}>
+        <div className="living-reader-editor-tools-heading">
+          <strong>เครื่องมือกระดาษ</strong>
+          <button type="button" className="living-reader-close"
+            onClick={()=>setToolsOpen(false)} aria-label="ปิดเครื่องมือกระดาษ">✕</button>
+        </div>
     <div className="living-editor-toolbar">
       {editable&&<div className="living-editor-toolset" role="group" aria-label="เลือกเครื่องมือ">
         {toolLabels.filter(item=>item.tool!=='stamp'||canGive).map(item=><button key={item.tool} type="button"
           className="button button--secondary" aria-pressed={tool===item.tool}
-          disabled={busy} onClick={()=>{setTool(item.tool);setSelectedId(null);setSelectedStampId(null)}}>
+          disabled={busy} onClick={()=>{
+            setTool(item.tool);setSelectedId(null);setSelectedStampId(null)
+            setToolsOpen(false)
+            if(item.tool==='stamp')setStampPanelOpen(true)
+          }}>
           {item.label}
         </button>)}
       </div>}
+      {!editable&&canGive&&<button type="button" className="button button--secondary"
+        onClick={()=>{
+          setTool('stamp');setToolsOpen(false);setStampPanelOpen(true)
+          setNotice('เลือกลายแสตมป์แล้วแตะกระดาษเพื่อเลือกตำแหน่ง')
+        }}>
+        ประทับแสตมป์
+      </button>}
+      {(editable||canGive||canReview)&&<button type="button"
+        className="button button--secondary"
+        onClick={()=>{setStampPanelOpen(true);setToolsOpen(false)}}>
+        แสตมป์และคำขอ {requests.length>0?'('+requests.length+')':''}
+      </button>}
       {editable&&<LivingPhotoUpload spaceId={spaceId} bookId={bookId}
         pageId={page.id} disabled={busy}
         onDone={()=>{setSelectedId(null);router.refresh()}}/>}
@@ -621,23 +869,205 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           disabled={busy} onClick={()=>newText(.24,.3)}>เพิ่มข้อความกลางหน้า</button>}
       </div>}
     </div>
-    <div ref={viewport} className="living-editor-viewport">
+      </div>
+    </div>
+    {editable&&(tool==='pen'||tool==='eraser')&&<div className="living-drawing-toolbar"
+      data-context-toolbar="true" role="group" aria-label="เครื่องมือวาดเส้น">
+      <button type="button" aria-pressed={tool==='pen'} onClick={()=>setTool('pen')}>
+        ปากกา
+      </button>
+      <label>สี <input type="color" value={penColor} aria-label="สีหมึก"
+        onChange={event=>{if(isHexColor(event.target.value))setPenColor(event.target.value)}}/></label>
+      <label>เส้น {strokeWidth}px
+        <input type="range" min={1} max={30} value={strokeWidth}
+          aria-label="ความหนาเส้น" onChange={event=>setStrokeWidth(Number(event.target.value))}/>
+      </label>
+      <button type="button" aria-pressed={tool==='eraser'} onClick={()=>setTool('eraser')}>
+        ยางลบ
+      </button>
+      <button type="button" onClick={()=>setTool('select')} aria-label="ออกจากโหมดวาด">
+        เสร็จ
+      </button>
+    </div>}
+    <div ref={viewport} className={'living-editor-viewport'+(dropActive?' is-dropping':'')}
+      onDragOver={event=>{
+        if(editable&&Array.from(event.dataTransfer.types).includes('Files')){
+          event.preventDefault();event.dataTransfer.dropEffect='copy';setDropActive(true)
+        }
+      }}
+      onDragLeave={event=>{
+        if(!event.currentTarget.contains(event.relatedTarget as Node))setDropActive(false)
+      }}
+      onDrop={event=>{void handlePhotoDrop(event)}}>
+      {tool==='select'&&!selected&&!selectedStampId&&!stampPreview&&
+        <div className="living-page-edge-actions" aria-label="พลิกหน้าจากริมกระดาษ">
+          {(['prev','next'] as const).map(side=><button key={side} type="button"
+            className={'living-page-edge living-page-edge--'+side}
+            data-living-page-edge={side}
+            aria-label={side==='prev'?'พลิกไปหน้าก่อนหน้า':'พลิกไปหน้าถัดไป'}
+            title={side==='prev'?'หน้าก่อนหน้า':'หน้าถัดไป'}
+            onTouchStart={event=>{
+              const touch=event.touches[0]
+              if(touch)edgeSwipe.current={side,x:touch.clientX,y:touch.clientY}
+            }}
+            onTouchEnd={event=>{
+              const begin=edgeSwipe.current
+              edgeSwipe.current=null
+              const touch=event.changedTouches[0]
+              if(!begin||!touch||begin.side!==side)return
+              const dx=touch.clientX-begin.x,dy=touch.clientY-begin.y
+              if(Math.abs(dx)>=70&&Math.abs(dy)<Math.abs(dx)*.55&&
+                (side==='prev'?dx>0:dx<0)){
+                event.preventDefault()
+                suppressEdgeClick.current=true
+                emitPageTurn(side==='prev'?-1:1)
+                window.setTimeout(()=>{suppressEdgeClick.current=false},400)
+              }
+            }}
+            onClick={event=>{
+              if(suppressEdgeClick.current){event.preventDefault();return}
+              emitPageTurn(side==='prev'?-1:1)
+            }}>
+            <span aria-hidden="true">{side==='prev'?'‹':'›'}</span>
+          </button>)}
+        </div>}
       <div ref={canvas} className="living-editor-paper" data-background={page.background_style}
         data-tool={tool} data-editable={editable}
         style={{width:(zoom*100)+'%'}}
-        role="group" tabIndex={editable?0:undefined}
-        aria-label={editable?'หน้ากระดาษ: แตะเพื่อเขียน หรือเลือกข้อความและเส้นวาด กดลูกศรเพื่อย้าย': 'หน้ากระดาษสำหรับอ่าน'}
+        role="group" tabIndex={editable||canGive?0:undefined}
+        aria-label={editable?'หน้ากระดาษ: แตะเพื่อเขียน หรือเลือกข้อความและเส้นวาด กดลูกศรเพื่อย้าย':
+          canGive?'หน้ากระดาษ: เลือกเครื่องมือประทับแสตมป์ แล้วแตะตำแหน่งที่ต้องการ':
+          'หน้ากระดาษสำหรับอ่าน'}
         onPointerDown={begin} onPointerMove={move} onPointerUp={finish}
-        onPointerCancel={cancel} onKeyDown={handleKey}>
+        onPointerCancel={event=>{activeFingers.current.delete(event.pointerId);cancel()}}
+        onKeyDown={handleKey}>
         {items.map(item=><PaperObject key={item.id} item={item}
           selected={selectedId===item.id} editable={editable}
+          editingText={editingTextId===item.id}
+          onEditText={id=>{
+            setTool('select');setSelectedId(id);setSelectedStampId(null)
+            setEditingTextId(id)
+          }}
+          onTextChange={text=>{
+            const target=items.find(candidate=>candidate.id===item.id)
+            if(!target||target.element_type!=='text')return
+            const next={...target,payload:{...(target.payload as EditorText),text}}
+            draftEdits.current.set(target.id,next)
+            setItems(prev=>prev.map(current=>current.id===next.id?next:current))
+            setDirty(true);setSaveFailed(false);scheduleAutosave()
+          }}
+          onFinishText={()=>setEditingTextId(null)}
           photoSrc={photos[item.id]}/>)}
+        {editable&&selected&&tool==='select'&&<div
+          className="living-selection-toolbar" data-context-toolbar="true"
+          role="toolbar" aria-label={'แก้ไข'+(selected.element_type==='text'?'ข้อความ':
+            selected.element_type==='image'?'ภาพ':'เส้นวาด')+'ที่เลือก'}
+          onPointerDown={event=>event.stopPropagation()}
+          onKeyDown={event=>{
+            event.stopPropagation()
+            if(event.key==='Escape'){
+              setSelectedId(null);setAdvancedOpen(false)
+            }else if((event.ctrlKey||event.metaKey)&&!event.altKey&&
+              ['z','y'].includes(event.key.toLowerCase())){
+              event.preventDefault()
+              void undoRedo(event.key.toLowerCase()==='y'||event.shiftKey?'redo':'undo')
+            }
+          }}
+          style={{
+            left:Math.min(.67,Math.max(.02,selected.position_x))*100+'%',
+            top:Math.max(.012,selected.position_y-.085)*100+'%',
+          }}>
+          <span className="living-selection-toolbar-label">
+            {selected.element_type==='text'?'ข้อความ':selected.element_type==='image'?'รูปภาพ':'เส้นวาด'}
+          </span>
+          {selectedText&&<>
+            <button type="button" title="แก้ไขข้อความโดยตรง" aria-label="แก้ไขข้อความ"
+              onClick={()=>setEditingTextId(selected.id)}>✎</button>
+            <label className="living-selection-color" title="สีข้อความ">
+              <span className="sr-only">สีข้อความ</span>
+              <input type="color" aria-label="สีข้อความ" value={selectedText.color}
+                disabled={busy} onChange={event=>patchText({color:event.target.value})}/>
+            </label>
+            <button type="button" aria-label="ลดขนาดข้อความ" disabled={busy||selectedText.fontSize<=12}
+              onClick={()=>patchText({fontSize:clamp(selectedText.fontSize-2,12,120)})}>A−</button>
+            <button type="button" aria-label="เพิ่มขนาดข้อความ" disabled={busy||selectedText.fontSize>=120}
+              onClick={()=>patchText({fontSize:clamp(selectedText.fontSize+2,12,120)})}>A+</button>
+            <button type="button" aria-pressed={selectedText.bold}
+              disabled={busy} aria-label="ตัวหนา"
+              onClick={()=>patchText({bold:!selectedText.bold})}><strong>B</strong></button>
+            <button type="button" aria-pressed={selectedText.italic}
+              disabled={busy} aria-label="ตัวเอียง"
+              onClick={()=>patchText({italic:!selectedText.italic})}><em>I</em></button>
+          </>}
+          {selected.element_type==='drawing'&&<label className="living-selection-color"
+            title="สีเส้นวาด">
+            <span className="sr-only">สีเส้นวาด</span>
+            <input type="color" aria-label="สีเส้นวาด"
+              value={(selected.payload as EditorDrawing).color} disabled={busy}
+              onChange={event=>patchSelected({payload:{
+                ...selected.payload,color:event.target.value,
+              }})}/>
+          </label>}
+          {selectedPhoto&&<button type="button" disabled={busy}
+            onClick={()=>setAdvancedOpen(true)}>ครอป</button>}
+          <button type="button" aria-label="นำวัตถุมาด้านหน้า"
+            title="นำมาด้านหน้า" disabled={busy||top>=1000000}
+            onClick={()=>patchSelected({z_index:top+1})}>↑</button>
+          <button type="button" aria-label="ส่งวัตถุไปด้านหลัง"
+            title="ส่งไปด้านหลัง" disabled={busy||bottom<=-1000000}
+            onClick={()=>patchSelected({z_index:bottom-1})}>↓</button>
+          <button type="button" aria-expanded={advancedOpen}
+            aria-controls="living-selection-advanced" title="การตั้งค่าเพิ่มเติม"
+            onClick={()=>setAdvancedOpen(value=>!value)}>···</button>
+        </div>}
         <LivingStampOverlay marks={marks} pending={requests}
           freshMarkId={freshMarkId} selectedId={selectedStampId} selectable={tool==='select'}
-          onSelect={id=>{setSelectedStampId(id);setSelectedId(null)}}/>
-        {stampPoint&&<span className="living-stamp-placement-preview"
-          style={{left:stampPoint.x*100+'%',top:stampPoint.y*100+'%'}}
-          aria-hidden="true">✚</span>}
+          onSelect={id=>{
+             setSelectedStampId(id);setSelectedId(null)
+             setStampPanelOpen(true);setToolsOpen(false)
+           }}/>
+        {stampPreview&&<div className="living-stamp-placement-preview"
+          data-stamp-preview="true" data-unissued="true"
+          style={{
+            left:stampPreview.x*100+'%',top:stampPreview.y*100+'%',
+            width:12*stampPreview.scale+'%',
+            transform:'translate(-50%,-50%) rotate('+stampPreview.rotation+'deg)',
+          }} aria-label="แสตมป์ตัวอย่างที่ยังไม่ได้ประทับจริง">
+          {stampArtwork.get(stampPreview.artId)&&<Image
+            src={stampArtwork.get(stampPreview.artId)!.png}
+            alt="" width={128} height={128} draggable={false}/>}
+          <span className="living-stamp-preview-watermark">ตัวอย่าง</span>
+        </div>}
+        {stampPreview&&!stampPanelOpen&&<button type="button"
+          className="living-stamp-preview-confirm-entry"
+          data-stamp-preview-control="true"
+          onPointerDown={event=>event.stopPropagation()}
+          onClick={()=>setStampPanelOpen(true)}
+          style={{
+            left:Math.min(84,Math.max(16,stampPreview.x*100))+'%',
+            top:Math.max(4,stampPreview.y*100-13)+'%',
+          }}>
+          {stampAttempted?'ลองยืนยันคำขอเดิม':'ตรวจและยืนยันแสตมป์'}
+        </button>}
+        {stampPreview&&!stampAttempted&&<div className="living-stamp-preview-handles"
+          data-stamp-preview-control="true" role="group" aria-label="จัดแสตมป์ตัวอย่าง"
+          style={{
+            left:Math.min(80,Math.max(12,stampPreview.x*100))+'%',
+            top:Math.min(90,Math.max(8,stampPreview.y*100+9))+'%',
+          }}>
+          <button type="button" aria-label="หมุนแสตมป์ซ้าย 15 องศา"
+            onPointerDown={event=>event.stopPropagation()}
+            onClick={()=>setStampPreview(d=>d&&rotateStampDraft(d,-15))}>↶</button>
+          <button type="button" aria-label="หมุนแสตมป์ขวา 15 องศา"
+            onPointerDown={event=>event.stopPropagation()}
+            onClick={()=>setStampPreview(d=>d&&rotateStampDraft(d,15))}>↷</button>
+          <button type="button" aria-label="ย่อแสตมป์"
+            onPointerDown={event=>event.stopPropagation()}
+            onClick={()=>setStampPreview(d=>d&&scaleStampDraft(d,.9))}>−</button>
+          <button type="button" aria-label="ขยายแสตมป์"
+            onPointerDown={event=>event.stopPropagation()}
+            onClick={()=>setStampPreview(d=>d&&scaleStampDraft(d,1.1))}>＋</button>
+        </div>}
         {draft.length>0&&<svg className="living-editor-draft" viewBox="0 0 1000 1000"
           preserveAspectRatio="none" aria-hidden="true">
           <polyline points={strokePoints(draft)} stroke={penColor}
@@ -645,7 +1075,11 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         </svg>}
       </div>
     </div>
-    {editable&&selected&&<div className="living-editor-properties">
+    {editable&&selected&&advancedOpen&&<div id="living-selection-advanced"
+      className="living-editor-properties living-editor-properties--contextual"
+      role="region" aria-label="การตั้งค่าขั้นสูงของวัตถุที่เลือก">
+      <button type="button" className="living-selection-advanced-close"
+        aria-label="ปิดการตั้งค่าขั้นสูง" onClick={()=>setAdvancedOpen(false)}>✕</button>
       <h3>ปรับแต่ง{selected.element_type==='text'?'ข้อความ':selected.element_type==='image'?'รูปภาพ':'เส้นวาด'}</h3>
       {selectedText&&<>
         <label className="living-editor-properties__wide">ข้อความ
@@ -738,17 +1172,61 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           onClick={()=>{if(window.confirm('ลบวัตถุนี้ออกจากหน้า?'))void remove(selected)}}>ลบวัตถุ</button>
       </div>
     </div>}
+    {(requests.length>0||stampPanelOpen)&&<div className="living-reader-stamp-panel-toggle">
+      <button type="button" aria-expanded={stampPanelOpen}
+        aria-controls="living-reader-stamp-panel" onClick={()=>setStampPanelOpen(v=>!v)}
+        className="living-reader-stamp-trigger">
+        {requests.length>0?'✉ รอพิจารณา '+requests.length+' รายการ':'✿ แสตมป์และคำขอ'}
+      </button>
+    </div>}
+    <div id="living-reader-stamp-panel" className="living-reader-stamp-panel"
+      hidden={!stampPanelOpen}>
+      <div className="living-stamp-sheet-head">
+        <strong>ถาดแสตมป์</strong>
+        <button type="button" className="living-reader-close"
+          onClick={()=>setStampPanelOpen(false)}
+          aria-label="ปิดถาดแสตมป์">✕</button>
+      </div>
     <LivingStampTools spaceId={spaceId} bookId={bookId} pageId={page.id}
-      placement={stampPoint} mark={selectedStamp} marks={marks}
-      pending={requests} pages={pages} canGive={canGive&&editable}
+      placement={stampPoint} preview={stampPreview}
+      onPreviewChange={next=>{if(!stampAttempted){
+        setStampPreview(next);setStampPoint({x:next.x,y:next.y})
+      }}}
+      selectedArtwork={stampArtworkId}
+      onSelectArtwork={id=>{
+        if(stampAttempted)return
+        setStampArtworkId(id)
+        setStampPreview(prev=>prev?{...prev,artId:id}:null)
+      }}
+      onBeginPlacement={()=>{
+        if(stampAttempted)return
+        setTool('stamp');setSelectedStampId(null);setSelectedId(null)
+        // Close the artwork tray so the paper stays accessible for the tap.
+        setStampPanelOpen(false);setToolsOpen(false)
+        setNotice('เลือกลายแล้ว แตะตำแหน่งบนกระดาษเพื่อวางตัวอย่าง')
+      }}
+      onPlacementAttempt={()=>setStampAttempted(true)}
+      mark={selectedStamp} marks={marks}
+      pending={requests} pages={pages} canGive={canGive}
       canEdit={editable} canReview={canReview} userId={userId}
-      onCancelPlacement={()=>setStampPoint(null)}
-      onComplete={()=>{setStampPoint(null);setSelectedStampId(null);router.refresh()}}/>
-    {editable&&<p className="living-editor-hint">
+      onCancelPlacement={()=>{
+        setStampPoint(null);setStampPreview(null);setStampAttempted(false)
+        setTool('select');setStampPanelOpen(false)
+      }}
+      onComplete={()=>{
+        setStampPoint(null);setStampPreview(null);setStampAttempted(false)
+        setSelectedStampId(null);setStampPanelOpen(false)
+        setTool('select');router.refresh()
+      }}/> 
+    </div>
+    {editable&&<details className="living-reader-editor-help">
+      <summary>วิธีใช้สมุด</summary>
+      <p className="living-editor-hint">
       เลือกเครื่องมือแล้วแตะบนกระดาษ · ปากกาบันทึกเป็นเส้นเวกเตอร์ · ลากเพื่อย้ายวัตถุ
       · ใช้ลูกศรเพื่อขยับตำแหน่ง · หยุดแก้ไขเพื่อบันทึกอัตโนมัติ
       · Ctrl/Cmd+Z ย้อน และ Ctrl/Cmd+Shift+Z ทำซ้ำ
-    </p>}
+      </p>
+    </details>}
     {notice&&<p className="living-editor-feedback" role="status">{notice}</p>}
     {saveFailed&&<p role="alert" className="living-editor-save-warning">
       บันทึกไม่สำเร็จ: ข้อมูลที่ยังไม่บันทึกยังอยู่บนหน้านี้ โปรดลองบันทึกอีกครั้ง
