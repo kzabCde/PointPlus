@@ -14,13 +14,13 @@ export function LivingBookShelf({books,people,base}:{
           <BookCover assetId={book.cover_asset_id} eager={index===0}/>
         </div>
         <div className="book-card__content">
-          <span className="stamp-collection-type">Living Stampbook</span>
+          <span className="stamp-collection-type">{book.card?'การ์ดสะสม V3':'Living Stampbook'}</span>
           <h3>{book.title}</h3>
           {book.description && <p>{book.description}</p>}
           {recipient && <p>สำหรับ {recipient.display_name}</p>}
-          <p>สะสมต่อเนื่อง · ไม่จำกัดจำนวนแสตมป์</p>
+          <p>{book.card?`สะสม ${book.card.target_count} ดวง · รางวัล: ${book.card.reward_title}`:'สะสมต่อเนื่อง · ไม่จำกัดจำนวนแสตมป์'}</p>
           <Link className="button button--secondary"
-            href={base+'/living/'+book.id}>เปิดสมุด <span aria-hidden="true">→</span></Link>
+            href={base+'/living/'+book.id}>{book.card?'เปิดการ์ด':'เปิดสมุด'} <span aria-hidden="true">→</span></Link>
         </div>
       </article>
     })}
