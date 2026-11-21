@@ -4,6 +4,7 @@ import {useEffect,useState,type FormEvent} from 'react'
 import Image from 'next/image'
 import {useRouter} from 'next/navigation'
 import {stampArtwork} from './stamp-model'
+import {emitPaperCue} from './paper-sound'
 import {requestLivingRedemption,fulfillLivingRedemption,
   cancelLivingRedemption} from './redemption-actions'
 import type {
@@ -49,6 +50,7 @@ export function LivingRedemptionPanel({
       })
       setFeedback(receipt.message)
       if(receipt.ok){
+        emitPaperCue('stamp')
         setLastStampIds(receipt.data?.mark_ids??[])
         setKey(crypto.randomUUID());setReward('');setQuantity(1)
         router.refresh()
@@ -64,6 +66,7 @@ export function LivingRedemptionPanel({
         ?await fulfillLivingRedemption({spaceId,bookId,redemptionId:id})
         :await cancelLivingRedemption({spaceId,bookId,redemptionId:id})
       setFeedback(result.message)
+      if(result.ok)emitPaperCue(fulfill?'reward':'page')
       if(result.ok||result.conflict)router.refresh()
     }catch{setFeedback('เชื่อมต่อไม่ได้ ยังไม่สามารถยืนยันสถานะรายการ')}
     finally{setBusy(null)}
