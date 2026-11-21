@@ -700,9 +700,10 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     }
   }
   async function handlePhotoDrop(event:ReactDragEvent<HTMLDivElement>){
-    if(!editable||locked.current||busy)return
+    // Always cancel native file-drop navigation, even in readonly/saving states.
     event.preventDefault()
     setDropActive(false)
+    if(!editable||locked.current||busy)return
     const file=Array.from(event.dataTransfer.files).find(item=>
       ['image/png','image/jpeg','image/webp'].includes(item.type))
     if(!file){setNotice('รองรับเฉพาะรูป JPEG, PNG และ WebP');return}
