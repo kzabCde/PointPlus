@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type DragEvent as ReactDragEvent, type PointerEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import {pointPlusStamps} from '@/lib/point-plus/assets'
 import { deleteLivingElement,saveLivingElement,restoreLivingElement } from './editor-actions'
 import {useLivingEditorStudio} from './editor-studio'
 import {emitPaperCue} from './paper-sound'
@@ -12,7 +14,9 @@ import {LivingStampOverlay,LivingStampTools,LivingPhotoUpload,preparePhotoForUpl
 import {uploadLivingPhoto} from './m03-actions'
 import {moveDecoration,resizeDecoration,rotateDecoration,pinchDecoration,
   type ResizeCorner} from './direct-manipulation'
-import type {LivingStampMark,LivingStampRequest} from './stamp-model'
+import {stampArtwork,type LivingStampMark,type LivingStampRequest} from './stamp-model'
+import {moveStampDraft,rotateStampDraft,scaleStampDraft,
+  type StampDraft} from './stamp-gesture'
 import {
   clamp,isHexColor,makeStrokeElement,normalizePoint,normalizeRotation,textDefault,
   type EditorElement,type EditorTool,type EditorText,type EditorDrawing,type EditorImage,type LivingEditorPage,type Point,
@@ -26,10 +30,11 @@ type EditorProps={
   canGive:boolean;canReview:boolean;userId:string
 }
 type Gesture={
-  id:number;mode:'draw'|'move'|'hand'|'stamp-move'|'resize'|'rotate'
+  id:number;mode:'draw'|'move'|'hand'|'stamp-move'|'stamp-preview-move'|'resize'|'rotate'
   startX:number;startY:number;corner?:ResizeCorner
   points?:Point[];original?:EditorElement;next?:EditorElement
   scrollX?:number;scrollY?:number;originalStamp?:LivingStampMark;nextStamp?:LivingStampMark
+  originalStampPreview?:StampDraft
 }
 type Finger={x:number;y:number;itemId:string|null}
 type PinchGesture={
@@ -156,6 +161,9 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   const [freshMarkId,setFreshMarkId]=useState<string|null>(null)
   const [requests,setRequests]=useState(initialRequests)
   const [stampPoint,setStampPoint]=useState<Point|null>(null)
+  const [stampArtworkId,setStampArtworkId]=useState(pointPlusStamps[0].id)
+  const [stampPreview,setStampPreview]=useState<StampDraft|null>(null)
+  const [stampAttempted,setStampAttempted]=useState(false)
   const [selectedStampId,setSelectedStampId]=useState<string|null>(null)
   useEffect(()=>{
     if(!locked.current&&draftEdits.current.size===0){
@@ -420,7 +428,17 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
   }
 
   function begin(event:PointerEvent<HTMLDivElement>){
-    if((event.target as Element).closest('[data-inline-text], [data-context-toolbar]'))return
+    if((event.target as Element).closest(
+      '[data-inline-text], [data-context-toolbar], [data-living-page-edge], [data-stamp-preview-control]'
+    ))return
+    if(tool==='stamp'&&stampPreview&&!stampAttempted&&
+      (event.target as Element).closest('[data-stamp-preview]')){
+      gesture.current={mode:'stamp-preview-move',id:event.pointerId,
+        startX:event.clientX,startY:event.clientY,
+        originalStampPreview:stampPreview}
+      try{event.currentTarget.setPointerCapture(event.pointerId)}catch{}
+      return
+    }
     if(event.pointerType==='touch'){
       const hit=(event.target as Element).closest<HTMLElement>('[data-editor-id]')
       activeFingers.current.set(event.pointerId,{x:event.clientX,y:event.clientY,
@@ -470,7 +488,11 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     const p=normalizePoint(event.clientX,event.clientY,bound)
     if(!p)return
     if(tool==='stamp'){
-      if(canGive&&!element&&!mark){
+      if(canGive&&!element&&!mark&&!stampAttempted){
+        const draft:StampDraft=stampPreview?
+          {...stampPreview,x:p.x,y:p.y}:
+          {artId:stampArtworkId,x:p.x,y:p.y,rotation:0,scale:1}
+        setStampPreview(draft)
         setStampPoint(p);setSelectedId(null);setSelectedStampId(null)
         setStampPanelOpen(true)
       }
@@ -525,6 +547,13 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       return
     }
     const bound=canvas.current.getBoundingClientRect()
+    if(g.mode==='stamp-preview-move'&&g.originalStampPreview&&!stampAttempted){
+      const next=moveStampDraft(g.originalStampPreview,
+        event.clientX-g.startX,event.clientY-g.startY,bound)
+      setStampPreview(next)
+      setStampPoint({x:next.x,y:next.y})
+      return
+    }
     if(g.mode==='stamp-move'&&g.originalStamp){
       const next={...g.originalStamp,
         position_x:clamp(g.originalStamp.position_x+
@@ -571,6 +600,7 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     const g=gesture.current
     if(!g||g.id!==event.pointerId)return
     gesture.current=null
+    if(g.mode==='stamp-preview-move')return
     if(g.mode==='stamp-move'&&g.originalStamp&&g.nextStamp&&
       (g.nextStamp.position_x!==g.originalStamp.position_x||
        g.nextStamp.position_y!==g.originalStamp.position_y)){
@@ -625,6 +655,10 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
       setItems(prev=>prev.map(item=>item.id===g.original?.id?g.original!:item))
     if(g?.mode==='stamp-move'&&g.originalStamp)
       setMarks(prev=>prev.map(mark=>mark.id===g.originalStamp?.id?g.originalStamp!:mark))
+    if(g?.mode==='stamp-preview-move'&&g.originalStampPreview){
+      setStampPreview(g.originalStampPreview)
+      setStampPoint({x:g.originalStampPreview.x,y:g.originalStampPreview.y})
+    }
   }
   async function remove(item:EditorElement){
     if(!editable||locked.current||item.version===0)return
@@ -741,7 +775,8 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
         className="living-reader-mode-chip"
         aria-label={'ออกจากโหมด '+(toolLabels.find(item=>item.tool===tool)?.label??tool)}
         onClick={()=>{
-          setTool('select');setStampPoint(null);setSelectedStampId(null)
+          setTool('select');setStampPoint(null);setStampPreview(null)
+          setStampAttempted(false);setSelectedStampId(null)
           setStampPanelOpen(false)
         }}>
         {toolLabels.find(item=>item.tool===tool)?.label??tool} <span aria-hidden="true">×</span>
@@ -759,13 +794,17 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
           className="button button--secondary" aria-pressed={tool===item.tool}
           disabled={busy} onClick={()=>{
             setTool(item.tool);setSelectedId(null);setSelectedStampId(null)
-            setToolsOpen(false);if(item.tool==='stamp')setStampPanelOpen(false)
+            setToolsOpen(false)
+            if(item.tool==='stamp')setStampPanelOpen(true)
           }}>
           {item.label}
         </button>)}
       </div>}
       {!editable&&canGive&&<button type="button" className="button button--secondary"
-        onClick={()=>{setTool('stamp');setToolsOpen(false);setNotice('แตะกระดาษเพื่อเลือกตำแหน่งแสตมป์')}}>
+        onClick={()=>{
+          setTool('stamp');setToolsOpen(false);setStampPanelOpen(true)
+          setNotice('เลือกลายแสตมป์แล้วแตะกระดาษเพื่อเลือกตำแหน่ง')
+        }}>
         ประทับแสตมป์
       </button>}
       {(editable||canGive||canReview)&&<button type="button"
@@ -932,9 +971,37 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
              setSelectedStampId(id);setSelectedId(null)
              setStampPanelOpen(true);setToolsOpen(false)
            }}/>
-        {stampPoint&&<span className="living-stamp-placement-preview"
-          style={{left:stampPoint.x*100+'%',top:stampPoint.y*100+'%'}}
-          aria-hidden="true">✚</span>}
+        {stampPreview&&<div className="living-stamp-placement-preview"
+          data-stamp-preview="true" data-unissued="true"
+          style={{
+            left:stampPreview.x*100+'%',top:stampPreview.y*100+'%',
+            width:12*stampPreview.scale+'%',
+            transform:'translate(-50%,-50%) rotate('+stampPreview.rotation+'deg)',
+          }} aria-label="แสตมป์ตัวอย่างที่ยังไม่ได้ประทับจริง">
+          {stampArtwork.get(stampPreview.artId)&&<Image
+            src={stampArtwork.get(stampPreview.artId)!.png}
+            alt="" width={128} height={128} draggable={false}/>}
+          <span className="living-stamp-preview-watermark">ตัวอย่าง</span>
+        </div>}
+        {stampPreview&&!stampAttempted&&<div className="living-stamp-preview-handles"
+          data-stamp-preview-control="true" role="group" aria-label="จัดแสตมป์ตัวอย่าง"
+          style={{
+            left:Math.min(80,Math.max(12,stampPreview.x*100))+'%',
+            top:Math.min(90,Math.max(8,stampPreview.y*100+9))+'%',
+          }}>
+          <button type="button" aria-label="หมุนแสตมป์ซ้าย 15 องศา"
+            onPointerDown={event=>event.stopPropagation()}
+            onClick={()=>setStampPreview(d=>d&&rotateStampDraft(d,-15))}>↶</button>
+          <button type="button" aria-label="หมุนแสตมป์ขวา 15 องศา"
+            onPointerDown={event=>event.stopPropagation()}
+            onClick={()=>setStampPreview(d=>d&&rotateStampDraft(d,15))}>↷</button>
+          <button type="button" aria-label="ย่อแสตมป์"
+            onPointerDown={event=>event.stopPropagation()}
+            onClick={()=>setStampPreview(d=>d&&scaleStampDraft(d,.9))}>−</button>
+          <button type="button" aria-label="ขยายแสตมป์"
+            onPointerDown={event=>event.stopPropagation()}
+            onClick={()=>setStampPreview(d=>d&&scaleStampDraft(d,1.1))}>＋</button>
+        </div>}
         {draft.length>0&&<svg className="living-editor-draft" viewBox="0 0 1000 1000"
           preserveAspectRatio="none" aria-hidden="true">
           <polyline points={strokePoints(draft)} stroke={penColor}
@@ -1049,12 +1116,32 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
     <div id="living-reader-stamp-panel" className="living-reader-stamp-panel"
       hidden={!stampPanelOpen}>
     <LivingStampTools spaceId={spaceId} bookId={bookId} pageId={page.id}
-      placement={stampPoint} mark={selectedStamp} marks={marks}
+      placement={stampPoint} preview={stampPreview}
+      onPreviewChange={next=>{if(!stampAttempted){
+        setStampPreview(next);setStampPoint({x:next.x,y:next.y})
+      }}}
+      selectedArtwork={stampArtworkId}
+      onSelectArtwork={id=>{
+        if(stampAttempted)return
+        setStampArtworkId(id)
+        setStampPreview(prev=>prev?{...prev,artId:id}:null)
+      }}
+      onBeginPlacement={()=>{
+        if(stampAttempted)return
+        setTool('stamp');setSelectedStampId(null);setSelectedId(null)
+        setStampPanelOpen(true);setToolsOpen(false)
+      }}
+      onPlacementAttempt={()=>setStampAttempted(true)}
+      mark={selectedStamp} marks={marks}
       pending={requests} pages={pages} canGive={canGive}
       canEdit={editable} canReview={canReview} userId={userId}
-      onCancelPlacement={()=>{setStampPoint(null);setTool('select');setStampPanelOpen(false)}}
+      onCancelPlacement={()=>{
+        setStampPoint(null);setStampPreview(null);setStampAttempted(false)
+        setTool('select');setStampPanelOpen(false)
+      }}
       onComplete={()=>{
-        setStampPoint(null);setSelectedStampId(null);setStampPanelOpen(false)
+        setStampPoint(null);setStampPreview(null);setStampAttempted(false)
+        setSelectedStampId(null);setStampPanelOpen(false)
         setTool('select');router.refresh()
       }}/> 
     </div>
