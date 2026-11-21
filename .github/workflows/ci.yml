@@ -63,6 +63,8 @@ jobs:
         run: node --test tests/server-action-export-boundary.test.mjs
       - name: Verify UX01 Paper First layout and preserved interactions
         run: node --test tests/living-v3-ux01-paper-first.test.mjs
+      - name: Verify UX02 Contextual Editing and normalized transform geometry
+        run: node --test tests/living-v3-ux02-contextual.test.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Build
