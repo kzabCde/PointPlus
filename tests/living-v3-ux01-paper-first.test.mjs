@@ -61,7 +61,7 @@ test('Paper tools remain mounted yet concealed until the single Add action',()=>
   assert.match(editor,/setTool\('stamp'\)/)
   assert.match(editor,/className="living-editor-history-controls"/)
   assert.match(editor,/className="living-editor-zoom"/)
-  assert.match(editor,/className="living-editor-viewport"/)
+  assert.match(editor,/className=\{\'living-editor-viewport\'\+/)
   assert.match(editor,/className="living-editor-paper"/)
 })
 test('Stamp giver is not incorrectly forced to be paper owner',()=>{
