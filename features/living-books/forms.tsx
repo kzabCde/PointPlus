@@ -3,44 +3,15 @@
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { pointPlusStamps } from '@/lib/point-plus/assets'
-import type { Participant, Membership } from '@/features/spaces/data'
-import { BookCover } from '@/features/stamp-books/presentation'
-import { CreateCoupleStampBookForm, CreateStampBookForm } from '@/features/stamp-books/forms'
+import type { Participant } from '@/features/spaces/data'
+import { LivingBookCover } from './cover'
 import {
   createLivingBookAction,addLivingBookPageAction,livingIdle,
 } from './actions'
 
 type CreationProps = {
-  spaceId:string;userId:string;kind:string;participants:Participant[];members:Membership[]
+  spaceId:string;userId:string;kind:string;participants:Participant[]
 }
-export function CollectionCreationChoice(props:CreationProps) {
-  const [format,setFormat]=useState<'living'|'card'>('living')
-  return <div className="living-creator">
-    <fieldset className="stamp-format-picker">
-      <legend>เลือกรูปแบบการสะสม</legend>
-      <div className="stamp-format-options">
-        <label className="stamp-format-option" data-selected={format==='living'}>
-          <input type="radio" name="top_level_format" value="living"
-            checked={format==='living'} onChange={()=>setFormat('living')}/>
-          <strong>สมุดความทรงจำ</strong>
-          <span>สมุดเล่มเดียว เพิ่มหน้าเอง รับแสตมป์ไม่จำกัด และแลกบางส่วนได้ในอนาคต</span>
-        </label>
-        <label className="stamp-format-option" data-selected={format==='card'}>
-          <input type="radio" name="top_level_format" value="card"
-            checked={format==='card'} onChange={()=>setFormat('card')}/>
-          <strong>การ์ดสะสม</strong>
-          <span>ช่องหมายเลขแบบเดิม กดเลือกช่องแล้วแปะแสตมป์</span>
-        </label>
-      </div>
-    </fieldset>
-    {format==='living' ? <CreateLivingBookForm {...props}/> :
-      props.kind==='couple'
-        ? <CreateCoupleStampBookForm spaceId={props.spaceId} userId={props.userId}
-            participants={props.participants} cardOnly/>
-        : <CreateStampBookForm {...props} cardOnly/>}
-  </div>
-}
-
 export function CreateLivingBookForm({spaceId,userId,kind,participants}:CreationProps) {
   const router=useRouter()
   const [state,action,pending]=useActionState(createLivingBookAction,livingIdle)
@@ -79,7 +50,7 @@ export function CreateLivingBookForm({spaceId,userId,kind,participants}:Creation
       onChange={event=>setCover(event.target.value)}>
       {pointPlusStamps.map(stamp=><option key={stamp.id} value={stamp.id}>{stamp.nameTh}</option>)}
     </select>
-    <BookCover assetId={cover}/>
+    <LivingBookCover assetId={cover}/>
     {kind==='couple'
       ? <input type="hidden" name="approval_policy" value="direct"/>
       : <label htmlFor="living-book-approval">การให้แสตมป์ในอนาคต
