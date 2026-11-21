@@ -24,6 +24,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
   const [background,setBackground]=useState<PaperBackground>(page.background_style)
   const [busy,setBusy]=useState(false)
   const [message,setMessage]=useState('')
+  const [overviewOpen,setOverviewOpen]=useState(false)
   const current=Math.max(0,pages.findIndex(p=>p.id===page.id))
   const [jump,setJump]=useState(current+1)
   const [start,setStart]=useState(Math.floor(current/windowSize)*windowSize)
@@ -42,6 +43,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
     setJump(current+1)
     setStart(Math.floor(current/windowSize)*windowSize)
     setMessage('')
+    setOverviewOpen(false)
     studio?.setPageUnsaved(false)
   // All setters are stable; reset only after server page version or identity changes.
   },[page.id,page.version,page.title,page.background_style,current])
@@ -87,6 +89,24 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
     return ()=>window.clearTimeout(timer)
   },[title,background,editable,busy,page.id])
 
+  function toggleOverview(){
+    if(overviewOpen&&(unsaved||savingRef.current)){
+      setMessage('มีข้อมูลหน้ากระดาษที่ยังไม่บันทึก กรุณาบันทึกให้เรียบร้อยก่อนปิดแผง')
+      return
+    }
+    setOverviewOpen(currentOpen=>!currentOpen)
+  }
+  useEffect(()=>{
+    if(!overviewOpen)return
+    const closeOnEscape=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){
+        if(!unsaved&&!savingRef.current)setOverviewOpen(false)
+        else setMessage('กรุณาบันทึกการแก้ไขก่อนปิดแผง')
+      }
+    }
+    window.addEventListener('keydown',closeOnEscape)
+    return ()=>window.removeEventListener('keydown',closeOnEscape)
+  },[overviewOpen,unsaved])
   function canNavigate():boolean{
     if(savingRef.current||unsaved||studio?.paperUnsaved||studio?.pageUnsaved){
       setMessage('มีการแก้ไขที่ยังไม่บันทึก กรุณาบันทึกให้เรียบร้อยก่อนพลิกหน้า')
@@ -140,7 +160,12 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
         href={current>0?base+'?page='+pages[current-1].id:base+'?page='+page.id}>
         ← ก่อนหน้า
       </Link>
-      <span role="status">หน้า {current+1} / {pages.length}</span>
+      <button type="button" className="living-reader-page-trigger"
+        aria-controls="living-page-overview" aria-expanded={overviewOpen}
+        onClick={toggleOverview} title="เปิดภาพย่อและจัดการหน้าสมุด">
+        <span role="status">หน้า {current+1} / {pages.length}</span>
+        <span aria-hidden="true">⌄</span>
+      </button>
       <Link aria-disabled={current===pages.length-1}
         tabIndex={current===pages.length-1?-1:0}
         className={'button button--secondary'+(current===pages.length-1?' is-disabled':'')}
@@ -149,6 +174,16 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
         ถัดไป →
       </Link>
     </div>
+    {editable&&current===pages.length-1&&<button type="button"
+      className="living-reader-page-corner" aria-label="เพิ่มหน้ากระดาษใหม่"
+      onClick={()=>setOverviewOpen(true)}>＋ เพิ่มหน้า</button>}
+    <div id="living-page-overview" className="living-reader-page-overview"
+      hidden={!overviewOpen} aria-label="ภาพย่อและการจัดการหน้าสมุด">
+      <div className="living-reader-overview-heading">
+        <h3>หน้าความทรงจำ</h3>
+        <button type="button" className="living-reader-close" onClick={toggleOverview}
+          aria-label="ปิดหน้าจัดการสมุด">✕</button>
+      </div>
     <div className="living-page-jump">
       <label htmlFor="living-page-jump-number">ไปยังหน้าที่</label>
       <div className="living-page-jump__row">
@@ -206,6 +241,7 @@ export function LivingPageManager({spaceId,bookId,pages,page,editable}:{
         <AddLivingBookPageForm spaceId={spaceId} bookId={bookId}/>
       </details>}
     </div>}
+    </div>
     {message&&<p role="status" className="living-page-feedback">{message}</p>}
   </section>
 }
