@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect,useState,type FormEvent} from 'react'
+import {useEffect,useRef,useState,type FormEvent} from 'react'
 import Image from 'next/image'
 import {useRouter} from 'next/navigation'
 import {stampArtwork} from './stamp-model'
@@ -31,45 +31,68 @@ export function LivingRedemptionPanel({
   const [busy,setBusy]=useState<string|null>(null)
   const [feedback,setFeedback]=useState('')
   const [lastStampIds,setLastStampIds]=useState<string[]>([])
+  const [attempted,setAttempted]=useState(false)
+  const requestLock=useRef(false)
+  const actionLock=useRef(false)
+  const requestSnapshot=useRef<{
+    quantity:number;rewardMessage:string;idempotencyKey:string
+  }|null>(null)
+  const [confirmAction,setConfirmAction]=useState<{
+    id:string;fulfill:boolean
+  }|null>(null)
   useEffect(()=>setKey(crypto.randomUUID()),[])
   const max=balance.available
   const count=Math.max(1,Math.min(quantity,Math.max(1,max)))
   const sample=candidates.slice(0,Math.min(count,12))
   const remaining=Math.max(0,count-sample.length)
+  const pending=history.filter(item=>item.status==='requested')
+  const completed=history.filter(item=>item.status!=='requested')
   const sendable=canRequest&&isActive&&max>0&&quantity>=1&&
     quantity<=max&&Number.isSafeInteger(quantity)&&
     reward.trim().length>0&&reward.trim().length<=2000&&!!key
 
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault()
-    if(busy||!sendable)return
+    if(requestLock.current||busy||!sendable)return
+    requestLock.current=true
+    // When the server response is lost, keep EXACTLY the same request parameters.
+    // Only a new deliberate request receives a fresh idempotency key.
+    if(!requestSnapshot.current)
+      requestSnapshot.current={quantity,rewardMessage:reward,idempotencyKey:key}
+    setAttempted(true)
     setBusy('request');setFeedback('')
     try{
       const receipt=await requestLivingRedemption({
-        spaceId,bookId,quantity,rewardMessage:reward,idempotencyKey:key,
+        spaceId,bookId,...requestSnapshot.current,
       })
       setFeedback(receipt.message)
       if(receipt.ok){
         emitPaperCue('stamp')
         setLastStampIds(receipt.data?.mark_ids??[])
         setKey(crypto.randomUUID());setReward('');setQuantity(1)
+        setAttempted(false);requestSnapshot.current=null
         router.refresh()
       }else if(receipt.conflict)router.refresh()
-    }catch{setFeedback('เชื่อมต่อไม่ได้ กรุณาลองอีกครั้งด้วยข้อมูลเดิม')}
-    finally{setBusy(null)}
+    }catch{setFeedback('เชื่อมต่อไม่ได้ ลองส่งคำขอเดิมด้วยจำนวนและข้อความเดิม หรือยกเลิกหลังตรวจสอบรายการ')}
+    finally{requestLock.current=false;setBusy(null)}
   }
   async function resolve(id:string,fulfill:boolean){
-    if(busy||!canFulfill)return
+    if(busy||!canFulfill||actionLock.current||
+      confirmAction?.id!==id||confirmAction.fulfill!==fulfill)return
+    actionLock.current=true
     setBusy(id);setFeedback('')
     try{
       const result=fulfill
         ?await fulfillLivingRedemption({spaceId,bookId,redemptionId:id})
         :await cancelLivingRedemption({spaceId,bookId,redemptionId:id})
       setFeedback(result.message)
-      if(result.ok)emitPaperCue(fulfill?'reward':'page')
+      if(result.ok){
+        emitPaperCue(fulfill?'reward':'page')
+        setConfirmAction(null)
+      }
       if(result.ok||result.conflict)router.refresh()
     }catch{setFeedback('เชื่อมต่อไม่ได้ ยังไม่สามารถยืนยันสถานะรายการ')}
-    finally{setBusy(null)}
+    finally{actionLock.current=false;setBusy(null)}
   }
 
   return <section className="living-redemption-panel" aria-label="การแลกแสตมป์">
