@@ -873,6 +873,10 @@ export function LivingPaperEditor({spaceId,bookId,page,initialElements,editable,
             event.stopPropagation()
             if(event.key==='Escape'){
               setSelectedId(null);setAdvancedOpen(false)
+            }else if((event.ctrlKey||event.metaKey)&&!event.altKey&&
+              ['z','y'].includes(event.key.toLowerCase())){
+              event.preventDefault()
+              void undoRedo(event.key.toLowerCase()==='y'||event.shiftKey?'redo':'undo')
             }
           }}
           style={{
