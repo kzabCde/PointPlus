@@ -63,7 +63,7 @@ jobs:
         run: node --test tests/living-stampbook-m03.test.mjs
       - name: Verify Living Stampbook V3 M04 flexible redemption
         run: node --test tests/living-stampbook-m04.test.mjs
-      - name: Verify Living Stampbook V3 M05 sound, autosave, undo and mobile
+      - name: Verify Living Stampbook V3 M05 sound, manual Save, undo and mobile
         run: node --test tests/living-stampbook-m05.test.mjs
       - name: Syntax check isolated hosted two-account E2E (no credentials or deployment)
         run: node --check tests/e2e/living-v3-hosted.test.mjs
@@ -92,7 +92,7 @@ jobs:
 
   verify-living-migrations:
     name: Living M01–M05 PostgreSQL migrations and RLS tests
-    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3' || github.head_ref == 'feat/living-v3-buttonless-integration'
+    if: github.head_ref == 'feat/living-stampbook-v3' || github.ref_name == 'feat/living-stampbook-v3' || github.head_ref == 'fix/room-living-creation-v3' || github.head_ref == 'feat/living-v3-buttonless-integration' || github.head_ref == 'feat/living-v3-compact-manual-save'
     runs-on: ubuntu-latest
     services:
       postgres:
