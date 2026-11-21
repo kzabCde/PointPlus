@@ -12,9 +12,11 @@ import type {Point,LivingEditorPage} from './editor-model'
 
 type Context={spaceId:string;bookId:string;pageId:string}
 type OverlayProps={marks:LivingStampMark[];pending:LivingStampRequest[];
-  selectedId:string|null;onSelect:(id:string)=>void;selectable:boolean}
+  selectedId:string|null;onSelect:(id:string)=>void;selectable:boolean
+  freshMarkId?:string|null}
 const stampSize=(scale:number)=>12*scale
-export function LivingStampOverlay({marks,pending,selectedId,onSelect,selectable}:OverlayProps){
+export function LivingStampOverlay({marks,pending,selectedId,onSelect,selectable,
+  freshMarkId}:OverlayProps){
   return <>
     {marks.map(mark=>{
       const artwork=stampArtwork.get(mark.asset_id)
@@ -23,7 +25,7 @@ export function LivingStampOverlay({marks,pending,selectedId,onSelect,selectable
       const reserved=mark.state==='reserved'
       return <button type="button" key={mark.id} data-living-stamp-id={mark.id}
         className="living-real-stamp" data-peeled={peeled}
-        data-used={used} data-reserved={reserved}
+        data-used={used} data-reserved={reserved} data-stamp-fresh={freshMarkId===mark.id}
         aria-pressed={mark.id===selectedId} disabled={!selectable}
         aria-label={peeled?'รอยแสตมป์ที่ลอกแล้ว':
           used?'แสตมป์แลกแล้ว ใช้ซ้ำไม่ได้':reserved?'แสตมป์จองไว้รอส่งมอบ':
